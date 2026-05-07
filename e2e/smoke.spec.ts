@@ -382,6 +382,7 @@ test('Build field create, edit, and delete persist across reloads', async ({ pag
   await addFieldModal.getByLabel('Field name').fill('Notes')
   await addFieldModal.getByLabel('Type').selectOption('longText')
   await addFieldModal.getByRole('button', { name: 'Add field' }).click()
+  await expect(page.getByRole('status')).toHaveText('Field added.')
   await expect(page.getByRole('columnheader', { name: /Notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Notes/ }).first().locator('.grid-field-menu-trigger').click()
   await page.getByRole('menuitem', { name: 'Edit field' }).click()

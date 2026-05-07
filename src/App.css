@@ -92,6 +92,22 @@
   --hero-gradient: linear-gradient(135deg, #ffffff, #f0f5fa);
 }
 
+.toast-region {
+  position: fixed;
+  z-index: 50;
+  right: 22px;
+  bottom: 22px;
+  max-width: min(320px, calc(100vw - 28px));
+  padding: 11px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--aura);
+  font-size: 13px;
+  font-weight: 850;
+}
+
 .rail {
   position: sticky;
   top: 0;
@@ -3127,6 +3143,13 @@ h2 {
     padding: 8px 10px;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .toast-region {
+    right: 12px;
+    bottom: 86px;
+    left: 12px;
+    max-width: none;
   }
 
   .desk {

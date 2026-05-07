@@ -301,6 +301,7 @@ function App() {
   )
   const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
   const [base, setBase] = useState(() => readStoredWorkbase())
+  const [toastMessage, setToastMessage] = useState('')
   const [timelineFilter, setTimelineFilter] = useState('')
   const [timelineTableId, setTimelineTableId] = useState('all')
   const [timelineStatus, setTimelineStatus] = useState('all')
@@ -495,6 +496,10 @@ function App() {
     localStorage.setItem(rulesStorageKey, JSON.stringify(nextRules))
   }
 
+  function showToast(message: string) {
+    setToastMessage(message)
+  }
+
   function closeBuildModal() {
     setBuildModal('')
     setPendingDeleteTableId('')
@@ -572,6 +577,7 @@ function App() {
       gridDensity,
       activeGridViewId: '',
     })
+    showToast('Table added.')
     closeBuildModal()
   }
 
@@ -613,6 +619,7 @@ function App() {
 
       return nextBase
     })
+    showToast('Table saved.')
     closeBuildModal()
   }
 
@@ -703,6 +710,7 @@ function App() {
       activeGridViewId: '',
       columnWidths: nextWidths,
     })
+    showToast('Table deleted.')
     closeBuildModal()
   }
 
@@ -774,6 +782,7 @@ function App() {
       })
     }
     setFieldDraft((current) => ({ ...current, label: '' }))
+    showToast('Field added.')
     closeBuildModal()
   }
 
@@ -877,6 +886,7 @@ function App() {
       gridColorFieldId: nextColorFieldId,
       columnWidths: nextWidths,
     })
+    showToast('Field deleted.')
     closeBuildModal()
   }
 
@@ -976,6 +986,7 @@ function App() {
       viewRenameDrafts: { ...viewRenameDrafts, [view.id]: view.name },
       activeGridViewId: view.id,
     })
+    showToast('View saved.')
   }
 
   function applyGridView(view: LocalGridView, buildStateUpdates: Partial<StoredBuildViewState> = {}) {
@@ -1067,6 +1078,7 @@ function App() {
       localGridViews: nextGridViews,
       activeGridViewId: viewId,
     })
+    showToast('View updated.')
   }
 
   function togglePinnedGridView(viewId: string) {
@@ -1121,6 +1133,7 @@ function App() {
     writeBuildViewState({
       localGridViews: localGridViews.map((view) => (view.id === viewId ? { ...view, name: nextName } : view)),
     })
+    showToast('View renamed.')
   }
 
   function deleteGridView(viewId: string) {
@@ -1143,6 +1156,7 @@ function App() {
       viewRenameDrafts: nextDrafts,
       activeGridViewId: activeGridViewId === viewId ? '' : activeGridViewId,
     })
+    showToast('View deleted.')
   }
 
   function createLocalRule() {
@@ -1401,6 +1415,7 @@ function App() {
     setSelectedBuildRecordId(record.id)
     setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(false)
+    showToast('Record added.')
   }
 
   function openCreateRecordModal() {
@@ -2309,6 +2324,16 @@ function App() {
   }, [localRules])
 
   useEffect(() => {
+    if (!toastMessage) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setToastMessage(''), 2400)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [toastMessage])
+
+  useEffect(() => {
     const buildViewState: StoredBuildViewState = {
       version: 1,
       selectedBuildTableId,
@@ -2380,6 +2405,11 @@ function App() {
 
   return (
     <main className="app" data-theme={selectedTheme}>
+      {toastMessage && (
+        <div className="toast-region" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
       <aside className="rail" aria-label="Sundesk navigation">
         <div className="brand">
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
