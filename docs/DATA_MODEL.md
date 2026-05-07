@@ -8,15 +8,10 @@ The Google Sheet is only a digest bridge for Apps Script.
 
 - `users`
 - `tables`
-- `communities`
-- `tasks`
-- `followUps`
-- `approvals`
-- `meetings`
-- `meetingItems`
-- `risks`
-- `people`
+- `records`
 - `fields`
+- `links`
+- `dependencies`
 - `views`
 - `templates`
 - `automations`
@@ -27,21 +22,22 @@ The Google Sheet is only a digest bridge for Apps Script.
 
 ## Record Shape
 
-Each operational record has fixed fields and custom fields.
+Each operational item is a record in a table.
+
+Tasks are records in the Tasks table. Communities are records in the Communities table. Custom tables use the same shape.
 
 ```json
 {
   "id": "task_001",
-  "type": "task",
-  "title": "Confirm COI status",
-  "status": "blocked",
-  "communityId": "community_halifax",
-  "dueDate": "2026-05-12",
-  "priority": "fire",
-  "custom": {
+  "tableId": "tasks",
+  "values": {
+    "title": "Confirm COI status",
+    "status": "blocked",
+    "community": ["community_halifax"],
+    "dueDate": "2026-05-12",
+    "priority": "fire",
     "coiStatus": "missing"
   },
-  "linkedRecordIds": ["approval_001", "followup_001"],
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
 }
@@ -67,11 +63,101 @@ Custom tables are V1.
 ```json
 {
   "id": "coiStatus",
-  "table": "communities",
+  "tableId": "communities",
   "label": "COI status",
   "type": "singleSelect",
   "options": ["Missing", "Requested", "Received", "Not needed"],
   "required": false,
+  "createdAt": "timestamp"
+}
+```
+
+## Linked Record Field Shape
+
+Linked records are field values.
+
+```json
+{
+  "id": "community",
+  "tableId": "tasks",
+  "label": "Community",
+  "type": "linkedRecord",
+  "linkedTableId": "communities",
+  "allowMultiple": false,
+  "createdAt": "timestamp"
+}
+```
+
+The record stores linked record IDs in the field value.
+
+```json
+{
+  "id": "task_001",
+  "tableId": "tasks",
+  "values": {
+    "title": "Confirm COI status",
+    "community": ["community_halifax"]
+  }
+}
+```
+
+Backlinks are derived from linked-record fields. They are not manually duplicated.
+
+## Link Shape
+
+Links can be materialized when the UI or automations need fast graph reads.
+
+```json
+{
+  "id": "link_001",
+  "fromTableId": "tasks",
+  "fromRecordId": "task_001",
+  "fromFieldId": "community",
+  "toTableId": "communities",
+  "toRecordId": "community_halifax",
+  "createdAt": "timestamp"
+}
+```
+
+## Lookup Field Shape
+
+```json
+{
+  "id": "communityEventDate",
+  "tableId": "tasks",
+  "label": "Community event date",
+  "type": "lookup",
+  "sourceLinkedFieldId": "community",
+  "sourceFieldId": "eventDate",
+  "createdAt": "timestamp"
+}
+```
+
+## Rollup Field Shape
+
+```json
+{
+  "id": "openTaskCount",
+  "tableId": "communities",
+  "label": "Open task count",
+  "type": "rollup",
+  "sourceLinkedFieldId": "tasks",
+  "sourceFieldId": "status",
+  "operation": "countWhere",
+  "condition": "status is not done",
+  "createdAt": "timestamp"
+}
+```
+
+## Count Field Shape
+
+```json
+{
+  "id": "followupCount",
+  "tableId": "communities",
+  "label": "Follow-ups",
+  "type": "count",
+  "sourceLinkedFieldId": "followups",
   "createdAt": "timestamp"
 }
 ```
@@ -132,12 +218,14 @@ The UI must show the reason trail.
 
 ## Task Links And Dependencies
 
-Tasks can link to records in any V1 table.
+Dependencies are typed links between records. Tasks can use them. Other tables can use them too.
 
 ```json
 {
   "id": "dependency_001",
+  "fromTableId": "tasks",
   "fromRecordId": "task_001",
+  "toTableId": "approvals",
   "toRecordId": "approval_001",
   "relationship": "dependsOn",
   "reason": "COI must be received before venue readiness can be marked ready.",
@@ -145,4 +233,18 @@ Tasks can link to records in any V1 table.
 }
 ```
 
-Dependency links feed Today, Kanban, Gantt, meeting prep, and the daily digest.
+Dependency links feed Today, Kanban, Gantt, meeting prep, record drawers, automations, and the daily digest.
+
+## Universal Record Picker
+
+The app needs one record picker that can select from any table.
+
+It is used by:
+
+- Linked-record fields.
+- Dependency fields.
+- Automation builders.
+- View filters.
+- Record drawers.
+
+The picker should show table, record title, key status, and safe context.
