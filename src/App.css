@@ -1,6 +1,7 @@
 .app {
   --background: #f7fcff;
   --paper: var(--surface);
+  --focus-ring: #183346;
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
   min-height: 100vh;
@@ -18,6 +19,7 @@
   --line: rgba(166, 94, 75, 0.22);
   --line-strong: rgba(238, 116, 111, 0.38);
   --accent: #b4554f;
+  --focus-ring: #263340;
   --sky-1: #ffe9dc;
   --sky-2: #ffd1b9;
   --sky-3: #e99376;
@@ -44,6 +46,7 @@
   --line: rgba(90, 129, 153, 0.22);
   --line-strong: rgba(83, 143, 180, 0.34);
   --accent: #3b7fa8;
+  --focus-ring: #122636;
   --sky-1: #e7f4fa;
   --sky-2: #c7e4f1;
   --sky-3: #82bddb;
@@ -61,6 +64,7 @@
   --line: rgba(181, 204, 218, 0.18);
   --line-strong: rgba(117, 188, 230, 0.34);
   --accent: #8dc7ea;
+  --focus-ring: #f4ce5f;
   --sky-1: #1c3548;
   --sky-2: #254e68;
   --sky-3: #75bce6;
@@ -87,6 +91,7 @@
   --line: rgba(104, 119, 133, 0.2);
   --line-strong: rgba(104, 119, 133, 0.34);
   --accent: #366f9f;
+  --focus-ring: #17212b;
   --sky-1: #eef5fb;
   --sky-2: #d8e8f5;
   --hero-gradient: linear-gradient(135deg, #ffffff, #f0f5fa);
@@ -2028,9 +2033,14 @@ h2 {
 }
 
 .grid-cell-button:hover,
-.grid-cell-button:focus-visible,
 .grid-cell-button.selected-cell {
-  outline: 0;
+  background: color-mix(in srgb, var(--sky-1) 64%, transparent);
+}
+
+.grid-cell-button:focus,
+.grid-cell-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
   background: color-mix(in srgb, var(--sky-1) 64%, transparent);
 }
 

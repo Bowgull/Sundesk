@@ -83,8 +83,9 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring, var(--accent));
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring, var(--accent)) 18%, transparent);
 }
 
 button:disabled,

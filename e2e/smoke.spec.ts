@@ -106,6 +106,17 @@ test('Build grid supports inline cell editing and keyboard movement', async ({ p
   await expect(page.getByTestId('grid-cell-task_coi_halifax-status')).toBeFocused()
 })
 
+test('Build grid cells keep a visible keyboard focus ring', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const titleCell = page.getByTestId('grid-cell-task_coi_halifax-title')
+
+  await titleCell.focus()
+  await expect(titleCell).toBeFocused()
+  await expect(titleCell).toHaveCSS('outline-style', 'solid')
+})
+
 test('Build field header menu exposes view and field actions', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
