@@ -122,8 +122,12 @@ test('Build field header menu exposes view and field actions', async ({ page }) 
   await page.getByTestId('build-table-tasks').click()
 
   const titleHeader = page.getByRole('columnheader', { name: /Title/ }).first()
+  const titleMenuTrigger = titleHeader.locator('.grid-field-menu-trigger')
 
-  await titleHeader.locator('.grid-field-menu-trigger').click()
+  await expect(titleMenuTrigger).toHaveAttribute('aria-haspopup', 'menu')
+  await expect(titleMenuTrigger).toHaveAttribute('aria-expanded', 'false')
+  await titleMenuTrigger.click()
+  await expect(titleMenuTrigger).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByRole('menuitem', { name: 'Edit field' })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Rename', exact: true })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Change type' })).toBeVisible()
@@ -164,6 +168,8 @@ test('Build toolbar exposes ordered view controls and persists density', async (
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
 
+  await expect(page.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('tab', { name: /Tasks/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByLabel('View')).toBeVisible()
   await expect(page.getByLabel('Fields')).toBeVisible()
   await expect(page.getByLabel('Filter')).toBeVisible()

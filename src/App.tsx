@@ -1718,10 +1718,14 @@ function App() {
 
   function renderGridHeader(field: FieldDefinition, menuKey: string) {
     const isPrimaryField = selectedBuildTable?.primaryFieldId === field.id
+    const menuId = `grid-field-menu-${field.tableId}-${field.id}-${menuKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`
 
     return (
       <div className="grid-header-cell">
         <button
+          aria-controls={openFieldMenuId === menuKey ? menuId : undefined}
+          aria-expanded={openFieldMenuId === menuKey}
+          aria-haspopup="menu"
           className="grid-field-menu-trigger"
           type="button"
           onClick={(event) => {
@@ -1734,7 +1738,7 @@ function App() {
           <strong>⌄</strong>
         </button>
         {openFieldMenuId === menuKey && (
-          <div className="grid-field-menu" role="menu" aria-label={`${field.label} field actions`}>
+          <div className="grid-field-menu" id={menuId} role="menu" aria-label={`${field.label} field actions`}>
             <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Edit field</button>
             <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Rename</button>
             <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Change type</button>
@@ -2425,6 +2429,7 @@ function App() {
             .filter((screen) => screen.group === 'Work')
             .map((screen) => (
               <a
+                aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
                 href={`#${screen.id}`}
                 key={screen.id}
@@ -2437,6 +2442,7 @@ function App() {
             .filter((screen) => screen.group === 'System')
             .map((screen) => (
               <a
+                aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
                 href={`#${screen.id}`}
                 key={screen.id}
@@ -3158,20 +3164,22 @@ function App() {
                     {activeGridViewChanged ? 'View changed' : 'View active'}: {activeGridView.name}
                   </span>
                 )}
-                <button onClick={() => setBuildModal('table')}>Add table</button>
-                <button onClick={openTableSettings}>Rename table</button>
-                <button className="danger" disabled={!canDeleteSelectedBuildTable} onClick={requestDeleteTable}>Delete table</button>
-                <button onClick={() => setBuildModal('field')}>Add field</button>
-                <button onClick={saveGridView}>Save view</button>
-                <button className="danger" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
+                <button type="button" onClick={() => setBuildModal('table')}>Add table</button>
+                <button type="button" onClick={openTableSettings}>Rename table</button>
+                <button className="danger" disabled={!canDeleteSelectedBuildTable} type="button" onClick={requestDeleteTable}>Delete table</button>
+                <button type="button" onClick={() => setBuildModal('field')}>Add field</button>
+                <button type="button" onClick={saveGridView}>Save view</button>
+                <button className="danger" type="button" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
               </div>
             </div>
-            <div className="table-tabs" aria-label="Tables">
+            <div className="table-tabs" role="tablist" aria-label="Tables">
               {buildTableRows.map((table) => (
                 <button
+                  aria-selected={table.id === selectedBuildTable?.id}
                   className={table.id === selectedBuildTable?.id ? 'selected' : ''}
                   data-testid={`build-table-${table.id}`}
                   key={table.id}
+                  role="tab"
                   type="button"
                   onClick={() => selectBuildTable(table.id)}
                 >
@@ -3399,15 +3407,15 @@ function App() {
                       Filter: {view.filter || 'none'}. Sort: {view.sortFieldId || 'manual'} {view.sortDirection || 'asc'}. Group: {view.groupFieldId || 'none'}.
                     </p>
                     <div className="view-actions">
-                      <button onClick={() => applyGridView(view)}>Apply</button>
-                      <button onClick={() => updateGridView(view.id)}>Update</button>
-                      <button onClick={() => duplicateGridView(view)}>Copy</button>
-                      <button onClick={() => togglePinnedGridView(view.id)}>{view.pinned ? 'Unpin' : 'Pin'}</button>
+                      <button type="button" onClick={() => applyGridView(view)}>Apply</button>
+                      <button type="button" onClick={() => updateGridView(view.id)}>Update</button>
+                      <button type="button" onClick={() => duplicateGridView(view)}>Copy</button>
+                      <button type="button" onClick={() => togglePinnedGridView(view.id)}>{view.pinned ? 'Unpin' : 'Pin'}</button>
                       {view.id === activeGridViewId && activeGridViewChanged && (
-                        <button onClick={resetActiveGridView}>Reset</button>
+                        <button type="button" onClick={resetActiveGridView}>Reset</button>
                       )}
-                      <button onClick={() => renameGridView(view.id)}>Rename</button>
-                      <button className="danger" onClick={() => deleteGridView(view.id)}>Delete</button>
+                      <button type="button" onClick={() => renameGridView(view.id)}>Rename</button>
+                      <button className="danger" type="button" onClick={() => deleteGridView(view.id)}>Delete</button>
                     </div>
                   </article>
                 ))}
