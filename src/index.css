@@ -1,0 +1,74 @@
+:root {
+  --ink: #152838;
+  --ink-2: #254052;
+  --muted: #6f8290;
+  --line: rgba(111, 143, 164, 0.24);
+  --line-strong: rgba(73, 137, 177, 0.38);
+  --paper: rgba(255, 255, 255, 0.88);
+  --sky-1: #e4f4ff;
+  --sky-2: #bfe3f8;
+  --sky-3: #75bce6;
+  --night: #183346;
+  --night-2: #0f2433;
+  --sun: #f9d96a;
+  --sun-2: #fff2b8;
+  --coral: #ee746f;
+  --coral-2: #ffe0df;
+  --sage-2: #e4f6e8;
+  --lav-2: #f0edff;
+  --accent: #3b8abd;
+  --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
+  --radius: 8px;
+  color: var(--ink);
+  background: #f7fcff;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 82% 6%, rgba(249, 217, 106, 0.48), transparent 25%),
+    radial-gradient(circle at 15% 12%, rgba(203, 195, 255, 0.35), transparent 24%),
+    linear-gradient(135deg, #f8fdff 0%, #edf8ff 48%, #fff8dc 100%);
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button.primary {
+  border-color: transparent;
+  background: var(--night);
+  color: #fff;
+}
+
+button.ghost {
+  background: rgba(228, 244, 255, 0.68);
+  color: var(--night);
+}
+
+a {
+  color: inherit;
+}
