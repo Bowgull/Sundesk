@@ -454,6 +454,10 @@ function App() {
     setLinkedRecordFilters({})
   }
 
+  function canDismissBuildModalWithEscape(modal: BuildModal) {
+    return modal !== 'deleteTable' && modal !== 'deleteField' && modal !== 'resetLocalData'
+  }
+
   function parseOptions(value: string) {
     return value
       .split(/[,\n]/)
@@ -1665,18 +1669,19 @@ function App() {
           <strong>⌄</strong>
         </button>
         {openFieldMenuId === menuKey && (
-          <div className="grid-field-menu">
-            <button type="button" onClick={() => openFieldSettings(field)}>Edit field</button>
-            <button type="button" onClick={() => openFieldSettings(field)}>Rename</button>
-            <button type="button" onClick={() => openFieldSettings(field)}>Change type</button>
-            <button type="button" onClick={() => toggleVisibleField(field.id)}>Hide from view</button>
-            <button type="button" onClick={() => sortGridByField(field.id, 'asc')}>Sort ascending</button>
-            <button type="button" onClick={() => sortGridByField(field.id, 'desc')}>Sort descending</button>
-            <button type="button" onClick={() => groupGridByField(field.id)}>Group by this field</button>
-            <button type="button" onClick={() => duplicateField(field)}>Duplicate field</button>
+          <div className="grid-field-menu" role="menu" aria-label={`${field.label} field actions`}>
+            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Edit field</button>
+            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Rename</button>
+            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Change type</button>
+            <button role="menuitem" type="button" onClick={() => toggleVisibleField(field.id)}>Hide from view</button>
+            <button role="menuitem" type="button" onClick={() => sortGridByField(field.id, 'asc')}>Sort ascending</button>
+            <button role="menuitem" type="button" onClick={() => sortGridByField(field.id, 'desc')}>Sort descending</button>
+            <button role="menuitem" type="button" onClick={() => groupGridByField(field.id)}>Group by this field</button>
+            <button role="menuitem" type="button" onClick={() => duplicateField(field)}>Duplicate field</button>
             <button
-              className="danger"
+              className="danger menu-danger"
               disabled={isPrimaryField}
+              role="menuitem"
               type="button"
               onClick={() => requestDeleteField(field)}
             >
@@ -1703,6 +1708,38 @@ function App() {
     const date = getFirstDateValue(record)
 
     return [getRecordTitle(base, record), status, date].filter(Boolean).join(' · ')
+  }
+
+  function getGridRowColorClass(record: BaseRecord) {
+    const field = fieldsForSelectedTable.find((fieldItem) => fieldItem.id === gridColorFieldId)
+
+    if (!field) {
+      return ''
+    }
+
+    const value = getFieldDisplayValue(record, field).toLowerCase()
+
+    if (['blocked', 'fire', 'risk', 'high', 'missing'].some((token) => value.includes(token))) {
+      return 'grid-row-color-coral'
+    }
+
+    if (['waiting', 'requested', 'pending', 'due'].some((token) => value.includes(token))) {
+      return 'grid-row-color-gold'
+    }
+
+    if (['done', 'received', 'complete', 'on track'].some((token) => value.includes(token))) {
+      return 'grid-row-color-green'
+    }
+
+    if (['prep', 'meeting', 'in progress'].some((token) => value.includes(token))) {
+      return 'grid-row-color-lavender'
+    }
+
+    if (['empty', 'archived', 'inactive', 'not needed', 'no status'].some((token) => value.includes(token))) {
+      return 'grid-row-color-gray'
+    }
+
+    return 'grid-row-color-blue'
   }
 
   function renderRecordInput(
@@ -2253,6 +2290,27 @@ function App() {
     viewRenameDrafts,
     visibleFieldIdsByTable,
   ])
+
+  useEffect(() => {
+    function closeTransientSurfaces(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      if (openFieldMenuId) {
+        setOpenFieldMenuId('')
+        return
+      }
+
+      if (buildModal && canDismissBuildModalWithEscape(buildModal)) {
+        closeBuildModal()
+      }
+    }
+
+    window.addEventListener('keydown', closeTransientSurfaces)
+
+    return () => window.removeEventListener('keydown', closeTransientSurfaces)
+  }, [buildModal, openFieldMenuId])
 
   useEffect(() => {
     function syncScreenFromHash() {
@@ -3196,7 +3254,7 @@ function App() {
                     <tbody>
                       {group.records.map((record) => (
                         <tr
-                          className={record.id === selectedBuildRecord?.id ? 'selected-row' : ''}
+                          className={`${record.id === selectedBuildRecord?.id ? 'selected-row' : ''} ${getGridRowColorClass(record)}`.trim()}
                           key={record.id}
                           onClick={() => setSelectedBuildRecordId(record.id)}
                           onDoubleClick={() => openEditRecordModal(record.id)}

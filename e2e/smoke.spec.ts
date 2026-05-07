@@ -113,19 +113,40 @@ test('Build field header menu exposes view and field actions', async ({ page }) 
   const titleHeader = page.getByRole('columnheader', { name: /Title/ }).first()
 
   await titleHeader.locator('.grid-field-menu-trigger').click()
-  await expect(page.getByRole('button', { name: 'Edit field' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Rename', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Change type' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Hide from view' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sort ascending' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sort descending' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Group by this field' })).toBeVisible()
-  await page.getByRole('button', { name: 'Sort descending' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Edit field' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Rename', exact: true })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Change type' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Hide from view' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Sort ascending' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Sort descending' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Group by this field' })).toBeVisible()
+  await page.getByRole('menuitem', { name: 'Sort descending' }).click()
   await expect(page.getByLabel('Direction')).toHaveValue('desc')
 
   await titleHeader.locator('.grid-field-menu-trigger').click()
-  await page.getByRole('button', { name: 'Duplicate field' }).click()
+  await page.getByRole('menuitem', { name: 'Duplicate field' }).click()
   await expect(page.getByRole('columnheader', { name: /Title copy/ }).first()).toBeVisible()
+})
+
+test('Build menus and non-destructive modals close on Escape', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await page.getByRole('columnheader', { name: /Title/ }).first().locator('.grid-field-menu-trigger').click()
+  await expect(page.getByRole('menu', { name: /Title field actions/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu', { name: /Title field actions/ })).toBeHidden()
+
+  await page.getByRole('button', { name: 'Add table' }).click()
+  await expect(page.getByRole('dialog', { name: 'Add table' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Add table' })).toBeHidden()
+
+  await page.getByRole('button', { name: 'Delete table' }).click()
+  await expect(page.getByRole('dialog', { name: 'Delete table' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Delete table' })).toBeVisible()
+  await page.getByRole('dialog', { name: 'Delete table' }).getByRole('button', { name: 'Cancel' }).click()
 })
 
 test('Build toolbar exposes ordered view controls and persists density', async ({ page }) => {
@@ -147,6 +168,16 @@ test('Build toolbar exposes ordered view controls and persists density', async (
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByLabel('Density')).toHaveValue('compact')
   await expect(page.locator('.record-table').first()).toHaveClass(/density-compact/)
+})
+
+test('Build toolbar colour applies semantic row tinting', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await page.getByLabel('Colour').selectOption('status')
+  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toHaveClass(/grid-row-color-coral/)
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toHaveClass(/grid-row-color-gold/)
+  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toHaveClass(/grid-row-color-lavender/)
 })
 
 test('Build grid linked-record editor searches and commits readable records', async ({ page }) => {
@@ -343,7 +374,7 @@ test('Build field create, edit, and delete persist across reloads', async ({ pag
   await addFieldModal.getByRole('button', { name: 'Add field' }).click()
   await expect(page.getByRole('columnheader', { name: /Notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Notes/ }).first().locator('.grid-field-menu-trigger').click()
-  await page.getByRole('button', { name: 'Edit field' }).click()
+  await page.getByRole('menuitem', { name: 'Edit field' }).click()
 
   const settingsModal = page.getByRole('dialog', { name: 'Field settings' })
 
@@ -354,7 +385,7 @@ test('Build field create, edit, and delete persist across reloads', async ({ pag
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('columnheader', { name: /Internal notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Internal notes/ }).first().locator('.grid-field-menu-trigger').click()
-  await page.getByRole('button', { name: 'Delete field' }).click()
+  await page.getByRole('menuitem', { name: 'Delete field' }).click()
   await page.getByRole('dialog', { name: 'Delete field' }).getByRole('button', { name: 'Delete field' }).click()
   await expect(page.getByRole('columnheader', { name: /Internal notes/ })).toBeHidden()
   await page.reload()

@@ -1928,7 +1928,9 @@ h2 {
   left: 0;
   display: grid;
   gap: 4px;
-  min-width: 150px;
+  width: clamp(220px, 18vw, 280px);
+  max-height: 320px;
+  overflow: auto;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1942,6 +1944,11 @@ h2 {
   padding: 0 8px;
   font-size: 12px;
   text-transform: none;
+}
+
+.grid-field-menu .menu-danger {
+  margin-top: 4px;
+  border-top-color: color-mix(in srgb, var(--coral) 28%, var(--line));
 }
 
 .grid-field-menu button:disabled {
@@ -2299,6 +2306,54 @@ h2 {
 .record-table tbody tr:hover,
 .record-table tbody tr.selected-row {
   background: color-mix(in srgb, var(--sky-1) 72%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-coral {
+  background: color-mix(in srgb, var(--coral-2) 38%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-gold {
+  background: color-mix(in srgb, var(--sun-2) 42%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-green {
+  background: color-mix(in srgb, var(--sage-2) 46%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-lavender {
+  background: color-mix(in srgb, var(--lav-2) 48%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-gray {
+  background: color-mix(in srgb, var(--muted) 9%, transparent);
+}
+
+.record-table tbody tr.grid-row-color-blue {
+  background: color-mix(in srgb, var(--sky-1) 44%, transparent);
+}
+
+.record-table tbody tr[class*="grid-row-color"] td:first-child {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.record-table tbody tr.grid-row-color-coral td:first-child {
+  box-shadow: inset 4px 0 0 var(--coral);
+}
+
+.record-table tbody tr.grid-row-color-gold td:first-child {
+  box-shadow: inset 4px 0 0 var(--sun);
+}
+
+.record-table tbody tr.grid-row-color-green td:first-child {
+  box-shadow: inset 4px 0 0 var(--success);
+}
+
+.record-table tbody tr.grid-row-color-lavender td:first-child {
+  box-shadow: inset 4px 0 0 var(--prep);
+}
+
+.record-table tbody tr.grid-row-color-gray td:first-child {
+  box-shadow: inset 4px 0 0 var(--muted);
 }
 
 .record-table tbody tr:last-child td {
