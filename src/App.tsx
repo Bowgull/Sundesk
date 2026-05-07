@@ -5,6 +5,49 @@ import {
   savedViews,
 } from './data/demoData'
 import {
+  type DependencyRelationship,
+  getDependencyLabel,
+  getDependencySummary as getDependencySummaryForBase,
+  getUniqueDependencyId,
+  hasDuplicateDependency,
+} from './data/dependencies'
+import {
+  type LocalGridView,
+  type StoredBuildViewState,
+  type StoredMigrationReport,
+  type StoredWorkbaseState,
+  buildViewStateStorageKey,
+  cloneWorkbase,
+  computedFieldTypes,
+  defaultVisibleFieldIdsByTable,
+  getDefaultVisibleFieldIds,
+  getEmptyFieldValue,
+  getEmptyRecordValues,
+  readStoredBuildViewState,
+  readStoredRules,
+  readStoredWorkbase,
+  rulesStorageKey,
+  storedMigrationReport,
+  workbaseStorageKey,
+} from './data/localStorage'
+import {
+  type LocalRule,
+  getFieldDisplayValue as getRecordFieldDisplayValue,
+  getFirstDateValue,
+  getNumberValue,
+  getRuleMatchCount as getRuleMatchCountForBase,
+  getRuleMatchedRecords as getRuleMatchedRecordsForBase,
+  getRuleOperatorOptionsForField,
+  getRulePreview as getRulePreviewForBase,
+  getRuleValidationMessages as getRuleValidationMessagesForBase,
+  getStringValue,
+  isDateField,
+  ruleActionOptions,
+  ruleDestinationOptions,
+  ruleOperatorNeedsValue,
+  sortRecordsByDate,
+} from './data/rules'
+import {
   type BaseRecord,
   type CheckboxColor,
   type CheckboxIcon,
@@ -12,7 +55,6 @@ import {
   type FieldDefinition,
   type FieldType,
   type RecordValue,
-  type Workbase,
   getBacklinksForRecord,
   getDependencyReferencesForRecord,
   getLinkedRecordsForRecord,
@@ -25,6 +67,19 @@ import {
   getRecordsForTable,
   workbase,
 } from './data/workbase'
+import {
+  getBuildTableRows,
+  getDailyTimelineRecords,
+  getLocalEngineStats,
+  getRuleDestinationStats,
+  getRuleMatchesForDestination,
+  getScreenStats,
+  getTimelineRecords,
+  getTimelineSourceRecords,
+  getTimelineStatusOptions,
+  getTodayLanes,
+  getWorkRecordGroups,
+} from './data/views'
 
 const themes = [
   { label: 'Sunrise Soft', value: 'sunrise-soft' },
@@ -72,7 +127,6 @@ const fieldTypeOptions: { label: string; value: FieldType }[] = [
 ]
 
 const optionFieldTypes: FieldType[] = ['status', 'singleSelect', 'multiSelect']
-const computedFieldTypes: FieldType[] = ['lookup', 'rollup', 'count', 'systemFormula', 'createdTime', 'lastUpdatedTime']
 const optionColorClassNames = ['tag-blue', 'tag-green', 'tag-yellow', 'tag-red', 'tag-purple', 'tag-gray']
 const checkboxIconOptions: { label: string; value: CheckboxIcon }[] = [
   { label: 'Check', value: 'check' },
@@ -93,94 +147,7 @@ const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
   { label: 'Gold', value: 'gold' },
   { label: 'Graphite', value: 'graphite' },
 ]
-const buildTableOrder = ['risks', 'tasks', 'followups', 'approvals', 'meetings', 'people']
-const workbaseStorageKey = 'sundesk-local-workbase-v1'
-const buildViewStateStorageKey = 'sundesk-build-view-state-v1'
-const rulesStorageKey = 'sundesk-local-rules-v1'
-const defaultVisibleFieldIdsByTable: Record<string, string[]> = {
-  communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
-  tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
-}
-const ruleOperatorOptions = [
-  { label: 'Is', value: 'is' },
-  { label: 'Is not', value: 'isNot' },
-  { label: 'Contains', value: 'contains' },
-  { label: 'Is empty', value: 'isEmpty' },
-  { label: 'Is today', value: 'isToday' },
-  { label: 'Is on or before today', value: 'isOnOrBeforeToday' },
-  { label: 'Is before today', value: 'isBeforeToday' },
-  { label: 'Is within 7 days', value: 'isWithin7Days' },
-  { label: 'Is linked to', value: 'linkedTo' },
-  { label: 'Is not linked to', value: 'notLinkedTo' },
-  { label: 'Has any link', value: 'hasAnyLink' },
-  { label: 'Has no link', value: 'hasNoLink' },
-] as const
-const ruleActionOptions = [
-  { label: 'Show in screen', value: 'showInScreen' },
-  { label: 'Set status', value: 'setStatus' },
-  { label: 'Add to prep', value: 'addToPrep' },
-] as const
-const ruleDestinationOptions = [
-  { label: 'Today', value: 'today' },
-  { label: 'Timeline', value: 'timeline' },
-  { label: 'Communities', value: 'communities' },
-  { label: 'Tasks', value: 'tasks' },
-  { label: 'Follow-ups', value: 'followups' },
-  { label: 'Meetings', value: 'meetings' },
-] as const
-
-type LocalGridView = {
-  id: string
-  name: string
-  tableId: string
-  filter: string
-  sortFieldId: string
-  groupFieldId: string
-  visibleFieldIds: string[]
-  pinned?: boolean
-}
-
-type StoredBuildViewState = {
-  version: 1
-  selectedBuildTableId: string
-  visibleFieldIdsByTable: Record<string, string[]>
-  gridFilter: string
-  gridSortFieldId: string
-  gridGroupFieldId: string
-  localGridViews: LocalGridView[]
-  viewRenameDrafts: Record<string, string>
-  activeGridViewId: string
-  columnWidths: Record<string, number>
-}
-
-type StoredWorkbaseState = {
-  version: 1
-  base: Workbase
-}
-
-type LocalRule = {
-  id: string
-  tableId: string
-  fieldId: string
-  operator: (typeof ruleOperatorOptions)[number]['value']
-  value: string
-  action: (typeof ruleActionOptions)[number]['value']
-  destination: (typeof ruleDestinationOptions)[number]['value']
-}
-
 type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record' | 'resetLocalData'
-type DependencyRelationship = DependencyLink['relationship']
-type StoredMigrationReport = {
-  workbaseReset: boolean
-  rulesReset: boolean
-  buildViewReset: boolean
-}
-
-const storedMigrationReport: StoredMigrationReport = {
-  workbaseReset: false,
-  rulesReset: false,
-  buildViewReset: false,
-}
 
 function getScreenFromHash(): AppScreen {
   if (typeof window === 'undefined') {
@@ -203,277 +170,6 @@ function toSlug(value: string) {
   return slug || `field_${Date.now()}`
 }
 
-function cloneWorkbase(base: Workbase): Workbase {
-  return {
-    tables: base.tables.map((table) => ({ ...table })),
-    fields: base.fields.map((field) => ({
-      ...field,
-      options: field.options ? [...field.options] : undefined,
-    })),
-    records: base.records.map((record) => ({ ...record, values: { ...record.values } })),
-    dependencies: base.dependencies.map((dependency) => ({ ...dependency })),
-  }
-}
-
-function isStoredWorkbaseState(value: unknown): value is StoredWorkbaseState {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const state = value as Partial<StoredWorkbaseState>
-  const base = state.base
-
-  return state.version === 1 &&
-    Boolean(base) &&
-    Array.isArray(base?.tables) &&
-    Array.isArray(base?.fields) &&
-    Array.isArray(base?.records) &&
-    Array.isArray(base?.dependencies)
-}
-
-function isRecordValue(value: unknown): value is RecordValue {
-  return value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
-}
-
-function isFieldDefinition(value: unknown): value is FieldDefinition {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const field = value as Partial<FieldDefinition>
-
-  return typeof field.id === 'string' &&
-    typeof field.tableId === 'string' &&
-    typeof field.label === 'string' &&
-    fieldTypeOptions.some((option) => option.value === field.type)
-}
-
-function isBaseRecord(value: unknown): value is BaseRecord {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const record = value as Partial<BaseRecord>
-
-  return typeof record.id === 'string' &&
-    typeof record.tableId === 'string' &&
-    Boolean(record.values) &&
-    typeof record.values === 'object' &&
-    Object.values(record.values).every(isRecordValue)
-}
-
-function isDependencyLink(value: unknown): value is DependencyLink {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const dependency = value as Partial<DependencyLink>
-
-  return typeof dependency.id === 'string' &&
-    typeof dependency.fromRecordId === 'string' &&
-    typeof dependency.toRecordId === 'string' &&
-    (dependency.relationship === 'dependsOn' || dependency.relationship === 'blocks') &&
-    typeof dependency.reason === 'string'
-}
-
-function isLocalRule(value: unknown): value is LocalRule {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const rule = value as Partial<LocalRule>
-
-  return typeof rule.id === 'string' &&
-    typeof rule.tableId === 'string' &&
-    typeof rule.fieldId === 'string' &&
-    ruleOperatorOptions.some((option) => option.value === rule.operator) &&
-    typeof rule.value === 'string' &&
-    ruleActionOptions.some((option) => option.value === rule.action) &&
-    ruleDestinationOptions.some((option) => option.value === rule.destination)
-}
-
-function isLocalGridView(value: unknown): value is LocalGridView {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const view = value as Partial<LocalGridView>
-
-  return typeof view.id === 'string' &&
-    typeof view.name === 'string' &&
-    typeof view.tableId === 'string' &&
-    typeof view.filter === 'string' &&
-    typeof view.sortFieldId === 'string' &&
-    typeof view.groupFieldId === 'string' &&
-    Array.isArray(view.visibleFieldIds) &&
-    view.visibleFieldIds.every((fieldId) => typeof fieldId === 'string')
-}
-
-function getDefaultLocalRules(): LocalRule[] {
-  return [
-    {
-      id: 'rule-overdue-followup',
-      tableId: 'followups',
-      fieldId: 'status',
-      operator: 'is',
-      value: 'Waiting',
-      action: 'showInScreen',
-      destination: 'today',
-    },
-    {
-      id: 'rule-blocked-status',
-      tableId: 'tasks',
-      fieldId: 'status',
-      operator: 'is',
-      value: 'Blocked',
-      action: 'showInScreen',
-      destination: 'today',
-    },
-    {
-      id: 'rule-task-due-today',
-      tableId: 'tasks',
-      fieldId: 'dueDate',
-      operator: 'isToday',
-      value: '',
-      action: 'showInScreen',
-      destination: 'today',
-    },
-    {
-      id: 'rule-task-upcoming',
-      tableId: 'tasks',
-      fieldId: 'dueDate',
-      operator: 'isWithin7Days',
-      value: '',
-      action: 'showInScreen',
-      destination: 'timeline',
-    },
-    {
-      id: 'rule-task-has-community',
-      tableId: 'tasks',
-      fieldId: 'community',
-      operator: 'hasAnyLink',
-      value: '',
-      action: 'showInScreen',
-      destination: 'today',
-    },
-    {
-      id: 'rule-risk-blocks-task',
-      tableId: 'risks',
-      fieldId: 'blocks',
-      operator: 'hasAnyLink',
-      value: '',
-      action: 'showInScreen',
-      destination: 'timeline',
-    },
-    {
-      id: 'rule-meeting-prep',
-      tableId: 'meetings',
-      fieldId: 'date',
-      operator: 'isBeforeToday',
-      value: '',
-      action: 'addToPrep',
-      destination: 'meetings',
-    },
-    {
-      id: 'rule-upcoming-meeting-prep',
-      tableId: 'meetings',
-      fieldId: 'date',
-      operator: 'isWithin7Days',
-      value: '',
-      action: 'addToPrep',
-      destination: 'meetings',
-    },
-  ]
-}
-
-function mergeDefaultLocalRules(rules: LocalRule[]) {
-  const ruleIds = new Set(rules.map((rule) => rule.id))
-  const missingDefaultRules = getDefaultLocalRules().filter((rule) => !ruleIds.has(rule.id))
-
-  return [...rules, ...missingDefaultRules]
-}
-
-function normalizeStoredWorkbase(base: Workbase) {
-  const defaultBase = cloneWorkbase(workbase)
-  const tables = base.tables.filter(
-    (table) =>
-      typeof table.id === 'string' &&
-      typeof table.label === 'string' &&
-      typeof table.description === 'string' &&
-      typeof table.primaryFieldId === 'string',
-  )
-  const tableIds = new Set(tables.map((table) => table.id))
-  const fields = base.fields.filter((field) => isFieldDefinition(field) && tableIds.has(field.tableId))
-  const fieldKeys = new Set(fields.map((field) => `${field.tableId}:${field.id}`))
-  const records = base.records
-    .filter((record) => isBaseRecord(record) && tableIds.has(record.tableId))
-    .map((record) => {
-      const values = Object.fromEntries(
-        Object.entries(record.values).filter(([fieldId, value]) => fieldKeys.has(`${record.tableId}:${fieldId}`) && isRecordValue(value)),
-      )
-
-      fields
-        .filter((field) => field.tableId === record.tableId && !computedFieldTypes.includes(field.type))
-        .forEach((field) => {
-          if (!(field.id in values)) {
-            values[field.id] = getEmptyFieldValue(field.type)
-          }
-        })
-
-      return { ...record, values }
-    })
-  const recordIds = new Set(records.map((record) => record.id))
-  const dependencies = base.dependencies.filter(
-    (dependency) =>
-      isDependencyLink(dependency) &&
-      recordIds.has(dependency.fromRecordId) &&
-      recordIds.has(dependency.toRecordId) &&
-      dependency.fromRecordId !== dependency.toRecordId,
-  )
-
-  if (tables.length === 0 || fields.length === 0) {
-    return { base: defaultBase, reset: true }
-  }
-
-  return {
-    base: {
-      tables,
-      fields,
-      records,
-      dependencies,
-    },
-    reset: false,
-  }
-}
-
-function getEmptyRecordValues(base: Workbase, tableId: string) {
-  const values: Record<string, RecordValue> = {}
-
-  base.fields
-    .filter((field) => field.tableId === tableId && !computedFieldTypes.includes(field.type))
-    .forEach((field) => {
-      values[field.id] = getEmptyFieldValue(field.type)
-    })
-
-  return values
-}
-
-function getEmptyFieldValue(fieldType: FieldType): RecordValue {
-  if (fieldType === 'checkbox') {
-    return false
-  }
-
-  if (fieldType === 'linkedRecord' || fieldType === 'multiSelect') {
-    return []
-  }
-
-  return ''
-}
-
 function toggleListValue(values: string[], value: string, allowMultiple = true) {
   if (!allowMultiple) {
     return values.includes(value) ? [] : [value]
@@ -482,205 +178,10 @@ function toggleListValue(values: string[], value: string, allowMultiple = true) 
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
 }
 
-function getDefaultVisibleFieldIds(fields: FieldDefinition[]) {
-  return fields.slice(0, 5).map((field) => field.id)
-}
-
 function getOptionColorClass(value: string) {
   const colorIndex = value.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0) % optionColorClassNames.length
 
   return optionColorClassNames[colorIndex]
-}
-
-function readStoredBuildViewState(): Partial<StoredBuildViewState> {
-  if (typeof window === 'undefined') {
-    return {}
-  }
-
-  try {
-    const rawState = window.localStorage.getItem(buildViewStateStorageKey)
-
-    if (!rawState) {
-      return {}
-    }
-
-    const state = JSON.parse(rawState) as Partial<StoredBuildViewState>
-
-    if (state.version !== 1) {
-      storedMigrationReport.buildViewReset = true
-      return {}
-    }
-
-    const localGridViews = Array.isArray(state.localGridViews)
-      ? state.localGridViews.filter(isLocalGridView)
-      : []
-    const visibleFieldIdsByTable = state.visibleFieldIdsByTable && typeof state.visibleFieldIdsByTable === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.visibleFieldIdsByTable).filter(
-            ([tableId, fieldIds]) =>
-              typeof tableId === 'string' &&
-              Array.isArray(fieldIds) &&
-              fieldIds.every((fieldId) => typeof fieldId === 'string'),
-          ),
-        )
-      : {}
-    const viewRenameDrafts = state.viewRenameDrafts && typeof state.viewRenameDrafts === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.viewRenameDrafts).filter(
-            ([viewId, draft]) => typeof viewId === 'string' && typeof draft === 'string',
-          ),
-        )
-      : {}
-    const columnWidths = state.columnWidths && typeof state.columnWidths === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.columnWidths).filter(
-            ([fieldId, width]) => typeof fieldId === 'string' && typeof width === 'number',
-          ),
-        )
-      : {}
-
-    return {
-      version: 1,
-      selectedBuildTableId: typeof state.selectedBuildTableId === 'string' ? state.selectedBuildTableId : 'risks',
-      visibleFieldIdsByTable,
-      gridFilter: typeof state.gridFilter === 'string' ? state.gridFilter : '',
-      gridSortFieldId: typeof state.gridSortFieldId === 'string' ? state.gridSortFieldId : 'title',
-      gridGroupFieldId: typeof state.gridGroupFieldId === 'string' ? state.gridGroupFieldId : 'level',
-      localGridViews,
-      viewRenameDrafts,
-      activeGridViewId: typeof state.activeGridViewId === 'string' ? state.activeGridViewId : '',
-      columnWidths,
-    }
-  } catch {
-    storedMigrationReport.buildViewReset = true
-    return {}
-  }
-}
-
-function readStoredWorkbase(): Workbase {
-  if (typeof window === 'undefined') {
-    return cloneWorkbase(workbase)
-  }
-
-  try {
-    const rawState = window.localStorage.getItem(workbaseStorageKey)
-
-    if (!rawState) {
-      return cloneWorkbase(workbase)
-    }
-
-    const state = JSON.parse(rawState) as unknown
-
-    if (!isStoredWorkbaseState(state)) {
-      storedMigrationReport.workbaseReset = true
-      return cloneWorkbase(workbase)
-    }
-
-    const normalizedState = normalizeStoredWorkbase(state.base)
-    storedMigrationReport.workbaseReset = normalizedState.reset
-
-    return normalizedState.base
-  } catch {
-    storedMigrationReport.workbaseReset = true
-    return cloneWorkbase(workbase)
-  }
-}
-
-function readStoredRules(): LocalRule[] {
-  if (typeof window === 'undefined') {
-    return getDefaultLocalRules()
-  }
-
-  try {
-    const rawRules = window.localStorage.getItem(rulesStorageKey)
-
-    if (!rawRules) {
-      return getDefaultLocalRules()
-    }
-
-    const rules = JSON.parse(rawRules) as unknown
-
-    if (!Array.isArray(rules)) {
-      storedMigrationReport.rulesReset = true
-      return getDefaultLocalRules()
-    }
-
-    const validRules = rules.filter(isLocalRule)
-
-    if (validRules.length !== rules.length) {
-      storedMigrationReport.rulesReset = true
-    }
-
-    return validRules.length > 0 ? mergeDefaultLocalRules(validRules) : getDefaultLocalRules()
-  } catch {
-    storedMigrationReport.rulesReset = true
-    return getDefaultLocalRules()
-  }
-}
-
-function getStringValue(record: BaseRecord, fieldId: string) {
-  const value = record.values[fieldId]
-
-  return typeof value === 'string' ? value : ''
-}
-
-function getNumberValue(record: BaseRecord, fieldId: string) {
-  const value = record.values[fieldId]
-
-  return typeof value === 'number' ? value : 0
-}
-
-function isDateField(field?: FieldDefinition) {
-  return field?.type === 'date' || field?.type === 'dateTime' || field?.type === 'createdTime' || field?.type === 'lastUpdatedTime'
-}
-
-function isDateRuleOperator(operator: LocalRule['operator']) {
-  return operator === 'isToday' ||
-    operator === 'isOnOrBeforeToday' ||
-    operator === 'isBeforeToday' ||
-    operator === 'isWithin7Days'
-}
-
-function isLinkedRecordRuleOperator(operator: LocalRule['operator']) {
-  return operator === 'linkedTo' ||
-    operator === 'notLinkedTo' ||
-    operator === 'hasAnyLink' ||
-    operator === 'hasNoLink'
-}
-
-function ruleOperatorNeedsValue(operator: LocalRule['operator']) {
-  return operator !== 'isEmpty' &&
-    operator !== 'hasAnyLink' &&
-    operator !== 'hasNoLink' &&
-    !isDateRuleOperator(operator)
-}
-
-function getRuleOperatorOptionsForField(field?: FieldDefinition) {
-  if (isDateField(field)) {
-    return ruleOperatorOptions.filter((option) => !isLinkedRecordRuleOperator(option.value) && option.value !== 'contains')
-  }
-
-  if (field?.type === 'linkedRecord') {
-    return ruleOperatorOptions.filter(
-      (option) =>
-        isLinkedRecordRuleOperator(option.value) ||
-        option.value === 'isEmpty',
-    )
-  }
-
-  return ruleOperatorOptions.filter((option) => !isDateRuleOperator(option.value) && !isLinkedRecordRuleOperator(option.value))
-}
-
-function getRuleDateValue(value: RecordValue) {
-  return typeof value === 'string' && value.length >= 10 ? value.slice(0, 10) : ''
-}
-
-function getFirstDateValue(record: BaseRecord) {
-  return getStringValue(record, 'dueDate') || getStringValue(record, 'eventDate') || getStringValue(record, 'date')
-}
-
-function sortRecordsByDate(records: BaseRecord[]) {
-  return [...records].sort((firstRecord, secondRecord) => getFirstDateValue(firstRecord).localeCompare(getFirstDateValue(secondRecord)))
 }
 
 function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
@@ -794,145 +295,31 @@ function App() {
   const recordPickerItems = getRecordReferences(base).slice(0, 8)
   const materializedLinks = getMaterializedLinks(base)
   const taskCommunityEventDate = getLookupPreview(base, 'task_coi_halifax', 'communityEventDate')
-  const localTableRows = base.tables.map((table) => ({
-    ...table,
-    recordCount: getRecordsForTable(base, table.id).length,
-    fieldCount: base.fields.filter((field) => field.tableId === table.id).length,
-  }))
-  const buildTableRows = localTableRows
-    .filter((table) => table.id !== 'communities')
-    .sort((firstTable, secondTable) => {
-      const firstIndex = buildTableOrder.includes(firstTable.id) ? buildTableOrder.indexOf(firstTable.id) : buildTableOrder.length
-      const secondIndex = buildTableOrder.includes(secondTable.id) ? buildTableOrder.indexOf(secondTable.id) : buildTableOrder.length
-
-      return firstIndex - secondIndex
-    })
+  const buildTableRows = getBuildTableRows(base)
   const selectedBuildTable = base.tables.find((table) => table.id === selectedBuildTableId) || base.tables[0]
   const fieldsForSelectedTable = base.fields.filter((field) => field.tableId === selectedBuildTable?.id)
   const editableFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => !computedFieldTypes.includes(field.type))
   const recordsForSelectedTable = selectedBuildTable ? getRecordsForTable(base, selectedBuildTable.id) : []
-  const taskRecords = getRecordsForTable(base, 'tasks')
-  const approvalRecords = getRecordsForTable(base, 'approvals')
-  const riskRecords = getRecordsForTable(base, 'risks')
-  const followupRecords = getRecordsForTable(base, 'followups')
-  const meetingRecords = getRecordsForTable(base, 'meetings')
-  const communityRecords = getRecordsForTable(base, 'communities')
-  const openTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') !== 'Done')
-  const blockedTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') === 'Blocked')
-  const waitingTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') === 'Waiting')
-  const waitingFollowupRecords = followupRecords.filter((record) => getStringValue(record, 'status') === 'Waiting')
-  const openApprovalRecords = approvalRecords.filter((record) => !['Received', 'Not needed'].includes(getStringValue(record, 'status')))
-  const highRiskRecords = riskRecords.filter((record) => getStringValue(record, 'level') === 'High')
-  const atRiskCommunityRecords = communityRecords.filter((record) => {
-    const status = getStringValue(record, 'status')
-
-    return status === 'At risk' || status === 'Blocked' || getNumberValue(record, 'readiness') < 70
-  })
+  const {
+    communityRecords,
+    atRiskCommunityRecords,
+    followupRecords,
+    meetingRecords,
+    openTaskRecords,
+    blockedTaskRecords,
+    waitingTaskRecords,
+    waitingFollowupRecords,
+  } = getWorkRecordGroups(base)
   const nextMeetingRecord = sortRecordsByDate(meetingRecords)[0]
   const nextMeetingLinkedTasks = nextMeetingRecord ? getLinkedRecordsForRecord(base, nextMeetingRecord.id).filter((link) => link.record.tableId === 'tasks') : []
-  const dailyTimelineRecords = sortRecordsByDate([
-    ...communityRecords,
-    ...openTaskRecords,
-    ...waitingFollowupRecords,
-    ...meetingRecords,
-  ])
-  const timelineSourceRecords = [
-    ...communityRecords,
-    ...taskRecords,
-    ...approvalRecords,
-    ...followupRecords,
-    ...meetingRecords,
-    ...riskRecords,
-  ]
-  const timelineStatusOptions = Array.from(
-    new Set(
-      timelineSourceRecords
-        .map((record) => getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority'))
-        .filter(Boolean),
-    ),
-  ).sort()
-  const timelineRecords = timelineSourceRecords
-    .filter((record) => {
-      const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
-      const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority')
-      const filter = timelineFilter.trim().toLowerCase()
-
-      if (timelineTableId !== 'all' && record.tableId !== timelineTableId) {
-        return false
-      }
-
-      if (timelineStatus !== 'all' && recordStatus !== timelineStatus) {
-        return false
-      }
-
-      if (!filter) {
-        return true
-      }
-
-      return [table?.label || record.tableId, getRecordTitle(base, record), getRecordContext(record), recordStatus]
-        .join(' ')
-        .toLowerCase()
-        .includes(filter)
-    })
-    .sort((firstRecord, secondRecord) => {
-      const firstDate = getFirstDateValue(firstRecord) || '9999-12-31'
-      const secondDate = getFirstDateValue(secondRecord) || '9999-12-31'
-
-      return firstDate.localeCompare(secondDate) || getRecordTitle(base, firstRecord).localeCompare(getRecordTitle(base, secondRecord))
-    })
-  const todayRuleMatches = localRules
-    .filter((rule) => rule.destination === 'today')
-    .flatMap((rule) =>
-      base.records
-        .filter((record) => ruleMatchesRecord(rule, record))
-        .map((record) => ({
-          rule,
-          record,
-        })),
-    )
-  const todayRuleRecords = Array.from(new Map(todayRuleMatches.map((match) => [match.record.id, match.record])).values())
-  const timelineRuleMatches = localRules
-    .filter((rule) => rule.destination === 'timeline')
-    .flatMap((rule) =>
-      base.records
-        .filter((record) => ruleMatchesRecord(rule, record))
-        .map((record) => ({
-          rule,
-          record,
-        })),
-    )
-  const todayLanes = [
-    {
-      id: 'now',
-      label: 'Now',
-      title: 'Move the work that can burn the day.',
-      records: [...blockedTaskRecords, ...highRiskRecords].slice(0, 4),
-    },
-    {
-      id: 'waiting',
-      label: 'Waiting',
-      title: 'Hold every open loop that depends on someone else.',
-      records: [...waitingFollowupRecords, ...waitingTaskRecords, ...openApprovalRecords].slice(0, 4),
-    },
-    {
-      id: 'next',
-      label: 'Next',
-      title: 'Pull work forward before it becomes urgent.',
-      records: sortRecordsByDate([...meetingRecords, ...openTaskRecords]).slice(0, 4),
-    },
-    {
-      id: 'rules',
-      label: 'Rules',
-      title: 'Records matched by local Rules.',
-      records: todayRuleRecords.slice(0, 4),
-    },
-  ]
-  const screenStats = [
-    { label: 'Communities', value: communityRecords.length, detail: `${atRiskCommunityRecords.length} need attention` },
-    { label: 'Open tasks', value: openTaskRecords.length, detail: `${blockedTaskRecords.length} blocked` },
-    { label: 'Waiting loops', value: waitingFollowupRecords.length, detail: `${openApprovalRecords.length} open approvals` },
-    { label: 'Risks', value: riskRecords.length, detail: `${highRiskRecords.length} high` },
-  ]
+  const dailyTimelineRecords = getDailyTimelineRecords(base)
+  const timelineSourceRecords = getTimelineSourceRecords(base)
+  const timelineStatusOptions = getTimelineStatusOptions(timelineSourceRecords)
+  const timelineRecords = getTimelineRecords(base, timelineSourceRecords, timelineTableId, timelineStatus, timelineFilter)
+  const todayRuleMatches = getRuleMatchesForDestination(base, localRules, 'today', todayDate)
+  const timelineRuleMatches = getRuleMatchesForDestination(base, localRules, 'timeline', todayDate)
+  const todayLanes = getTodayLanes(base, todayRuleMatches)
+  const screenStats = getScreenStats(base)
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
   const visibleFieldIds = selectedBuildTable
@@ -1024,41 +411,14 @@ function App() {
   const pendingDeleteField = fieldsForSelectedTable.find((field) => field.id === pendingDeleteFieldId)
   const pendingDeleteTable = base.tables.find((table) => table.id === pendingDeleteTableId)
   const pinnedGridViews = localGridViews.filter((view) => view.pinned)
-  const activeScreenRuleMatches = localRules
-    .filter((rule) => rule.destination === activeScreen)
-    .flatMap((rule) =>
-      base.records
-        .filter((record) => ruleMatchesRecord(rule, record))
-        .map((record) => ({
-          rule,
-          record,
-        })),
-    )
+  const activeScreenRuleMatches = getRuleMatchesForDestination(base, localRules, activeScreen, todayDate)
   const migrationMessages = [
     initialMigrationReport.workbaseReset ? 'Workbase state was repaired.' : '',
     initialMigrationReport.rulesReset ? 'Rules state was repaired.' : '',
     initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
   ].filter(Boolean)
-  const localEngineStats = [
-    { label: 'Tables', value: base.tables.length },
-    { label: 'Fields', value: base.fields.length },
-    { label: 'Records', value: base.records.length },
-    { label: 'Links', value: materializedLinks.length },
-    { label: 'Dependencies', value: base.dependencies.length },
-    { label: 'Rules', value: localRules.length },
-    { label: 'Invalid Rules', value: localRules.filter((rule) => getRuleValidationMessages(rule).length > 0).length },
-    { label: 'Saved views', value: localGridViews.length },
-  ]
-  const ruleDestinationStats = ruleDestinationOptions.map((destination) => {
-    const rules = localRules.filter((rule) => rule.destination === destination.value)
-    const matchCount = rules.reduce((count, rule) => count + getRuleMatchCount(rule), 0)
-
-    return {
-      label: destination.label,
-      rules: rules.length,
-      matches: matchCount,
-    }
-  })
+  const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
+  const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
 
   function closeBuildModal() {
     setBuildModal('')
@@ -1603,22 +963,8 @@ function App() {
     setLocalRules((current) => current.filter((rule) => rule.id !== ruleId))
   }
 
-  function getDependencyLabel(dependency: DependencyLink, currentRecordId: string) {
-    if (dependency.relationship === 'dependsOn') {
-      return dependency.fromRecordId === currentRecordId ? 'Depends on' : 'Needed by'
-    }
-
-    return dependency.fromRecordId === currentRecordId ? 'Blocks' : 'Blocked by'
-  }
-
   function getDependencySummary(recordId: string) {
-    const dependencies = getDependencyReferencesForRecord(base, recordId)
-
-    return dependencies.map((dependency) => ({
-      id: dependency.id,
-      label: getDependencyLabel(dependency, recordId),
-      title: dependency.record.title,
-    }))
+    return getDependencySummaryForBase(base, recordId)
   }
 
   function createDependency() {
@@ -1626,31 +972,19 @@ function App() {
       return
     }
 
-    const existingDependency = base.dependencies.find(
-      (dependency) =>
-        dependency.fromRecordId === selectedBuildRecord.id &&
-        dependency.toRecordId === dependencyDraft.toRecordId &&
-        dependency.relationship === dependencyDraft.relationship,
-    )
-
-    if (existingDependency) {
-      return
-    }
-
-    const baseId = `dependency_${selectedBuildRecord.id}_${dependencyDraft.toRecordId}_${dependencyDraft.relationship}`
-    let uniqueId = baseId
-    let suffix = 2
-
-    while (base.dependencies.some((dependency) => dependency.id === uniqueId)) {
-      uniqueId = `${baseId}_${suffix}`
-      suffix += 1
-    }
-
-    const dependency: DependencyLink = {
-      id: uniqueId,
+    const nextDependency = {
       fromRecordId: selectedBuildRecord.id,
       toRecordId: dependencyDraft.toRecordId,
       relationship: dependencyDraft.relationship,
+    }
+
+    if (hasDuplicateDependency(base.dependencies, nextDependency)) {
+      return
+    }
+
+    const dependency: DependencyLink = {
+      id: getUniqueDependencyId(base.dependencies, nextDependency),
+      ...nextDependency,
       reason: dependencyDraft.reason.trim() || 'No reason set.',
     }
 
@@ -1679,12 +1013,14 @@ function App() {
         return current
       }
 
-      const duplicateExists = current.dependencies.some(
-        (dependency) =>
-          dependency.id !== dependencyId &&
-          dependency.fromRecordId === dependencyToFlip.toRecordId &&
-          dependency.toRecordId === dependencyToFlip.fromRecordId &&
-          dependency.relationship === dependencyToFlip.relationship,
+      const duplicateExists = hasDuplicateDependency(
+        current.dependencies,
+        {
+          fromRecordId: dependencyToFlip.toRecordId,
+          toRecordId: dependencyToFlip.fromRecordId,
+          relationship: dependencyToFlip.relationship,
+        },
+        dependencyId,
       )
 
       if (duplicateExists) {
@@ -1714,149 +1050,19 @@ function App() {
   }
 
   function getRulePreview(rule: LocalRule) {
-    const table = base.tables.find((tableItem) => tableItem.id === rule.tableId)
-    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
-    const operator = ruleOperatorOptions.find((option) => option.value === rule.operator)?.label.toLowerCase() || rule.operator
-    const action = ruleActionOptions.find((option) => option.value === rule.action)?.label.toLowerCase() || rule.action
-    const destination = ruleDestinationOptions.find((option) => option.value === rule.destination)?.label || rule.destination
-    const valueText = ruleOperatorNeedsValue(rule.operator) ? ` "${getRuleValueLabel(rule) || 'value'}"` : ''
-
-    return `${table?.label || rule.tableId}.${field?.label || rule.fieldId} ${operator}${valueText}. ${action}: ${destination}.`
-  }
-
-  function getRuleValueLabel(rule: LocalRule) {
-    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
-
-    if (field?.type === 'linkedRecord') {
-      const record = getRecord(base, rule.value)
-
-      return record ? getRecordTitle(base, record) : rule.value
-    }
-
-    return rule.value
+    return getRulePreviewForBase(base, rule)
   }
 
   function getRuleValidationMessages(rule: LocalRule) {
-    const table = base.tables.find((tableItem) => tableItem.id === rule.tableId)
-    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
-    const operatorOptions = getRuleOperatorOptionsForField(field)
-    const messages: string[] = []
-
-    if (!table) {
-      messages.push('Table missing.')
-    }
-
-    if (!field) {
-      messages.push('Field missing.')
-    }
-
-    if (field && !operatorOptions.some((option) => option.value === rule.operator)) {
-      messages.push('Operator does not fit this field.')
-    }
-
-    if (ruleOperatorNeedsValue(rule.operator) && !rule.value.trim()) {
-      messages.push('Value required.')
-    }
-
-    if (field?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator)) {
-      const linkedRecord = getRecord(base, rule.value)
-
-      if (!linkedRecord || linkedRecord.tableId !== field.linkedTableId) {
-        messages.push('Linked record missing.')
-      }
-    }
-
-    return messages
-  }
-
-  function ruleMatchesRecord(rule: LocalRule, record: BaseRecord) {
-    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
-
-    if (getRuleValidationMessages(rule).length > 0 || !field || record.tableId !== rule.tableId) {
-      return false
-    }
-
-    const value = record.values[field.id]
-    const displayValue = getFieldDisplayValue(record, field)
-    const ruleValue = rule.value.trim().toLowerCase()
-
-    if (rule.operator === 'isEmpty') {
-      return value === null || value === '' || (Array.isArray(value) && value.length === 0) || displayValue === 'Empty'
-    }
-
-    const ruleDateValue = getRuleDateValue(value)
-
-    if (rule.operator === 'isToday') {
-      return ruleDateValue === todayDate
-    }
-
-    if (rule.operator === 'isOnOrBeforeToday') {
-      return Boolean(ruleDateValue) && ruleDateValue <= todayDate
-    }
-
-    if (rule.operator === 'isBeforeToday') {
-      return Boolean(ruleDateValue) && ruleDateValue < todayDate
-    }
-
-    if (rule.operator === 'isWithin7Days') {
-      if (!ruleDateValue) {
-        return false
-      }
-
-      const date = new Date(`${ruleDateValue}T00:00:00`)
-      const today = new Date(`${todayDate}T00:00:00`)
-      const differenceInDays = Math.floor((date.getTime() - today.getTime()) / 86400000)
-
-      return differenceInDays >= 0 && differenceInDays <= 7
-    }
-
-    if (Array.isArray(value) && field.type === 'linkedRecord') {
-      if (rule.operator === 'hasAnyLink') {
-        return value.length > 0
-      }
-
-      if (rule.operator === 'hasNoLink') {
-        return value.length === 0
-      }
-
-      if (rule.operator === 'linkedTo') {
-        return value.includes(rule.value)
-      }
-
-      if (rule.operator === 'notLinkedTo') {
-        return !value.includes(rule.value)
-      }
-    }
-
-    if (Array.isArray(value)) {
-      const values = value.map((item) => String(item).toLowerCase())
-
-      if (rule.operator === 'contains') {
-        return displayValue.toLowerCase().includes(ruleValue) || values.some((item) => item.includes(ruleValue))
-      }
-
-      const hasValue = values.includes(ruleValue) || displayValue.toLowerCase() === ruleValue
-
-      return rule.operator === 'isNot' ? !hasValue : hasValue
-    }
-
-    const normalizedValue = displayValue.toLowerCase()
-
-    if (rule.operator === 'contains') {
-      return normalizedValue.includes(ruleValue)
-    }
-
-    const isMatch = normalizedValue === ruleValue
-
-    return rule.operator === 'isNot' ? !isMatch : isMatch
+    return getRuleValidationMessagesForBase(base, rule)
   }
 
   function getRuleMatchCount(rule: LocalRule) {
-    return getRuleMatchedRecords(rule).length
+    return getRuleMatchCountForBase(base, rule, todayDate)
   }
 
   function getRuleMatchedRecords(rule: LocalRule) {
-    return base.records.filter((record) => ruleMatchesRecord(rule, record))
+    return getRuleMatchedRecordsForBase(base, rule, todayDate)
   }
 
   function getTodayRuleMatchesForRecord(recordId: string) {
@@ -2039,60 +1245,7 @@ function App() {
   }
 
   function getFieldDisplayValue(record: BaseRecord, field: FieldDefinition) {
-    if (field.type === 'lookup') {
-      return String(getLookupPreview(base, record.id, field.id) || 'Empty')
-    }
-
-    if (field.type === 'count') {
-      const count = getMaterializedLinks(base).filter(
-        (link) => link.toRecordId === record.id && link.fromFieldId === field.sourceLinkedFieldId,
-      ).length
-
-      return String(count)
-    }
-
-    if (field.type === 'rollup') {
-      const values = getMaterializedLinks(base)
-        .filter((link) => link.toRecordId === record.id && link.fromFieldId === field.sourceLinkedFieldId)
-        .flatMap((link) => {
-          const linkedRecord = getRecord(base, link.fromRecordId)
-          const value = field.sourceFieldId && linkedRecord ? linkedRecord.values[field.sourceFieldId] : null
-
-          return typeof value === 'string' || typeof value === 'number' ? [String(value)] : []
-        })
-
-      return values.length > 0 ? values.join(', ') : 'Empty'
-    }
-
-    const value = record.values[field.id]
-
-    if (Array.isArray(value)) {
-      if (field.type === 'multiSelect') {
-        return value.length > 0 ? value.join(', ') : 'Empty'
-      }
-
-      const titles = value.flatMap((recordId) => {
-        const linkedRecord = getRecord(base, recordId)
-
-        return linkedRecord ? [getRecordTitle(base, linkedRecord)] : []
-      })
-
-      return titles.length > 0 ? titles.join(', ') : 'Empty'
-    }
-
-    if (typeof value === 'boolean') {
-      return value ? 'Yes' : 'No'
-    }
-
-    if (value === null || value === '') {
-      return 'Empty'
-    }
-
-    if (field.type === 'currency' && typeof value === 'number') {
-      return `$${value.toLocaleString()}`
-    }
-
-    return String(value)
+    return getRecordFieldDisplayValue(base, record, field)
   }
 
   function renderRecordInput(
@@ -2328,7 +1481,7 @@ function App() {
 
     return (
       <div className="modal-backdrop" role="presentation">
-        <section className="build-modal record-modal" role="dialog" aria-modal="true" aria-label="Record">
+        <section className="build-modal record-modal" data-testid="record-modal" role="dialog" aria-modal="true" aria-label="Record editor">
           <div className="modal-header">
             <div>
               <span className="eyebrow">{selectedBuildTable?.label}</span>
@@ -2559,9 +1712,9 @@ function App() {
           </article>
         </header>
 
-        <section className="today-lane-grid" aria-label="Today lanes">
+        <section className="today-lane-grid" aria-label="Today lanes" data-testid="today-lanes">
           {todayLanes.map((lane) => (
-            <article className={`today-lane ${lane.id}`} key={lane.id}>
+            <article className={`today-lane ${lane.id}`} data-testid={`today-lane-${lane.id}`} key={lane.id}>
               <div className="lane-head">
                 <span>{lane.label}</span>
                 <strong>{lane.records.length}</strong>
@@ -2605,7 +1758,7 @@ function App() {
               <button className="ghost" type="button" onClick={openBuildScreen}>Adjust rules</button>
             </div>
 
-            <div className="priority-list">
+            <div className="priority-list" data-testid="today-rule-receipts">
               {todayRuleMatches.slice(0, 4).map((match, index) => (
                 <article className="priority-card prep" key={`${match.rule.id}-${match.record.id}`}>
                   <div className="priority-rank">{index + 1}</div>
@@ -2821,7 +1974,7 @@ function App() {
           </section>
         )}
 
-        <section className="record-drawer" id="record">
+        <section className={`record-drawer ${activeScreen === 'build' ? 'active-record-drawer' : ''}`} data-testid="record-drawer" id="record">
           <div className="drawer-header">
             <div>
               <span className="eyebrow">{selectedBuildTable?.label || 'Record'}</span>
@@ -2905,7 +2058,7 @@ function App() {
                   <div className="mini-title">
                     <strong>Dependencies</strong>
                   </div>
-                  <div className="dependency-editor">
+                  <div className="dependency-editor" data-testid="dependency-editor">
                     <label>
                       <span>Relationship</span>
                       <select
@@ -3077,7 +2230,7 @@ function App() {
         </section>
 
         {activeScreen === 'timeline' && (
-        <section className="screen-grid" id="timeline">
+        <section className="screen-grid" data-testid="timeline-screen" id="timeline">
           <article className="screen-panel wide">
             <div className="panel-title">
               <div>
@@ -3118,7 +2271,7 @@ function App() {
                 </select>
               </label>
             </div>
-            <div className="timeline-list">
+            <div className="timeline-list" data-testid="timeline-list">
               {timelineRecords.map((record) => {
                 const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
                 const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
@@ -3127,7 +2280,7 @@ function App() {
                 const ruleSummary = getTimelineRuleMatchesForRecord(record.id)
 
                 return (
-                  <button className="timeline-record-row" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                  <button className="timeline-record-row" data-testid={`timeline-row-${record.id}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
                     <span>{recordDate || 'No date'}</span>
                     <strong>{getRecordTitle(base, record)}</strong>
                     <small>{table?.label || record.tableId}. {recordStatus}. {getRecordContext(record)}</small>
@@ -3188,7 +2341,7 @@ function App() {
         )}
 
         {activeScreen === 'build' && (
-        <section className="build-zone build-reset" id="build">
+        <section className="build-zone build-reset" data-testid="build-screen" id="build">
           <article className="builder-panel wide build-workbench">
             <div className="panel-title">
               <div>
@@ -3214,6 +2367,7 @@ function App() {
               {buildTableRows.map((table) => (
                 <button
                   className={table.id === selectedBuildTable?.id ? 'selected' : ''}
+                  data-testid={`build-table-${table.id}`}
                   key={table.id}
                   type="button"
                   onClick={() => selectBuildTable(table.id)}
@@ -3325,7 +2479,7 @@ function App() {
                             </td>
                           ))}
                           <td className="row-action-cell">
-                            <button type="button" onClick={() => openEditRecordModal(record.id)}>Edit</button>
+                            <button data-testid={`edit-record-${record.id}`} type="button" onClick={() => openEditRecordModal(record.id)}>Edit</button>
                           </td>
                         </tr>
                       ))}
@@ -3399,7 +2553,7 @@ function App() {
             </div>
           </article>
 
-          <article className="automation-panel build-sidecar">
+          <article className="automation-panel build-sidecar" data-testid="rules-panel">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Rules</span>
@@ -3935,7 +3089,7 @@ function App() {
         )}
 
         {activeScreen === 'settings' && (
-        <section className="settings-zone" id="settings">
+        <section className="settings-zone" data-testid="settings-screen" id="settings">
           <article className="settings-panel">
             <div className="panel-title">
               <div>
@@ -4018,7 +3172,7 @@ function App() {
               </div>
               <span className="metric-pill">{localRules.length} Rules</span>
             </div>
-            <div className="rule-destination-grid">
+            <div className="rule-destination-grid" data-testid="rule-destination-grid">
               {ruleDestinationStats.map((stat) => (
                 <div key={stat.label}>
                   <span>{stat.label}</span>

@@ -1076,6 +1076,10 @@ h2 {
   display: none;
 }
 
+.record-drawer.active-record-drawer {
+  display: block;
+}
+
 .mode-card {
   padding: 16px;
 }
