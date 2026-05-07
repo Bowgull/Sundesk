@@ -84,11 +84,31 @@ import {
 } from './data/views'
 
 const themes = [
-  { label: 'Sunrise Soft', value: 'sunrise-soft' },
-  { label: 'Sunset Bold', value: 'sunset-bold' },
-  { label: 'Cloud Light', value: 'cloud-light' },
-  { label: 'Focus Dark', value: 'focus-dark' },
-  { label: 'Light', value: 'light' },
+  {
+    label: 'Sunrise Soft',
+    value: 'sunrise-soft',
+    swatch: { background: '#f7fcff', panel: '#ffffff', text: '#152838', accent: '#3b8abd', status: '#ffe0df', primary: '#183346' },
+  },
+  {
+    label: 'Sunset Bold',
+    value: 'sunset-bold',
+    swatch: { background: '#fff6ef', panel: '#fffefe', text: '#1d2732', accent: '#b4554f', status: '#ffe0dc', primary: '#263340' },
+  },
+  {
+    label: 'Cloud Light',
+    value: 'cloud-light',
+    swatch: { background: '#f3f9fc', panel: '#ffffff', text: '#122636', accent: '#3b7fa8', status: '#e7f4fa', primary: '#122636' },
+  },
+  {
+    label: 'Focus Dark',
+    value: 'focus-dark',
+    swatch: { background: '#0f1720', panel: '#223040', text: '#f3f7fa', accent: '#8dc7ea', status: '#4c2729', primary: '#eaf4fb' },
+  },
+  {
+    label: 'Paper Light',
+    value: 'light',
+    swatch: { background: '#f8fafc', panel: '#ffffff', text: '#17212b', accent: '#366f9f', status: '#eef5fb', primary: '#17212b' },
+  },
 ]
 
 const mainScreens = [
@@ -1838,8 +1858,8 @@ function App() {
                   </div>
                 )}
                 <div className="linked-choice-grid">
-                  {linkedRecords.length === 0 && <small>No records in linked table.</small>}
-                  {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No records match.</small>}
+                  {linkedRecords.length === 0 && <small>Add a record in the linked table.</small>}
+                  {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
                   {filteredLinkedRecords.map((record) => {
                     const isSelected = selectedLinkedIds.includes(record.id)
 
@@ -2105,7 +2125,7 @@ function App() {
             </div>
           )}
           <div className="grid-linked-pills">
-            {filteredLinkedRecords.length === 0 && <small>No records match.</small>}
+            {filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
             {filteredLinkedRecords.map((linkedRecord) => {
               const isSelected = selectedLinkedIds.includes(linkedRecord.id)
 
@@ -2524,7 +2544,7 @@ function App() {
                   <button type="button" onClick={() => openDailyRecord(match.record)}>Open</button>
                 </article>
               ))}
-              {todayRuleMatches.length === 0 && <p className="empty-note">No Today Rules match records.</p>}
+              {todayRuleMatches.length === 0 && <p className="empty-note">No Today Rules match. Open Build to adjust rules.</p>}
             </div>
           </article>
 
@@ -2847,7 +2867,7 @@ function App() {
                       </button>
                     )}
                     <div className="dependency-picker-list">
-                      {dependencyPickerRecords.length === 0 && <p className="empty-note">No records match.</p>}
+                      {dependencyPickerRecords.length === 0 && <p className="empty-note">No records match. Change the search.</p>}
                       {dependencyPickerRecords.slice(0, 6).map((record) => {
                         const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
                         const isSelected = dependencyDraft.toRecordId === record.id
@@ -3057,7 +3077,7 @@ function App() {
                   </button>
                 )
               })}
-              {timelineRecords.length === 0 && <p className="empty-note">No records match this timeline view.</p>}
+              {timelineRecords.length === 0 && <p className="empty-note">No records match. Clear the timeline filters.</p>}
             </div>
           </article>
 
@@ -3314,7 +3334,7 @@ function App() {
                 </div>
               </section>
             ))}
-            {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match this filter.</p>}
+            {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match. Clear the filter or add a record.</p>}
           </article>
 
           <article className="automation-panel build-sidecar" data-testid="build-views-panel">
@@ -3922,10 +3942,22 @@ function App() {
               {themes.map((theme) => (
                 <button
                   key={theme.value}
-                  className={theme.value === selectedTheme ? 'selected' : ''}
+                  aria-pressed={theme.value === selectedTheme}
+                  className={`theme-swatch ${theme.value === selectedTheme ? 'selected' : ''}`}
                   onClick={() => setSelectedTheme(theme.value)}
                 >
-                  {theme.label}
+                  <span className="theme-swatch-preview" aria-hidden="true" style={{ background: theme.swatch.background }}>
+                    <span className="theme-swatch-panel" style={{ background: theme.swatch.panel }}>
+                      <i style={{ color: theme.swatch.text }} />
+                      <b style={{ background: theme.swatch.accent }} />
+                    </span>
+                    <span className="theme-swatch-row">
+                      <i style={{ background: theme.swatch.status, borderColor: theme.swatch.accent }} />
+                      <b style={{ background: theme.swatch.primary }} />
+                    </span>
+                    {theme.value === selectedTheme && <span className="theme-check">✓</span>}
+                  </span>
+                  <strong>{theme.label}</strong>
                 </button>
               ))}
             </div>

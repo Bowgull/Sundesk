@@ -2808,17 +2808,87 @@ h2 {
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   margin-top: 14px;
 }
 
-.theme-grid button {
-  min-height: 46px;
+.theme-swatch {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+  min-height: 126px;
+  padding: 8px;
+  text-align: left;
 }
 
-.theme-grid .selected {
+.theme-swatch.selected {
   border-color: var(--accent);
   background: var(--sky-1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.theme-swatch-preview {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 78px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.theme-swatch-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px;
+  border-radius: 6px;
+}
+
+.theme-swatch-panel i,
+.theme-swatch-panel b,
+.theme-swatch-row i,
+.theme-swatch-row b {
+  display: block;
+  min-width: 0;
+  min-height: 12px;
+  border-radius: 999px;
+}
+
+.theme-swatch-panel i {
+  background: currentColor;
+}
+
+.theme-swatch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+}
+
+.theme-swatch-row i {
+  border: 1px solid;
+}
+
+.theme-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--night);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.theme-swatch strong {
+  color: var(--ink);
+  font-size: 12px;
 }
 
 .settings-list {

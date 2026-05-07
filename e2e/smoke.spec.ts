@@ -463,6 +463,11 @@ test('Settings exposes local engine and Rule destination health', async ({ page 
   await page.goto('/#settings')
 
   await expect(page.getByRole('heading', { name: 'Browser state.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Paper Light' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sunrise Soft' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Paper Light' }).click()
+  await expect(page.locator('.app')).toHaveAttribute('data-theme', 'light')
+  await expect(page.getByRole('button', { name: 'Paper Light' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No Firebase writes in this local build.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Read targets.' })).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
