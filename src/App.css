@@ -1032,6 +1032,19 @@ h2 {
   text-transform: uppercase;
 }
 
+.field-strip .field-type-chip {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-raised) 86%, transparent);
+  color: var(--muted);
+  text-transform: none;
+}
+
 .field-strip strong {
   display: block;
   margin: 8px 0 6px;
@@ -2297,6 +2310,36 @@ h2 {
 .tag-gray {
   border-color: color-mix(in srgb, var(--muted) 26%, var(--line));
   background: color-mix(in srgb, var(--muted) 12%, white);
+}
+
+.chip-coral {
+  border-color: color-mix(in srgb, var(--coral) 45%, var(--line));
+  background: color-mix(in srgb, var(--coral-2) 78%, white);
+  color: color-mix(in srgb, var(--coral) 72%, var(--ink));
+}
+
+.chip-gold {
+  border-color: color-mix(in srgb, var(--sun) 60%, var(--line));
+  background: color-mix(in srgb, var(--sun-2) 78%, white);
+  color: color-mix(in srgb, #7d620f 70%, var(--ink));
+}
+
+.chip-green {
+  border-color: color-mix(in srgb, var(--success) 44%, var(--line));
+  background: color-mix(in srgb, var(--sage-2) 76%, white);
+  color: color-mix(in srgb, #26815b 76%, var(--ink));
+}
+
+.chip-lavender {
+  border-color: color-mix(in srgb, var(--prep) 38%, var(--line));
+  background: color-mix(in srgb, var(--lav-2) 80%, white);
+  color: color-mix(in srgb, var(--prep) 72%, var(--ink));
+}
+
+.chip-gray {
+  border-color: color-mix(in srgb, var(--muted) 30%, var(--line));
+  background: color-mix(in srgb, var(--muted) 10%, white);
+  color: var(--muted);
 }
 
 .record-table tr {

@@ -204,6 +204,36 @@ function getOptionColorClass(value: string) {
   return optionColorClassNames[colorIndex]
 }
 
+function getSemanticChipClass(value: string) {
+  const normalizedValue = value.toLowerCase()
+
+  if (['blocked', 'fire', 'risk', 'high', 'missing'].some((token) => normalizedValue.includes(token))) {
+    return 'chip-coral'
+  }
+
+  if (['waiting', 'requested', 'pending', 'due'].some((token) => normalizedValue.includes(token))) {
+    return 'chip-gold'
+  }
+
+  if (['done', 'received', 'complete', 'on track'].some((token) => normalizedValue.includes(token))) {
+    return 'chip-green'
+  }
+
+  if (['prep', 'meeting', 'in progress'].some((token) => normalizedValue.includes(token))) {
+    return 'chip-lavender'
+  }
+
+  if (['empty', 'archived', 'inactive', 'not needed', 'no status'].some((token) => normalizedValue.includes(token))) {
+    return 'chip-gray'
+  }
+
+  return ''
+}
+
+function getChipColorClass(value: string) {
+  return getSemanticChipClass(value) || getOptionColorClass(value)
+}
+
 function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
   if (icon === 'star') {
     return (
@@ -1936,7 +1966,7 @@ function App() {
         <span className="saved-pill-list">
           {value.length === 0 && <span className="grid-linked-empty">Empty</span>}
           {value.map((option) => (
-            <span className={`select-tag ${getOptionColorClass(option)}`} key={option}>{option}</span>
+            <span className={`select-tag ${getChipColorClass(option)}`} key={option}>{option}</span>
           ))}
         </span>
       )
@@ -1945,7 +1975,7 @@ function App() {
     if (field.options) {
       const selectedValue = typeof value === 'string' ? value : ''
 
-      return selectedValue ? <span className={`select-tag ${getOptionColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>
+      return selectedValue ? <span className={`select-tag ${getChipColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>
     }
 
     if (field.type === 'linkedRecord' && Array.isArray(value)) {
@@ -2716,7 +2746,7 @@ function App() {
                   <article className="field-strip" key={field.id}>
                     <span>{field.label}</span>
                     <strong>{getFieldDisplayValue(selectedBuildRecord, field)}</strong>
-                    <small>{field.type}</small>
+                    <small className="field-type-chip">{field.type}</small>
                   </article>
                 ))}
               </div>

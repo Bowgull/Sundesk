@@ -180,6 +180,16 @@ test('Build toolbar colour applies semantic row tinting', async ({ page }) => {
   await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toHaveClass(/grid-row-color-lavender/)
 })
 
+test('Build chips use semantic colour and field type treatment', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-status').locator('.select-tag')).toHaveClass(/chip-coral/)
+  await expect(page.getByTestId('grid-cell-task_permit_moncton-status').locator('.select-tag')).toHaveClass(/chip-gold/)
+  await expect(page.getByTestId('grid-cell-task_meeting_charlottetown-status').locator('.select-tag')).toHaveClass(/chip-lavender/)
+  await expect(page.getByTestId('record-drawer').locator('.field-type-chip').first()).toBeVisible()
+})
+
 test('Build grid linked-record editor searches and commits readable records', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
