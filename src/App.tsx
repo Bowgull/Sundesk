@@ -1,16 +1,14 @@
 import './App.css'
 import { useEffect, useState, type PointerEvent } from 'react'
 import {
-  automationRules,
   buildFieldTypes,
-  priorityItems,
   savedViews,
-  type Priority,
 } from './data/demoData'
 import {
   type BaseRecord,
   type CheckboxColor,
   type CheckboxIcon,
+  type DependencyLink,
   type FieldDefinition,
   type FieldType,
   type RecordValue,
@@ -96,6 +94,40 @@ const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
   { label: 'Graphite', value: 'graphite' },
 ]
 const buildTableOrder = ['risks', 'tasks', 'followups', 'approvals', 'meetings', 'people']
+const workbaseStorageKey = 'sundesk-local-workbase-v1'
+const buildViewStateStorageKey = 'sundesk-build-view-state-v1'
+const rulesStorageKey = 'sundesk-local-rules-v1'
+const defaultVisibleFieldIdsByTable: Record<string, string[]> = {
+  communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
+  tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
+}
+const ruleOperatorOptions = [
+  { label: 'Is', value: 'is' },
+  { label: 'Is not', value: 'isNot' },
+  { label: 'Contains', value: 'contains' },
+  { label: 'Is empty', value: 'isEmpty' },
+  { label: 'Is today', value: 'isToday' },
+  { label: 'Is on or before today', value: 'isOnOrBeforeToday' },
+  { label: 'Is before today', value: 'isBeforeToday' },
+  { label: 'Is within 7 days', value: 'isWithin7Days' },
+  { label: 'Is linked to', value: 'linkedTo' },
+  { label: 'Is not linked to', value: 'notLinkedTo' },
+  { label: 'Has any link', value: 'hasAnyLink' },
+  { label: 'Has no link', value: 'hasNoLink' },
+] as const
+const ruleActionOptions = [
+  { label: 'Show in screen', value: 'showInScreen' },
+  { label: 'Set status', value: 'setStatus' },
+  { label: 'Add to prep', value: 'addToPrep' },
+] as const
+const ruleDestinationOptions = [
+  { label: 'Today', value: 'today' },
+  { label: 'Timeline', value: 'timeline' },
+  { label: 'Communities', value: 'communities' },
+  { label: 'Tasks', value: 'tasks' },
+  { label: 'Follow-ups', value: 'followups' },
+  { label: 'Meetings', value: 'meetings' },
+] as const
 
 type LocalGridView = {
   id: string
@@ -105,9 +137,50 @@ type LocalGridView = {
   sortFieldId: string
   groupFieldId: string
   visibleFieldIds: string[]
+  pinned?: boolean
 }
 
-type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record'
+type StoredBuildViewState = {
+  version: 1
+  selectedBuildTableId: string
+  visibleFieldIdsByTable: Record<string, string[]>
+  gridFilter: string
+  gridSortFieldId: string
+  gridGroupFieldId: string
+  localGridViews: LocalGridView[]
+  viewRenameDrafts: Record<string, string>
+  activeGridViewId: string
+  columnWidths: Record<string, number>
+}
+
+type StoredWorkbaseState = {
+  version: 1
+  base: Workbase
+}
+
+type LocalRule = {
+  id: string
+  tableId: string
+  fieldId: string
+  operator: (typeof ruleOperatorOptions)[number]['value']
+  value: string
+  action: (typeof ruleActionOptions)[number]['value']
+  destination: (typeof ruleDestinationOptions)[number]['value']
+}
+
+type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record' | 'resetLocalData'
+type DependencyRelationship = DependencyLink['relationship']
+type StoredMigrationReport = {
+  workbaseReset: boolean
+  rulesReset: boolean
+  buildViewReset: boolean
+}
+
+const storedMigrationReport: StoredMigrationReport = {
+  workbaseReset: false,
+  rulesReset: false,
+  buildViewReset: false,
+}
 
 function getScreenFromHash(): AppScreen {
   if (typeof window === 'undefined') {
@@ -139,6 +212,241 @@ function cloneWorkbase(base: Workbase): Workbase {
     })),
     records: base.records.map((record) => ({ ...record, values: { ...record.values } })),
     dependencies: base.dependencies.map((dependency) => ({ ...dependency })),
+  }
+}
+
+function isStoredWorkbaseState(value: unknown): value is StoredWorkbaseState {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const state = value as Partial<StoredWorkbaseState>
+  const base = state.base
+
+  return state.version === 1 &&
+    Boolean(base) &&
+    Array.isArray(base?.tables) &&
+    Array.isArray(base?.fields) &&
+    Array.isArray(base?.records) &&
+    Array.isArray(base?.dependencies)
+}
+
+function isRecordValue(value: unknown): value is RecordValue {
+  return value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+}
+
+function isFieldDefinition(value: unknown): value is FieldDefinition {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const field = value as Partial<FieldDefinition>
+
+  return typeof field.id === 'string' &&
+    typeof field.tableId === 'string' &&
+    typeof field.label === 'string' &&
+    fieldTypeOptions.some((option) => option.value === field.type)
+}
+
+function isBaseRecord(value: unknown): value is BaseRecord {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const record = value as Partial<BaseRecord>
+
+  return typeof record.id === 'string' &&
+    typeof record.tableId === 'string' &&
+    Boolean(record.values) &&
+    typeof record.values === 'object' &&
+    Object.values(record.values).every(isRecordValue)
+}
+
+function isDependencyLink(value: unknown): value is DependencyLink {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const dependency = value as Partial<DependencyLink>
+
+  return typeof dependency.id === 'string' &&
+    typeof dependency.fromRecordId === 'string' &&
+    typeof dependency.toRecordId === 'string' &&
+    (dependency.relationship === 'dependsOn' || dependency.relationship === 'blocks') &&
+    typeof dependency.reason === 'string'
+}
+
+function isLocalRule(value: unknown): value is LocalRule {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const rule = value as Partial<LocalRule>
+
+  return typeof rule.id === 'string' &&
+    typeof rule.tableId === 'string' &&
+    typeof rule.fieldId === 'string' &&
+    ruleOperatorOptions.some((option) => option.value === rule.operator) &&
+    typeof rule.value === 'string' &&
+    ruleActionOptions.some((option) => option.value === rule.action) &&
+    ruleDestinationOptions.some((option) => option.value === rule.destination)
+}
+
+function isLocalGridView(value: unknown): value is LocalGridView {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const view = value as Partial<LocalGridView>
+
+  return typeof view.id === 'string' &&
+    typeof view.name === 'string' &&
+    typeof view.tableId === 'string' &&
+    typeof view.filter === 'string' &&
+    typeof view.sortFieldId === 'string' &&
+    typeof view.groupFieldId === 'string' &&
+    Array.isArray(view.visibleFieldIds) &&
+    view.visibleFieldIds.every((fieldId) => typeof fieldId === 'string')
+}
+
+function getDefaultLocalRules(): LocalRule[] {
+  return [
+    {
+      id: 'rule-overdue-followup',
+      tableId: 'followups',
+      fieldId: 'status',
+      operator: 'is',
+      value: 'Waiting',
+      action: 'showInScreen',
+      destination: 'today',
+    },
+    {
+      id: 'rule-blocked-status',
+      tableId: 'tasks',
+      fieldId: 'status',
+      operator: 'is',
+      value: 'Blocked',
+      action: 'showInScreen',
+      destination: 'today',
+    },
+    {
+      id: 'rule-task-due-today',
+      tableId: 'tasks',
+      fieldId: 'dueDate',
+      operator: 'isToday',
+      value: '',
+      action: 'showInScreen',
+      destination: 'today',
+    },
+    {
+      id: 'rule-task-upcoming',
+      tableId: 'tasks',
+      fieldId: 'dueDate',
+      operator: 'isWithin7Days',
+      value: '',
+      action: 'showInScreen',
+      destination: 'timeline',
+    },
+    {
+      id: 'rule-task-has-community',
+      tableId: 'tasks',
+      fieldId: 'community',
+      operator: 'hasAnyLink',
+      value: '',
+      action: 'showInScreen',
+      destination: 'today',
+    },
+    {
+      id: 'rule-risk-blocks-task',
+      tableId: 'risks',
+      fieldId: 'blocks',
+      operator: 'hasAnyLink',
+      value: '',
+      action: 'showInScreen',
+      destination: 'timeline',
+    },
+    {
+      id: 'rule-meeting-prep',
+      tableId: 'meetings',
+      fieldId: 'date',
+      operator: 'isBeforeToday',
+      value: '',
+      action: 'addToPrep',
+      destination: 'meetings',
+    },
+    {
+      id: 'rule-upcoming-meeting-prep',
+      tableId: 'meetings',
+      fieldId: 'date',
+      operator: 'isWithin7Days',
+      value: '',
+      action: 'addToPrep',
+      destination: 'meetings',
+    },
+  ]
+}
+
+function mergeDefaultLocalRules(rules: LocalRule[]) {
+  const ruleIds = new Set(rules.map((rule) => rule.id))
+  const missingDefaultRules = getDefaultLocalRules().filter((rule) => !ruleIds.has(rule.id))
+
+  return [...rules, ...missingDefaultRules]
+}
+
+function normalizeStoredWorkbase(base: Workbase) {
+  const defaultBase = cloneWorkbase(workbase)
+  const tables = base.tables.filter(
+    (table) =>
+      typeof table.id === 'string' &&
+      typeof table.label === 'string' &&
+      typeof table.description === 'string' &&
+      typeof table.primaryFieldId === 'string',
+  )
+  const tableIds = new Set(tables.map((table) => table.id))
+  const fields = base.fields.filter((field) => isFieldDefinition(field) && tableIds.has(field.tableId))
+  const fieldKeys = new Set(fields.map((field) => `${field.tableId}:${field.id}`))
+  const records = base.records
+    .filter((record) => isBaseRecord(record) && tableIds.has(record.tableId))
+    .map((record) => {
+      const values = Object.fromEntries(
+        Object.entries(record.values).filter(([fieldId, value]) => fieldKeys.has(`${record.tableId}:${fieldId}`) && isRecordValue(value)),
+      )
+
+      fields
+        .filter((field) => field.tableId === record.tableId && !computedFieldTypes.includes(field.type))
+        .forEach((field) => {
+          if (!(field.id in values)) {
+            values[field.id] = getEmptyFieldValue(field.type)
+          }
+        })
+
+      return { ...record, values }
+    })
+  const recordIds = new Set(records.map((record) => record.id))
+  const dependencies = base.dependencies.filter(
+    (dependency) =>
+      isDependencyLink(dependency) &&
+      recordIds.has(dependency.fromRecordId) &&
+      recordIds.has(dependency.toRecordId) &&
+      dependency.fromRecordId !== dependency.toRecordId,
+  )
+
+  if (tables.length === 0 || fields.length === 0) {
+    return { base: defaultBase, reset: true }
+  }
+
+  return {
+    base: {
+      tables,
+      fields,
+      records,
+      dependencies,
+    },
+    reset: false,
   }
 }
 
@@ -184,6 +492,132 @@ function getOptionColorClass(value: string) {
   return optionColorClassNames[colorIndex]
 }
 
+function readStoredBuildViewState(): Partial<StoredBuildViewState> {
+  if (typeof window === 'undefined') {
+    return {}
+  }
+
+  try {
+    const rawState = window.localStorage.getItem(buildViewStateStorageKey)
+
+    if (!rawState) {
+      return {}
+    }
+
+    const state = JSON.parse(rawState) as Partial<StoredBuildViewState>
+
+    if (state.version !== 1) {
+      storedMigrationReport.buildViewReset = true
+      return {}
+    }
+
+    const localGridViews = Array.isArray(state.localGridViews)
+      ? state.localGridViews.filter(isLocalGridView)
+      : []
+    const visibleFieldIdsByTable = state.visibleFieldIdsByTable && typeof state.visibleFieldIdsByTable === 'object'
+      ? Object.fromEntries(
+          Object.entries(state.visibleFieldIdsByTable).filter(
+            ([tableId, fieldIds]) =>
+              typeof tableId === 'string' &&
+              Array.isArray(fieldIds) &&
+              fieldIds.every((fieldId) => typeof fieldId === 'string'),
+          ),
+        )
+      : {}
+    const viewRenameDrafts = state.viewRenameDrafts && typeof state.viewRenameDrafts === 'object'
+      ? Object.fromEntries(
+          Object.entries(state.viewRenameDrafts).filter(
+            ([viewId, draft]) => typeof viewId === 'string' && typeof draft === 'string',
+          ),
+        )
+      : {}
+    const columnWidths = state.columnWidths && typeof state.columnWidths === 'object'
+      ? Object.fromEntries(
+          Object.entries(state.columnWidths).filter(
+            ([fieldId, width]) => typeof fieldId === 'string' && typeof width === 'number',
+          ),
+        )
+      : {}
+
+    return {
+      version: 1,
+      selectedBuildTableId: typeof state.selectedBuildTableId === 'string' ? state.selectedBuildTableId : 'risks',
+      visibleFieldIdsByTable,
+      gridFilter: typeof state.gridFilter === 'string' ? state.gridFilter : '',
+      gridSortFieldId: typeof state.gridSortFieldId === 'string' ? state.gridSortFieldId : 'title',
+      gridGroupFieldId: typeof state.gridGroupFieldId === 'string' ? state.gridGroupFieldId : 'level',
+      localGridViews,
+      viewRenameDrafts,
+      activeGridViewId: typeof state.activeGridViewId === 'string' ? state.activeGridViewId : '',
+      columnWidths,
+    }
+  } catch {
+    storedMigrationReport.buildViewReset = true
+    return {}
+  }
+}
+
+function readStoredWorkbase(): Workbase {
+  if (typeof window === 'undefined') {
+    return cloneWorkbase(workbase)
+  }
+
+  try {
+    const rawState = window.localStorage.getItem(workbaseStorageKey)
+
+    if (!rawState) {
+      return cloneWorkbase(workbase)
+    }
+
+    const state = JSON.parse(rawState) as unknown
+
+    if (!isStoredWorkbaseState(state)) {
+      storedMigrationReport.workbaseReset = true
+      return cloneWorkbase(workbase)
+    }
+
+    const normalizedState = normalizeStoredWorkbase(state.base)
+    storedMigrationReport.workbaseReset = normalizedState.reset
+
+    return normalizedState.base
+  } catch {
+    storedMigrationReport.workbaseReset = true
+    return cloneWorkbase(workbase)
+  }
+}
+
+function readStoredRules(): LocalRule[] {
+  if (typeof window === 'undefined') {
+    return getDefaultLocalRules()
+  }
+
+  try {
+    const rawRules = window.localStorage.getItem(rulesStorageKey)
+
+    if (!rawRules) {
+      return getDefaultLocalRules()
+    }
+
+    const rules = JSON.parse(rawRules) as unknown
+
+    if (!Array.isArray(rules)) {
+      storedMigrationReport.rulesReset = true
+      return getDefaultLocalRules()
+    }
+
+    const validRules = rules.filter(isLocalRule)
+
+    if (validRules.length !== rules.length) {
+      storedMigrationReport.rulesReset = true
+    }
+
+    return validRules.length > 0 ? mergeDefaultLocalRules(validRules) : getDefaultLocalRules()
+  } catch {
+    storedMigrationReport.rulesReset = true
+    return getDefaultLocalRules()
+  }
+}
+
 function getStringValue(record: BaseRecord, fieldId: string) {
   const value = record.values[fieldId]
 
@@ -194,6 +628,51 @@ function getNumberValue(record: BaseRecord, fieldId: string) {
   const value = record.values[fieldId]
 
   return typeof value === 'number' ? value : 0
+}
+
+function isDateField(field?: FieldDefinition) {
+  return field?.type === 'date' || field?.type === 'dateTime' || field?.type === 'createdTime' || field?.type === 'lastUpdatedTime'
+}
+
+function isDateRuleOperator(operator: LocalRule['operator']) {
+  return operator === 'isToday' ||
+    operator === 'isOnOrBeforeToday' ||
+    operator === 'isBeforeToday' ||
+    operator === 'isWithin7Days'
+}
+
+function isLinkedRecordRuleOperator(operator: LocalRule['operator']) {
+  return operator === 'linkedTo' ||
+    operator === 'notLinkedTo' ||
+    operator === 'hasAnyLink' ||
+    operator === 'hasNoLink'
+}
+
+function ruleOperatorNeedsValue(operator: LocalRule['operator']) {
+  return operator !== 'isEmpty' &&
+    operator !== 'hasAnyLink' &&
+    operator !== 'hasNoLink' &&
+    !isDateRuleOperator(operator)
+}
+
+function getRuleOperatorOptionsForField(field?: FieldDefinition) {
+  if (isDateField(field)) {
+    return ruleOperatorOptions.filter((option) => !isLinkedRecordRuleOperator(option.value) && option.value !== 'contains')
+  }
+
+  if (field?.type === 'linkedRecord') {
+    return ruleOperatorOptions.filter(
+      (option) =>
+        isLinkedRecordRuleOperator(option.value) ||
+        option.value === 'isEmpty',
+    )
+  }
+
+  return ruleOperatorOptions.filter((option) => !isDateRuleOperator(option.value) && !isLinkedRecordRuleOperator(option.value))
+}
+
+function getRuleDateValue(value: RecordValue) {
+  return typeof value === 'string' && value.length >= 10 ? value.slice(0, 10) : ''
 }
 
 function getFirstDateValue(record: BaseRecord) {
@@ -244,25 +723,22 @@ function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
   )
 }
 
-function priorityLabel(priority: Priority) {
-  const labels: Record<Priority, string> = {
-    fire: 'Fire',
-    urgent: 'Urgent',
-    waiting: 'Waiting',
-    prep: 'Prep',
-    routine: 'Routine',
-  }
-
-  return labels[priority]
-}
-
 function App() {
+  const [initialBuildViewState] = useState(() => readStoredBuildViewState())
   const [selectedTheme, setSelectedTheme] = useState(
     () => localStorage.getItem('sundesk-theme') || 'sunrise-soft',
   )
   const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
-  const [base, setBase] = useState(() => cloneWorkbase(workbase))
-  const [selectedBuildTableId, setSelectedBuildTableId] = useState('risks')
+  const [base, setBase] = useState(() => readStoredWorkbase())
+  const [timelineFilter, setTimelineFilter] = useState('')
+  const [timelineTableId, setTimelineTableId] = useState('all')
+  const [timelineStatus, setTimelineStatus] = useState('all')
+  const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
+  const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
+  const [todayDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [selectedBuildTableId, setSelectedBuildTableId] = useState(
+    () => initialBuildViewState.selectedBuildTableId || 'risks',
+  )
   const [tableDraft, setTableDraft] = useState({
     label: '',
     description: '',
@@ -284,23 +760,33 @@ function App() {
   })
   const [recordDraft, setRecordDraft] = useState<Record<string, RecordValue>>(() => getEmptyRecordValues(workbase, 'tasks'))
   const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('risk_venue_halifax')
-  const [visibleFieldIdsByTable, setVisibleFieldIdsByTable] = useState<Record<string, string[]>>(() => ({
-    communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
-    tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
-  }))
-  const [gridFilter, setGridFilter] = useState('')
-  const [gridSortFieldId, setGridSortFieldId] = useState('title')
-  const [gridGroupFieldId, setGridGroupFieldId] = useState('level')
-  const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>([])
-  const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>({})
-  const [activeGridViewId, setActiveGridViewId] = useState('')
+  const [visibleFieldIdsByTable, setVisibleFieldIdsByTable] = useState<Record<string, string[]>>(
+    () => initialBuildViewState.visibleFieldIdsByTable || defaultVisibleFieldIdsByTable,
+  )
+  const [gridFilter, setGridFilter] = useState(() => initialBuildViewState.gridFilter || '')
+  const [gridSortFieldId, setGridSortFieldId] = useState(() => initialBuildViewState.gridSortFieldId || 'title')
+  const [gridGroupFieldId, setGridGroupFieldId] = useState(() => initialBuildViewState.gridGroupFieldId || 'level')
+  const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>(() => initialBuildViewState.localGridViews || [])
+  const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>(
+    () => initialBuildViewState.viewRenameDrafts || {},
+  )
+  const [activeGridViewId, setActiveGridViewId] = useState(() => initialBuildViewState.activeGridViewId || '')
   const [openFieldMenuId, setOpenFieldMenuId] = useState('')
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
+    () => initialBuildViewState.columnWidths || {},
+  )
   const [buildModal, setBuildModal] = useState<BuildModal>('')
   const [pendingDeleteTableId, setPendingDeleteTableId] = useState('')
   const [selectedFieldSettingsId, setSelectedFieldSettingsId] = useState('')
   const [pendingDeleteFieldId, setPendingDeleteFieldId] = useState('')
   const [isCreatingRecord, setIsCreatingRecord] = useState(false)
+  const [linkedRecordFilters, setLinkedRecordFilters] = useState<Record<string, string>>({})
+  const [dependencyDraft, setDependencyDraft] = useState({
+    toRecordId: '',
+    relationship: 'dependsOn' as DependencyRelationship,
+    reason: '',
+  })
+  const [dependencySearch, setDependencySearch] = useState('')
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -350,6 +836,71 @@ function App() {
     ...waitingFollowupRecords,
     ...meetingRecords,
   ])
+  const timelineSourceRecords = [
+    ...communityRecords,
+    ...taskRecords,
+    ...approvalRecords,
+    ...followupRecords,
+    ...meetingRecords,
+    ...riskRecords,
+  ]
+  const timelineStatusOptions = Array.from(
+    new Set(
+      timelineSourceRecords
+        .map((record) => getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority'))
+        .filter(Boolean),
+    ),
+  ).sort()
+  const timelineRecords = timelineSourceRecords
+    .filter((record) => {
+      const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+      const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority')
+      const filter = timelineFilter.trim().toLowerCase()
+
+      if (timelineTableId !== 'all' && record.tableId !== timelineTableId) {
+        return false
+      }
+
+      if (timelineStatus !== 'all' && recordStatus !== timelineStatus) {
+        return false
+      }
+
+      if (!filter) {
+        return true
+      }
+
+      return [table?.label || record.tableId, getRecordTitle(base, record), getRecordContext(record), recordStatus]
+        .join(' ')
+        .toLowerCase()
+        .includes(filter)
+    })
+    .sort((firstRecord, secondRecord) => {
+      const firstDate = getFirstDateValue(firstRecord) || '9999-12-31'
+      const secondDate = getFirstDateValue(secondRecord) || '9999-12-31'
+
+      return firstDate.localeCompare(secondDate) || getRecordTitle(base, firstRecord).localeCompare(getRecordTitle(base, secondRecord))
+    })
+  const todayRuleMatches = localRules
+    .filter((rule) => rule.destination === 'today')
+    .flatMap((rule) =>
+      base.records
+        .filter((record) => ruleMatchesRecord(rule, record))
+        .map((record) => ({
+          rule,
+          record,
+        })),
+    )
+  const todayRuleRecords = Array.from(new Map(todayRuleMatches.map((match) => [match.record.id, match.record])).values())
+  const timelineRuleMatches = localRules
+    .filter((rule) => rule.destination === 'timeline')
+    .flatMap((rule) =>
+      base.records
+        .filter((record) => ruleMatchesRecord(rule, record))
+        .map((record) => ({
+          rule,
+          record,
+        })),
+    )
   const todayLanes = [
     {
       id: 'now',
@@ -368,6 +919,12 @@ function App() {
       label: 'Next',
       title: 'Pull work forward before it becomes urgent.',
       records: sortRecordsByDate([...meetingRecords, ...openTaskRecords]).slice(0, 4),
+    },
+    {
+      id: 'rules',
+      label: 'Rules',
+      title: 'Records matched by local Rules.',
+      records: todayRuleRecords.slice(0, 4),
     },
   ]
   const screenStats = [
@@ -426,6 +983,26 @@ function App() {
   const drawerBacklinks = selectedBuildRecord ? getBacklinksForRecord(base, selectedBuildRecord.id) : []
   const drawerLinkedRecords = selectedBuildRecord ? getLinkedRecordsForRecord(base, selectedBuildRecord.id) : []
   const drawerDependencies = selectedBuildRecord ? getDependencyReferencesForRecord(base, selectedBuildRecord.id) : []
+  const selectedDependencyTargetRecord = dependencyDraft.toRecordId ? getRecord(base, dependencyDraft.toRecordId) : null
+  const dependencySearchTerm = dependencySearch.trim().toLowerCase()
+  const dependencyPickerRecords = base.records.filter((record) => {
+    if (record.id === selectedBuildRecord?.id) {
+      return false
+    }
+
+    if (!dependencySearchTerm) {
+      return true
+    }
+
+    return [
+      base.tables.find((table) => table.id === record.tableId)?.label || record.tableId,
+      getRecordTitle(base, record),
+      getRecordContext(record),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(dependencySearchTerm)
+  })
   const linkedFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => field.type === 'linkedRecord' && field.linkedTableId)
   const effectiveSourceLinkedFieldId = fieldDraft.sourceLinkedFieldId || linkedFieldsForSelectedTable[0]?.id || ''
   const selectedSourceLinkedField = fieldsForSelectedTable.find((field) => field.id === effectiveSourceLinkedFieldId)
@@ -446,6 +1023,42 @@ function App() {
   const settingsField = fieldsForSelectedTable.find((field) => field.id === selectedFieldSettingsId)
   const pendingDeleteField = fieldsForSelectedTable.find((field) => field.id === pendingDeleteFieldId)
   const pendingDeleteTable = base.tables.find((table) => table.id === pendingDeleteTableId)
+  const pinnedGridViews = localGridViews.filter((view) => view.pinned)
+  const activeScreenRuleMatches = localRules
+    .filter((rule) => rule.destination === activeScreen)
+    .flatMap((rule) =>
+      base.records
+        .filter((record) => ruleMatchesRecord(rule, record))
+        .map((record) => ({
+          rule,
+          record,
+        })),
+    )
+  const migrationMessages = [
+    initialMigrationReport.workbaseReset ? 'Workbase state was repaired.' : '',
+    initialMigrationReport.rulesReset ? 'Rules state was repaired.' : '',
+    initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
+  ].filter(Boolean)
+  const localEngineStats = [
+    { label: 'Tables', value: base.tables.length },
+    { label: 'Fields', value: base.fields.length },
+    { label: 'Records', value: base.records.length },
+    { label: 'Links', value: materializedLinks.length },
+    { label: 'Dependencies', value: base.dependencies.length },
+    { label: 'Rules', value: localRules.length },
+    { label: 'Invalid Rules', value: localRules.filter((rule) => getRuleValidationMessages(rule).length > 0).length },
+    { label: 'Saved views', value: localGridViews.length },
+  ]
+  const ruleDestinationStats = ruleDestinationOptions.map((destination) => {
+    const rules = localRules.filter((rule) => rule.destination === destination.value)
+    const matchCount = rules.reduce((count, rule) => count + getRuleMatchCount(rule), 0)
+
+    return {
+      label: destination.label,
+      rules: rules.length,
+      matches: matchCount,
+    }
+  })
 
   function closeBuildModal() {
     setBuildModal('')
@@ -453,6 +1066,7 @@ function App() {
     setSelectedFieldSettingsId('')
     setPendingDeleteFieldId('')
     setIsCreatingRecord(false)
+    setLinkedRecordFilters({})
   }
 
   function parseOptions(value: string) {
@@ -851,6 +1465,19 @@ function App() {
     setRecordDraft(getEmptyRecordValues(base, view.tableId))
   }
 
+  function openPinnedGridView(view: LocalGridView) {
+    applyGridView(view)
+    openBuildScreen()
+  }
+
+  function openBuildScreen() {
+    setActiveScreen('build')
+
+    if (window.location.hash !== '#build') {
+      window.history.pushState(null, '', '#build')
+    }
+  }
+
   function updateGridView(viewId: string) {
     if (!selectedBuildTable) {
       return
@@ -873,12 +1500,19 @@ function App() {
     setActiveGridViewId(viewId)
   }
 
+  function togglePinnedGridView(viewId: string) {
+    setLocalGridViews((current) =>
+      current.map((view) => (view.id === viewId ? { ...view, pinned: !view.pinned } : view)),
+    )
+  }
+
   function duplicateGridView(view: LocalGridView) {
     const copyCount = localGridViews.filter((gridView) => gridView.name.startsWith(`${view.name} copy`)).length + 1
     const copy: LocalGridView = {
       ...view,
       id: `${view.id}_copy_${Date.now()}`,
       name: `${view.name} copy ${copyCount}`,
+      pinned: false,
       visibleFieldIds: [...view.visibleFieldIds],
     }
 
@@ -918,6 +1552,335 @@ function App() {
 
       return nextDrafts
     })
+  }
+
+  function createLocalRule() {
+    setLocalRules((current) => {
+      const rule: LocalRule = {
+        id: `rule_${current.length + 1}_${selectedBuildTable?.id || 'tasks'}`,
+        tableId: selectedBuildTable?.id || 'tasks',
+        fieldId: fieldsForSelectedTable[0]?.id || 'title',
+        operator: 'is',
+        value: '',
+        action: 'showInScreen',
+        destination: 'today',
+      }
+
+      return [rule, ...current]
+    })
+  }
+
+  function updateLocalRule(ruleId: string, updates: Partial<LocalRule>) {
+    setLocalRules((current) => current.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule)))
+  }
+
+  function updateLocalRuleField(ruleId: string, tableId: string, fieldId: string) {
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === tableId && fieldItem.id === fieldId)
+
+    setLocalRules((current) =>
+      current.map((rule) => {
+        if (rule.id !== ruleId) {
+          return rule
+        }
+
+        const operatorOptions = getRuleOperatorOptionsForField(field)
+        const operator = operatorOptions.some((option) => option.value === rule.operator)
+          ? rule.operator
+          : operatorOptions[0]?.value || 'is'
+
+        return {
+          ...rule,
+          tableId,
+          fieldId,
+          operator,
+          value: '',
+        }
+      }),
+    )
+  }
+
+  function deleteLocalRule(ruleId: string) {
+    setLocalRules((current) => current.filter((rule) => rule.id !== ruleId))
+  }
+
+  function getDependencyLabel(dependency: DependencyLink, currentRecordId: string) {
+    if (dependency.relationship === 'dependsOn') {
+      return dependency.fromRecordId === currentRecordId ? 'Depends on' : 'Needed by'
+    }
+
+    return dependency.fromRecordId === currentRecordId ? 'Blocks' : 'Blocked by'
+  }
+
+  function getDependencySummary(recordId: string) {
+    const dependencies = getDependencyReferencesForRecord(base, recordId)
+
+    return dependencies.map((dependency) => ({
+      id: dependency.id,
+      label: getDependencyLabel(dependency, recordId),
+      title: dependency.record.title,
+    }))
+  }
+
+  function createDependency() {
+    if (!selectedBuildRecord || !dependencyDraft.toRecordId || selectedBuildRecord.id === dependencyDraft.toRecordId) {
+      return
+    }
+
+    const existingDependency = base.dependencies.find(
+      (dependency) =>
+        dependency.fromRecordId === selectedBuildRecord.id &&
+        dependency.toRecordId === dependencyDraft.toRecordId &&
+        dependency.relationship === dependencyDraft.relationship,
+    )
+
+    if (existingDependency) {
+      return
+    }
+
+    const baseId = `dependency_${selectedBuildRecord.id}_${dependencyDraft.toRecordId}_${dependencyDraft.relationship}`
+    let uniqueId = baseId
+    let suffix = 2
+
+    while (base.dependencies.some((dependency) => dependency.id === uniqueId)) {
+      uniqueId = `${baseId}_${suffix}`
+      suffix += 1
+    }
+
+    const dependency: DependencyLink = {
+      id: uniqueId,
+      fromRecordId: selectedBuildRecord.id,
+      toRecordId: dependencyDraft.toRecordId,
+      relationship: dependencyDraft.relationship,
+      reason: dependencyDraft.reason.trim() || 'No reason set.',
+    }
+
+    setBase((current) => ({
+      ...current,
+      dependencies: [...current.dependencies, dependency],
+    }))
+    setDependencyDraft({ toRecordId: '', relationship: 'dependsOn', reason: '' })
+    setDependencySearch('')
+  }
+
+  function updateDependency(dependencyId: string, updates: Partial<DependencyLink>) {
+    setBase((current) => ({
+      ...current,
+      dependencies: current.dependencies.map((dependency) =>
+        dependency.id === dependencyId ? { ...dependency, ...updates } : dependency,
+      ),
+    }))
+  }
+
+  function flipDependencyDirection(dependencyId: string) {
+    setBase((current) => {
+      const dependencyToFlip = current.dependencies.find((dependency) => dependency.id === dependencyId)
+
+      if (!dependencyToFlip) {
+        return current
+      }
+
+      const duplicateExists = current.dependencies.some(
+        (dependency) =>
+          dependency.id !== dependencyId &&
+          dependency.fromRecordId === dependencyToFlip.toRecordId &&
+          dependency.toRecordId === dependencyToFlip.fromRecordId &&
+          dependency.relationship === dependencyToFlip.relationship,
+      )
+
+      if (duplicateExists) {
+        return current
+      }
+
+      return {
+        ...current,
+        dependencies: current.dependencies.map((dependency) =>
+          dependency.id === dependencyId
+            ? {
+                ...dependency,
+                fromRecordId: dependency.toRecordId,
+                toRecordId: dependency.fromRecordId,
+              }
+            : dependency,
+        ),
+      }
+    })
+  }
+
+  function deleteDependency(dependencyId: string) {
+    setBase((current) => ({
+      ...current,
+      dependencies: current.dependencies.filter((dependency) => dependency.id !== dependencyId),
+    }))
+  }
+
+  function getRulePreview(rule: LocalRule) {
+    const table = base.tables.find((tableItem) => tableItem.id === rule.tableId)
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
+    const operator = ruleOperatorOptions.find((option) => option.value === rule.operator)?.label.toLowerCase() || rule.operator
+    const action = ruleActionOptions.find((option) => option.value === rule.action)?.label.toLowerCase() || rule.action
+    const destination = ruleDestinationOptions.find((option) => option.value === rule.destination)?.label || rule.destination
+    const valueText = ruleOperatorNeedsValue(rule.operator) ? ` "${getRuleValueLabel(rule) || 'value'}"` : ''
+
+    return `${table?.label || rule.tableId}.${field?.label || rule.fieldId} ${operator}${valueText}. ${action}: ${destination}.`
+  }
+
+  function getRuleValueLabel(rule: LocalRule) {
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
+
+    if (field?.type === 'linkedRecord') {
+      const record = getRecord(base, rule.value)
+
+      return record ? getRecordTitle(base, record) : rule.value
+    }
+
+    return rule.value
+  }
+
+  function getRuleValidationMessages(rule: LocalRule) {
+    const table = base.tables.find((tableItem) => tableItem.id === rule.tableId)
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
+    const operatorOptions = getRuleOperatorOptionsForField(field)
+    const messages: string[] = []
+
+    if (!table) {
+      messages.push('Table missing.')
+    }
+
+    if (!field) {
+      messages.push('Field missing.')
+    }
+
+    if (field && !operatorOptions.some((option) => option.value === rule.operator)) {
+      messages.push('Operator does not fit this field.')
+    }
+
+    if (ruleOperatorNeedsValue(rule.operator) && !rule.value.trim()) {
+      messages.push('Value required.')
+    }
+
+    if (field?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator)) {
+      const linkedRecord = getRecord(base, rule.value)
+
+      if (!linkedRecord || linkedRecord.tableId !== field.linkedTableId) {
+        messages.push('Linked record missing.')
+      }
+    }
+
+    return messages
+  }
+
+  function ruleMatchesRecord(rule: LocalRule, record: BaseRecord) {
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
+
+    if (getRuleValidationMessages(rule).length > 0 || !field || record.tableId !== rule.tableId) {
+      return false
+    }
+
+    const value = record.values[field.id]
+    const displayValue = getFieldDisplayValue(record, field)
+    const ruleValue = rule.value.trim().toLowerCase()
+
+    if (rule.operator === 'isEmpty') {
+      return value === null || value === '' || (Array.isArray(value) && value.length === 0) || displayValue === 'Empty'
+    }
+
+    const ruleDateValue = getRuleDateValue(value)
+
+    if (rule.operator === 'isToday') {
+      return ruleDateValue === todayDate
+    }
+
+    if (rule.operator === 'isOnOrBeforeToday') {
+      return Boolean(ruleDateValue) && ruleDateValue <= todayDate
+    }
+
+    if (rule.operator === 'isBeforeToday') {
+      return Boolean(ruleDateValue) && ruleDateValue < todayDate
+    }
+
+    if (rule.operator === 'isWithin7Days') {
+      if (!ruleDateValue) {
+        return false
+      }
+
+      const date = new Date(`${ruleDateValue}T00:00:00`)
+      const today = new Date(`${todayDate}T00:00:00`)
+      const differenceInDays = Math.floor((date.getTime() - today.getTime()) / 86400000)
+
+      return differenceInDays >= 0 && differenceInDays <= 7
+    }
+
+    if (Array.isArray(value) && field.type === 'linkedRecord') {
+      if (rule.operator === 'hasAnyLink') {
+        return value.length > 0
+      }
+
+      if (rule.operator === 'hasNoLink') {
+        return value.length === 0
+      }
+
+      if (rule.operator === 'linkedTo') {
+        return value.includes(rule.value)
+      }
+
+      if (rule.operator === 'notLinkedTo') {
+        return !value.includes(rule.value)
+      }
+    }
+
+    if (Array.isArray(value)) {
+      const values = value.map((item) => String(item).toLowerCase())
+
+      if (rule.operator === 'contains') {
+        return displayValue.toLowerCase().includes(ruleValue) || values.some((item) => item.includes(ruleValue))
+      }
+
+      const hasValue = values.includes(ruleValue) || displayValue.toLowerCase() === ruleValue
+
+      return rule.operator === 'isNot' ? !hasValue : hasValue
+    }
+
+    const normalizedValue = displayValue.toLowerCase()
+
+    if (rule.operator === 'contains') {
+      return normalizedValue.includes(ruleValue)
+    }
+
+    const isMatch = normalizedValue === ruleValue
+
+    return rule.operator === 'isNot' ? !isMatch : isMatch
+  }
+
+  function getRuleMatchCount(rule: LocalRule) {
+    return getRuleMatchedRecords(rule).length
+  }
+
+  function getRuleMatchedRecords(rule: LocalRule) {
+    return base.records.filter((record) => ruleMatchesRecord(rule, record))
+  }
+
+  function getTodayRuleMatchesForRecord(recordId: string) {
+    return todayRuleMatches.filter((match) => match.record.id === recordId)
+  }
+
+  function getTimelineRuleMatchesForRecord(recordId: string) {
+    return timelineRuleMatches.filter((match) => match.record.id === recordId)
+  }
+
+  function resetLocalWorkbase() {
+    const nextBase = cloneWorkbase(workbase)
+    const nextTableId = 'risks'
+
+    localStorage.removeItem(workbaseStorageKey)
+    setBase(nextBase)
+    setSelectedBuildTableId(nextTableId)
+    setSelectedBuildRecordId(getRecordsForTable(nextBase, nextTableId)[0]?.id || '')
+    setRecordDraft(getEmptyRecordValues(nextBase, nextTableId))
+    setGridFilter('')
+    setGridSortFieldId('title')
+    setGridGroupFieldId('level')
+    setActiveGridViewId('')
+    setBuildModal('')
   }
 
   function updateRecordDraft(fieldId: string, value: RecordValue) {
@@ -962,6 +1925,24 @@ function App() {
     }
 
     setRecordDraft(getEmptyRecordValues(base, selectedBuildTable.id))
+    setIsCreatingRecord(true)
+    setBuildModal('record')
+  }
+
+  function openCreateRecordForTable(tableId: string) {
+    const table = base.tables.find((tableItem) => tableItem.id === tableId)
+
+    if (!table) {
+      return
+    }
+
+    setSelectedBuildTableId(tableId)
+    setSelectedBuildRecordId(getRecordsForTable(base, tableId)[0]?.id || '')
+    setGridFilter('')
+    setGridSortFieldId(table.primaryFieldId)
+    setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(true)
     setBuildModal('record')
   }
@@ -1123,26 +2104,85 @@ function App() {
     const selectedLinkedIds = Array.isArray(value) ? value : []
 
     if (field.type === 'linkedRecord') {
+      const linkedTable = base.tables.find((table) => table.id === field.linkedTableId)
+      const searchKey = `${field.tableId}:${field.id}`
+      const searchTerm = linkedRecordFilters[searchKey] || ''
+      const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+      const selectedRecords = selectedLinkedIds.map((recordId) => getRecord(base, recordId))
+      const filteredLinkedRecords = linkedRecords.filter((record) => {
+        if (!normalizedSearchTerm) {
+          return true
+        }
+
+        const title = getRecordTitle(base, record).toLowerCase()
+        const context = getRecordContext(record).toLowerCase()
+
+        return title.includes(normalizedSearchTerm) || context.includes(normalizedSearchTerm)
+      })
+
       return (
         <label className="full-row" key={field.id}>
           <span>{field.label}</span>
-          <div className="linked-choice-grid">
-            {linkedRecords.length === 0 && <small>No records in linked table.</small>}
-            {linkedRecords.map((record) => {
-              const isSelected = selectedLinkedIds.includes(record.id)
+          <div className="linked-record-picker">
+            <div className="linked-picker-head">
+              <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
+              <small>{field.allowMultiple ? `${selectedLinkedIds.length} selected` : selectedLinkedIds.length > 0 ? '1 selected' : 'None selected'}</small>
+            </div>
+            {field.linkedTableId ? (
+              <>
+                <input
+                  aria-label={`Search ${field.label}`}
+                  placeholder={`Search ${linkedTable?.label || 'records'}`}
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) =>
+                    setLinkedRecordFilters((current) => ({
+                      ...current,
+                      [searchKey]: event.target.value,
+                    }))
+                  }
+                />
+                {selectedLinkedIds.length > 0 && (
+                  <div className="linked-selected-list" aria-label={`Selected ${field.label}`}>
+                    {selectedRecords.map((record, index) => {
+                      const recordId = selectedLinkedIds[index]
 
-              return (
-                <button
-                  className={isSelected ? 'selected' : ''}
-                  key={record.id}
-                  type="button"
-                  onClick={() => onChange(field.id, toggleListValue(selectedLinkedIds, record.id, field.allowMultiple))}
-                >
-                  <strong>{getRecordTitle(base, record)}</strong>
-                  <small>{getRecordContext(record)}</small>
-                </button>
-              )
-            })}
+                      return (
+                        <button
+                          key={recordId}
+                          type="button"
+                          onClick={() => onChange(field.id, selectedLinkedIds.filter((selectedId) => selectedId !== recordId))}
+                        >
+                          <strong>{record ? getRecordTitle(base, record) : recordId}</strong>
+                          <small>Remove</small>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                <div className="linked-choice-grid">
+                  {linkedRecords.length === 0 && <small>No records in linked table.</small>}
+                  {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No records match.</small>}
+                  {filteredLinkedRecords.map((record) => {
+                    const isSelected = selectedLinkedIds.includes(record.id)
+
+                    return (
+                      <button
+                        className={isSelected ? 'selected' : ''}
+                        key={record.id}
+                        type="button"
+                        onClick={() => onChange(field.id, toggleListValue(selectedLinkedIds, record.id, field.allowMultiple))}
+                      >
+                        <strong>{getRecordTitle(base, record)}</strong>
+                        <small>{getRecordContext(record)}</small>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="empty-note">Choose a linked table in field settings.</p>
+            )}
           </div>
         </label>
       )
@@ -1363,6 +2403,46 @@ function App() {
   }, [selectedTheme])
 
   useEffect(() => {
+    const workbaseState: StoredWorkbaseState = {
+      version: 1,
+      base,
+    }
+
+    localStorage.setItem(workbaseStorageKey, JSON.stringify(workbaseState))
+  }, [base])
+
+  useEffect(() => {
+    localStorage.setItem(rulesStorageKey, JSON.stringify(localRules))
+  }, [localRules])
+
+  useEffect(() => {
+    const buildViewState: StoredBuildViewState = {
+      version: 1,
+      selectedBuildTableId,
+      visibleFieldIdsByTable,
+      gridFilter,
+      gridSortFieldId,
+      gridGroupFieldId,
+      localGridViews,
+      viewRenameDrafts,
+      activeGridViewId,
+      columnWidths,
+    }
+
+    localStorage.setItem(buildViewStateStorageKey, JSON.stringify(buildViewState))
+  }, [
+    activeGridViewId,
+    columnWidths,
+    gridFilter,
+    gridGroupFieldId,
+    gridSortFieldId,
+    localGridViews,
+    selectedBuildTableId,
+    viewRenameDrafts,
+    visibleFieldIdsByTable,
+  ])
+
+  useEffect(() => {
     function syncScreenFromHash() {
       setActiveScreen(getScreenFromHash())
       setBuildModal('')
@@ -1416,10 +2496,38 @@ function App() {
             ))}
         </nav>
 
+        {pinnedGridViews.length > 0 && (
+          <section className="pinned-view-nav" aria-label="Pinned Build views">
+            <span>Pinned views</span>
+            {pinnedGridViews.map((view) => (
+              <button key={view.id} type="button" onClick={() => openPinnedGridView(view)}>
+                <strong>{view.name}</strong>
+                <small>{base.tables.find((table) => table.id === view.tableId)?.label || view.tableId}</small>
+              </button>
+            ))}
+          </section>
+        )}
+
         <section className="privacy-card">
           <span>Privacy boundary</span>
           <strong>Track status. Not files.</strong>
           <p>Upload sensitive information at your own risk. Sundesk is built for metadata, not files.</p>
+        </section>
+
+        <section className="privacy-card rule-card">
+          <span>Rule read</span>
+          <strong>{activeScreenRuleMatches.length} records match here.</strong>
+          <p>Rules are structured locally. They do not run automations yet.</p>
+          {activeScreenRuleMatches.length > 0 && (
+            <div className="rule-card-list">
+              {activeScreenRuleMatches.slice(0, 3).map((match) => (
+                <button key={`${match.rule.id}-${match.record.id}`} type="button" onClick={() => openDailyRecord(match.record)}>
+                  <strong>{getRecordTitle(base, match.record)}</strong>
+                  <small>{getRulePreview(match.rule)}</small>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       </aside>
 
@@ -1466,6 +2574,20 @@ function App() {
                       <strong>{getRecordTitle(base, record)}</strong>
                     </button>
                     <span>{getRecordContext(record)}</span>
+                    {getTodayRuleMatchesForRecord(record.id).length > 0 && (
+                      <div className="lane-rule-list">
+                        {getTodayRuleMatchesForRecord(record.id).slice(0, 2).map((match) => (
+                          <small key={match.rule.id}>Rule: {getRulePreview(match.rule)}</small>
+                        ))}
+                      </div>
+                    )}
+                    {getDependencySummary(record.id).length > 0 && (
+                      <div className="lane-dependency-list">
+                        {getDependencySummary(record.id).slice(0, 2).map((dependency) => (
+                          <small key={dependency.id}>{dependency.label}: {dependency.title}</small>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -1480,31 +2602,29 @@ function App() {
                 <span className="eyebrow">Why it surfaced</span>
                 <h2>The system shows its work.</h2>
               </div>
-              <button className="ghost">Adjust rules</button>
+              <button className="ghost" type="button" onClick={openBuildScreen}>Adjust rules</button>
             </div>
 
             <div className="priority-list">
-              {priorityItems.map((item, index) => (
-                <article className={`priority-card ${item.priority}`} key={item.id}>
+              {todayRuleMatches.slice(0, 4).map((match, index) => (
+                <article className="priority-card prep" key={`${match.rule.id}-${match.record.id}`}>
                   <div className="priority-rank">{index + 1}</div>
                   <div className="priority-main">
                     <div className="priority-top">
-                      <strong>{item.title}</strong>
-                      <span className={`pill ${item.priority}`}>{priorityLabel(item.priority)}</span>
+                      <strong>{getRecordTitle(base, match.record)}</strong>
+                      <span className="pill prep">{base.tables.find((table) => table.id === match.record.tableId)?.label || match.record.tableId}</span>
                     </div>
-                    <p>{item.summary}</p>
+                    <p>{getRulePreview(match.rule)}</p>
                     <div className="reason-chain">
-                      {item.reasons.map((reason, reasonIndex) => (
-                        <span key={reason}>
-                          {reasonIndex > 0 && <i aria-hidden="true" />}
-                          {reason}
-                        </span>
-                      ))}
+                      <span>Rule matched</span>
+                      <span><i aria-hidden="true" />Destination: Today</span>
+                      <span><i aria-hidden="true" />No automation ran</span>
                     </div>
                   </div>
-                  <button>Open</button>
+                  <button type="button" onClick={() => openDailyRecord(match.record)}>Open</button>
                 </article>
               ))}
+              {todayRuleMatches.length === 0 && <p className="empty-note">No Today Rules match records.</p>}
             </div>
           </article>
 
@@ -1591,7 +2711,7 @@ function App() {
                 <span className="eyebrow">Tasks</span>
                 <h2>Open work.</h2>
               </div>
-              <button className="primary">New task</button>
+              <button className="primary" type="button" onClick={() => openCreateRecordForTable('tasks')}>New task</button>
             </div>
             <div className="record-card-grid">
               {openTaskRecords.map((record) => (
@@ -1615,7 +2735,7 @@ function App() {
             <div className="dependency-list">
               {selectedTaskDependencies.map((dependency) => (
                 <article key={dependency.id}>
-                  <strong>{dependency.direction === 'outgoing' ? 'Depends on' : 'Blocked by'} {dependency.record.title}</strong>
+                  <strong>{getDependencyLabel(dependency, 'task_coi_halifax')} {dependency.record.title}</strong>
                   <span>{dependency.record.tableLabel}</span>
                   <small>{dependency.reason}</small>
                 </article>
@@ -1633,7 +2753,7 @@ function App() {
                   <span className="eyebrow">Follow-ups</span>
                   <h2>Waiting loops.</h2>
                 </div>
-                <button className="primary">New follow-up</button>
+                <button className="primary" type="button" onClick={() => openCreateRecordForTable('followups')}>New follow-up</button>
               </div>
               <div className="record-card-grid">
                 {followupRecords.map((record) => (
@@ -1677,7 +2797,10 @@ function App() {
                   <span className="eyebrow">Meeting records</span>
                   <h2>Scheduled work.</h2>
                 </div>
-                <span className="metric-pill">{meetingRecords.length} records</span>
+                <div className="drawer-actions">
+                  <span className="metric-pill">{meetingRecords.length} records</span>
+                  <button className="primary" type="button" onClick={() => openCreateRecordForTable('meetings')}>New meeting</button>
+                </div>
               </div>
               <div className="record-card-grid">
                 {meetingRecords.map((record) => (
@@ -1782,17 +2905,111 @@ function App() {
                   <div className="mini-title">
                     <strong>Dependencies</strong>
                   </div>
+                  <div className="dependency-editor">
+                    <label>
+                      <span>Relationship</span>
+                      <select
+                        value={dependencyDraft.relationship}
+                        onChange={(event) =>
+                          setDependencyDraft((current) => ({
+                            ...current,
+                            relationship: event.target.value as DependencyRelationship,
+                          }))
+                        }
+                      >
+                        <option value="dependsOn">Depends on</option>
+                        <option value="blocks">Blocks</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Find record</span>
+                      <input
+                        placeholder="Search records"
+                        type="search"
+                        value={dependencySearch}
+                        onChange={(event) => setDependencySearch(event.target.value)}
+                      />
+                    </label>
+                    {selectedDependencyTargetRecord && (
+                      <button
+                        className="selected-dependency-target"
+                        type="button"
+                        onClick={() => setDependencyDraft((current) => ({ ...current, toRecordId: '' }))}
+                      >
+                        <strong>{getRecordTitle(base, selectedDependencyTargetRecord)}</strong>
+                        <small>Clear selected record</small>
+                      </button>
+                    )}
+                    <div className="dependency-picker-list">
+                      {dependencyPickerRecords.length === 0 && <p className="empty-note">No records match.</p>}
+                      {dependencyPickerRecords.slice(0, 6).map((record) => {
+                        const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+                        const isSelected = dependencyDraft.toRecordId === record.id
+
+                        return (
+                          <button
+                            className={isSelected ? 'selected' : ''}
+                            key={record.id}
+                            type="button"
+                            onClick={() => setDependencyDraft((current) => ({ ...current, toRecordId: record.id }))}
+                          >
+                            <strong>{getRecordTitle(base, record)}</strong>
+                            <small>{table?.label || record.tableId}. {getRecordContext(record)}</small>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <label className="full-row">
+                      <span>Reason</span>
+                      <textarea
+                        rows={3}
+                        value={dependencyDraft.reason}
+                        onChange={(event) => setDependencyDraft((current) => ({ ...current, reason: event.target.value }))}
+                        placeholder="Why this link matters"
+                      />
+                    </label>
+                    <button className="primary" disabled={!dependencyDraft.toRecordId} type="button" onClick={createDependency}>
+                      Add dependency
+                    </button>
+                  </div>
                   {drawerDependencies.length > 0 ? (
-                    <ol>
+                    <ol className="editable-dependency-list">
                       {drawerDependencies.map((dependency) => (
                         <li key={dependency.id}>
-                          <button
-                            className="dependency-record-link"
-                            type="button"
-                            onClick={() => openBuildRecord(dependency.record.tableId, dependency.record.id)}
-                          >
-                            {dependency.direction === 'outgoing' ? 'Depends on' : 'Blocked by'} {dependency.record.title}.
-                          </button>
+                          <div>
+                            <button
+                              className="dependency-record-link"
+                              type="button"
+                              onClick={() => openBuildRecord(dependency.record.tableId, dependency.record.id)}
+                            >
+                              {getDependencyLabel(dependency, selectedBuildRecord.id)} {dependency.record.title}.
+                            </button>
+                            <span>{dependency.record.tableLabel}</span>
+                          </div>
+                          <label>
+                            <span>Type</span>
+                            <select
+                              value={dependency.relationship}
+                              onChange={(event) =>
+                                updateDependency(dependency.id, { relationship: event.target.value as DependencyRelationship })
+                              }
+                            >
+                              <option value="dependsOn">Depends on</option>
+                              <option value="blocks">Blocks</option>
+                            </select>
+                          </label>
+                          <label>
+                            <span>Reason</span>
+                            <textarea
+                              rows={2}
+                              value={dependency.reason}
+                              onChange={(event) => updateDependency(dependency.id, { reason: event.target.value })}
+                            />
+                          </label>
+                          <div className="dependency-row-actions">
+                            <button type="button" onClick={() => flipDependencyDirection(dependency.id)}>Flip direction</button>
+                            <button className="danger" type="button" onClick={() => deleteDependency(dependency.id)}>Remove</button>
+                          </div>
                         </li>
                       ))}
                     </ol>
@@ -1860,38 +3077,102 @@ function App() {
         </section>
 
         {activeScreen === 'timeline' && (
-        <section className="mode-grid" id="timeline">
-          <article className="mode-card">
-            <div className="mode-head">
-              <span>Kanban</span>
-                <strong>Move work across statuses.</strong>
+        <section className="screen-grid" id="timeline">
+          <article className="screen-panel wide">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Timeline</span>
+                <h2>Records by date.</h2>
+              </div>
+              <span className="metric-pill">{timelineRecords.length} shown</span>
             </div>
-            <div className="kanban-preview">
+            <div className="grid-toolbar timeline-toolbar">
+              <label>
+                <span>Filter</span>
+                <input
+                  value={timelineFilter}
+                  onChange={(event) => setTimelineFilter(event.target.value)}
+                  placeholder="Find records"
+                />
+              </label>
+              <label>
+                <span>Table</span>
+                <select value={timelineTableId} onChange={(event) => setTimelineTableId(event.target.value)}>
+                  <option value="all">All tables</option>
+                  {base.tables.map((table) => (
+                    <option key={table.id} value={table.id}>
+                      {table.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Status</span>
+                <select value={timelineStatus} onChange={(event) => setTimelineStatus(event.target.value)}>
+                  <option value="all">All statuses</option>
+                  {timelineStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="timeline-list">
+              {timelineRecords.map((record) => {
+                const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+                const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
+                const recordDate = getFirstDateValue(record)
+                const dependencySummary = getDependencySummary(record.id)
+                const ruleSummary = getTimelineRuleMatchesForRecord(record.id)
+
+                return (
+                  <button className="timeline-record-row" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <span>{recordDate || 'No date'}</span>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{table?.label || record.tableId}. {recordStatus}. {getRecordContext(record)}</small>
+                    <span className="timeline-dependency-summary">
+                      {dependencySummary.length === 0 ? (
+                        <small>No dependencies</small>
+                      ) : (
+                        dependencySummary.slice(0, 2).map((dependency) => (
+                          <i key={dependency.id}>{dependency.label}: {dependency.title}</i>
+                        ))
+                      )}
+                      {dependencySummary.length > 2 && <small>+{dependencySummary.length - 2} more</small>}
+                    </span>
+                    {ruleSummary.length > 0 && (
+                      <span className="timeline-rule-summary">
+                        {ruleSummary.slice(0, 2).map((match) => (
+                          <i key={match.rule.id}>Rule: {getRulePreview(match.rule)}</i>
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+              {timelineRecords.length === 0 && <p className="empty-note">No records match this timeline view.</p>}
+            </div>
+          </article>
+
+          <article className="screen-panel">
+            <div className="panel-title compact">
+              <div>
+                <span className="eyebrow">Status board</span>
+                <h2>Current pressure.</h2>
+              </div>
+            </div>
+            <div className="kanban-preview timeline-status-preview">
               <div><b>Waiting</b><p>{waitingTaskRecords.length + waitingFollowupRecords.length} records</p></div>
               <div><b>Blocked</b><p>{blockedTaskRecords.length} records</p></div>
               <div><b>In progress</b><p>{openTaskRecords.filter((record) => getStringValue(record, 'status') === 'In progress').length} records</p></div>
             </div>
-          </article>
 
-          <article className="mode-card">
-            <div className="mode-head">
-              <span>Calendar</span>
-                <strong>See meetings and deadlines by date.</strong>
-            </div>
-            <div className="calendar-preview">
-              {dailyTimelineRecords.slice(0, 4).map((record) => (
-                <div key={record.id}>
-                  {getFirstDateValue(record).slice(8, 10) || 'Now'}
-                  <span>{getRecordTitle(base, record)}</span>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="mode-card wide">
-            <div className="mode-head">
-              <span>Gantt</span>
-              <strong>See what blocks what.</strong>
+            <div className="panel-title compact timeline-panel-gap">
+              <div>
+                <span className="eyebrow">Date sample</span>
+                <h2>Next records.</h2>
+              </div>
             </div>
             <div className="gantt-preview">
               {dailyTimelineRecords.slice(0, 5).map((record, index) => (
@@ -1926,6 +3207,7 @@ function App() {
                 <button className="danger" disabled={!canDeleteSelectedBuildTable} onClick={requestDeleteTable}>Delete table</button>
                 <button onClick={() => setBuildModal('field')}>Add field</button>
                 <button onClick={saveGridView}>Save view</button>
+                <button className="danger" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
               </div>
             </div>
             <div className="table-tabs" aria-label="Tables">
@@ -2001,8 +3283,14 @@ function App() {
             </div>
             <div className="local-state-strip">
               <span>Local only</span>
-              <strong>Current grid state lives in React state. Saved views reset on refresh.</strong>
+              <strong>Grid state, widths, and saved views persist in this browser.</strong>
             </div>
+            {migrationMessages.length > 0 && (
+              <div className="local-state-strip migration-strip">
+                <span>Migration</span>
+                <strong>{migrationMessages.join(' ')}</strong>
+              </div>
+            )}
             {groupedRecords.map((group) => (
               <section className="record-grid-group" key={group.label || 'all-records'}>
                 {groupField && (
@@ -2060,16 +3348,18 @@ function App() {
                 <span className="eyebrow">Views</span>
                 <h2>Saved ways to work.</h2>
               </div>
-              <span className="metric-pill">{localGridViews.length} local</span>
+              <span className="metric-pill">{pinnedGridViews.length} pinned</span>
             </div>
-            <p className="panel-copy">Saved views keep table context. Pinning comes later.</p>
+            <p className="panel-copy">Saved views keep table context and can be pinned to the sidebar.</p>
             {localGridViews.length > 0 && (
               <div className="view-list">
                 {localGridViews.map((view) => (
                   <article className={`local-view-row ${view.id === activeGridViewId ? 'active-row' : ''}`} key={view.id}>
                     <div className="view-row-top">
                       <span>{base.tables.find((table) => table.id === view.tableId)?.label || view.tableId}</span>
-                      {view.id === activeGridViewId && (
+                      {view.pinned ? (
+                        <strong>Pinned</strong>
+                      ) : view.id === activeGridViewId && (
                         <strong>{activeGridViewChanged ? 'Changed' : 'Active'}</strong>
                       )}
                     </div>
@@ -2087,6 +3377,7 @@ function App() {
                       <button onClick={() => applyGridView(view)}>Apply</button>
                       <button onClick={() => updateGridView(view.id)}>Update</button>
                       <button onClick={() => duplicateGridView(view)}>Copy</button>
+                      <button onClick={() => togglePinnedGridView(view.id)}>{view.pinned ? 'Unpin' : 'Pin'}</button>
                       {view.id === activeGridViewId && activeGridViewChanged && (
                         <button onClick={resetActiveGridView}>Reset</button>
                       )}
@@ -2114,13 +3405,136 @@ function App() {
                 <span className="eyebrow">Rules</span>
                 <h2>When this happens, do this.</h2>
               </div>
-              <button className="primary">New rule</button>
+              <button className="primary" type="button" onClick={createLocalRule}>New rule</button>
             </div>
-            <div className="rules">
-              {automationRules.map((rule) => (
-                <p key={rule.id}>
-                  <span>When</span> {rule.when}. <span>Do</span> {rule.then}.
-                </p>
+            <div className="rules editable-rules">
+              {localRules.map((rule) => (
+                <article key={rule.id}>
+                  <label>
+                    <span>Table</span>
+                    <select
+                      value={rule.tableId}
+                      onChange={(event) => {
+                        const tableId = event.target.value
+                        const nextFieldId = base.fields.find((field) => field.tableId === tableId)?.id || ''
+
+                        updateLocalRuleField(rule.id, tableId, nextFieldId)
+                      }}
+                    >
+                      {base.tables.map((table) => (
+                        <option key={table.id} value={table.id}>
+                          {table.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Field</span>
+                    <select
+                      value={rule.fieldId}
+                      onChange={(event) => updateLocalRuleField(rule.id, rule.tableId, event.target.value)}
+                    >
+                      {base.fields
+                        .filter((field) => field.tableId === rule.tableId)
+                        .map((field) => (
+                          <option key={field.id} value={field.id}>
+                            {field.label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Operator</span>
+                    <select
+                      value={rule.operator}
+                      onChange={(event) => {
+                        const operator = event.target.value as LocalRule['operator']
+
+                        updateLocalRule(rule.id, {
+                          operator,
+                          value: ruleOperatorNeedsValue(operator) ? rule.value : '',
+                        })
+                      }}
+                    >
+                      {getRuleOperatorOptionsForField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId))
+                        .map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Value</span>
+                    {base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator) ? (
+                      <select value={rule.value} onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}>
+                        <option value="">Choose record</option>
+                        {getRecordsForTable(
+                          base,
+                          base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.linkedTableId || '',
+                        ).map((record) => (
+                          <option key={record.id} value={record.id}>
+                            {getRecordTitle(base, record)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        disabled={!ruleOperatorNeedsValue(rule.operator)}
+                        type={isDateField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)) && ruleOperatorNeedsValue(rule.operator) ? 'date' : 'text'}
+                        value={rule.value}
+                        onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}
+                        placeholder={ruleOperatorNeedsValue(rule.operator) ? 'Value to match' : 'Computed from today'}
+                      />
+                    )}
+                  </label>
+                  <label>
+                    <span>Action</span>
+                    <select
+                      value={rule.action}
+                      onChange={(event) => updateLocalRule(rule.id, { action: event.target.value as LocalRule['action'] })}
+                    >
+                      {ruleActionOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Destination</span>
+                    <select
+                      value={rule.destination}
+                      onChange={(event) => updateLocalRule(rule.id, { destination: event.target.value as LocalRule['destination'] })}
+                    >
+                      {ruleDestinationOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p>{getRulePreview(rule)}</p>
+                  {getRuleValidationMessages(rule).length > 0 && (
+                    <div className="rule-validation-list">
+                      {getRuleValidationMessages(rule).map((message) => (
+                        <span key={message}>{message}</span>
+                      ))}
+                    </div>
+                  )}
+                  <span className="rule-match-count">{getRuleMatchCount(rule)} matching records</span>
+                  {getRuleMatchedRecords(rule).length > 0 && (
+                    <div className="rule-match-list">
+                      {getRuleMatchedRecords(rule).slice(0, 3).map((record) => (
+                        <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                          <strong>{getRecordTitle(base, record)}</strong>
+                          <small>{base.tables.find((table) => table.id === record.tableId)?.label || record.tableId}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button className="danger" type="button" onClick={() => deleteLocalRule(rule.id)}>Delete</button>
+                </article>
               ))}
             </div>
           </article>
@@ -2209,6 +3623,25 @@ function App() {
                 <div className="modal-actions">
                   <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
                   <button className="danger" type="button" onClick={() => deleteTable(pendingDeleteTable.id)}>Delete table</button>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {buildModal === 'resetLocalData' && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Reset local data">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Reset</span>
+                    <h2>Reset local data.</h2>
+                  </div>
+                </div>
+                <p>This restores the starter workbase in this browser.</p>
+                <p>Saved views and rules stay local. Record, table, and field edits return to the starter set.</p>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="danger" type="button" onClick={resetLocalWorkbase}>Reset local data</button>
                 </div>
               </section>
             </div>
@@ -2551,6 +3984,48 @@ function App() {
               <p><strong>Boundary.</strong> Sundesk is for status, dates, owners, links, and short notes.</p>
               <p><strong>Sensitive information.</strong> Files, document contents, private numbers, permits, COI files, and contract text are your responsibility if added.</p>
               <p><strong>Build notes.</strong> Obsidian is for session memory only. No product data goes there.</p>
+            </div>
+          </article>
+
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Local engine</span>
+                <h2>Browser state.</h2>
+              </div>
+              <span className="metric-pill">Local only</span>
+            </div>
+            <div className="engine-stat-grid">
+              {localEngineStats.map((stat) => (
+                <div key={stat.label}>
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="settings-list">
+              <p><strong>Storage.</strong> Tables, fields, records, dependencies, Rules, and Build views are saved in this browser.</p>
+              <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
+              <p><strong>Network.</strong> No Firebase writes in this local build.</p>
+            </div>
+          </article>
+
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Rule engine</span>
+                <h2>Read targets.</h2>
+              </div>
+              <span className="metric-pill">{localRules.length} Rules</span>
+            </div>
+            <div className="rule-destination-grid">
+              {ruleDestinationStats.map((stat) => (
+                <div key={stat.label}>
+                  <span>{stat.label}</span>
+                  <strong>{stat.matches}</strong>
+                  <small>{stat.rules} Rules</small>
+                </div>
+              ))}
             </div>
           </article>
 
