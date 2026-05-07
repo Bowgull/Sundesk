@@ -16,10 +16,13 @@ test.beforeEach(async ({ page }) => {
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Today builds the day.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Preview unavailable' })).toBeDisabled()
   await expect(page.getByTestId('today-lane-rules').getByText('Records matched by local Rules.')).toBeVisible()
   await expect(page.getByTestId('today-rule-receipts').getByText('Rule matched').first()).toBeVisible()
   await expect(page.getByTestId('today-rule-receipts').getByText('No automation ran').first()).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText('Blocked by: Venue readiness may slip.')).toBeVisible()
+  await page.getByRole('button', { name: 'Open setup' }).click()
+  await expect(page.getByRole('heading', { name: 'Browser state.' })).toBeVisible()
 })
 
 test('Build renders table workshop, record drawer, dependency editor, and Rules panel', async ({ page }) => {
@@ -475,6 +478,21 @@ test('Timeline filters records and keeps rule receipts visible', async ({ page }
   await expect(page.getByTestId('timeline-row-task_permit_moncton')).toBeVisible()
   await expect(page.getByTestId('timeline-row-approval_permit_moncton')).toBeVisible()
   await expect(page.getByTestId('timeline-list').getByText('Rule: Tasks.Due date is within 7 days. show in screen: Timeline.')).toBeVisible()
+})
+
+test('Daily support actions open real local surfaces', async ({ page }) => {
+  await page.goto('/#tasks')
+  await page.getByRole('button', { name: 'Open dependency editor' }).click()
+  await expect(page.getByRole('dialog', { name: 'Record editor' })).toBeVisible()
+  await page.getByRole('button', { name: 'Close' }).click()
+
+  await page.goto('/#followups')
+  await page.getByRole('button', { name: 'Adjust rule' }).click()
+  await expect(page.getByTestId('build-screen')).toBeVisible()
+
+  await page.goto('/#meetings')
+  await page.getByRole('button', { name: 'Open next meeting' }).click()
+  await expect(page.getByRole('dialog', { name: 'Record editor' })).toBeVisible()
 })
 
 test('Settings exposes local engine and Rule destination health', async ({ page }) => {

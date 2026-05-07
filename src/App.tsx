@@ -1028,10 +1028,14 @@ function App() {
   }
 
   function openBuildScreen() {
-    setActiveScreen('build')
+    openScreen('build')
+  }
 
-    if (window.location.hash !== '#build') {
-      window.history.pushState(null, '', '#build')
+  function openScreen(screen: AppScreen) {
+    setActiveScreen(screen)
+
+    if (window.location.hash !== `#${screen}`) {
+      window.history.pushState(null, '', `#${screen}`)
     }
   }
 
@@ -2496,7 +2500,7 @@ function App() {
             <strong>Setup is required before real data.</strong>
             <p>Review privacy, choose a theme, set digest time, check starter tables, then add the first communities.</p>
           </div>
-          <button>Run setup</button>
+          <button type="button" onClick={() => openScreen('settings')}>Open setup</button>
         </section>
 
         <header className="hero" id="today">
@@ -2511,7 +2515,7 @@ function App() {
             <span>Daily digest</span>
             <strong>7:30 AM</strong>
             <p>Next send goes to lindsaybelldesign@gmail.com.</p>
-            <button>Preview digest</button>
+            <button disabled title="Daily digest bridge is not connected yet." type="button">Preview unavailable</button>
           </article>
         </header>
 
@@ -2595,7 +2599,9 @@ function App() {
               <span className="eyebrow">Next meeting</span>
               <strong>Charlottetown. Tomorrow.</strong>
               <p>Agenda can be generated from 2 tasks, 1 risk, and 1 follow-up.</p>
-              <button>Generate prep</button>
+              <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
+                Open next meeting
+              </button>
             </article>
           </aside>
         </section>
@@ -2686,7 +2692,9 @@ function App() {
                 <span className="eyebrow">Dependencies</span>
                 <h2>What blocks what.</h2>
               </div>
-              <button>Add dependency</button>
+              <button disabled={!selectedTask} type="button" onClick={() => selectedTask && openDailyRecord(selectedTask)}>
+                Open dependency editor
+              </button>
             </div>
             <div className="dependency-list">
               {selectedTaskDependencies.map((dependency) => (
@@ -2728,7 +2736,7 @@ function App() {
                   <span className="eyebrow">Daily rule</span>
                   <h2>Waiting needs an owner.</h2>
                 </div>
-                <button>Adjust rule</button>
+                <button type="button" onClick={openBuildScreen}>Adjust rule</button>
               </div>
               <div className="rules">
                 <p><span>When</span> a follow-up is waiting and due today. <span>Do</span> show it in Today.</p>
@@ -2744,7 +2752,9 @@ function App() {
               <span className="eyebrow">Meetings</span>
               <strong>Prep comes from records.</strong>
               <p>Meetings read linked communities, tasks, risks, and follow-ups. The agenda should be deterministic before it is written.</p>
-              <button>Generate prep</button>
+              <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
+                Open next meeting
+              </button>
             </article>
 
             <article className="screen-panel wide">
@@ -3028,7 +3038,7 @@ function App() {
             </div>
             <div className="picker-list">
               {recordPickerItems.map((record) => (
-                <button key={record.id}>
+                <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
                   <span>{record.tableLabel}</span>
                   <strong>{record.title}</strong>
                   <small>{record.context}</small>
@@ -4080,7 +4090,7 @@ function App() {
                 <span className="eyebrow">Setup</span>
                 <h2>Run setup again.</h2>
               </div>
-              <button>Run setup again</button>
+              <button type="button" onClick={() => openScreen('today')}>Review setup prompt</button>
             </div>
             <div className="settings-list">
               <p><strong>Review privacy.</strong> Show the warning again.</p>
