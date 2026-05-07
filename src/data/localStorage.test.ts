@@ -77,6 +77,43 @@ describe('local storage helpers', () => {
     expect(storedMigrationReport.workbaseReset).toBe(true)
   })
 
+  it('repairs malformed linked values and dependency links in stored workbase state', () => {
+    const storedBase = cloneWorkbase(workbase)
+    const task = storedBase.records.find((record) => record.id === 'task_coi_halifax')
+
+    if (task) {
+      task.values.community = ['community_halifax', 7] as unknown as string[]
+    }
+
+    storedBase.dependencies = [
+      storedBase.dependencies[0],
+      {
+        id: 'dependency_missing',
+        fromRecordId: 'task_coi_halifax',
+        toRecordId: 'missing_record',
+        relationship: 'dependsOn',
+        reason: 'Missing target.',
+      },
+      {
+        id: 'dependency_self',
+        fromRecordId: 'task_coi_halifax',
+        toRecordId: 'task_coi_halifax',
+        relationship: 'dependsOn',
+        reason: 'Self link.',
+      },
+    ]
+    stubLocalStorage({
+      [workbaseStorageKey]: JSON.stringify({ version: 1, base: storedBase }),
+    })
+
+    const repairedBase = readStoredWorkbase()
+    const repairedTask = repairedBase.records.find((record) => record.id === 'task_coi_halifax')
+
+    expect(repairedTask?.values.community).toEqual([])
+    expect(repairedBase.dependencies.map((dependency) => dependency.id)).toEqual(['dependency_coi_halifax'])
+    expect(storedMigrationReport.workbaseReset).toBe(false)
+  })
+
   it('repairs malformed stored Rules while preserving starter defaults', () => {
     stubLocalStorage({
       [rulesStorageKey]: JSON.stringify([{ id: 'bad-rule' }]),

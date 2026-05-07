@@ -148,8 +148,7 @@ function isBaseRecord(value: unknown): value is BaseRecord {
   return typeof record.id === 'string' &&
     typeof record.tableId === 'string' &&
     Boolean(record.values) &&
-    typeof record.values === 'object' &&
-    Object.values(record.values).every(isRecordValue)
+    typeof record.values === 'object'
 }
 
 function isDependencyLink(value: unknown): value is DependencyLink {

@@ -412,6 +412,10 @@ function App() {
     localStorage.setItem(buildViewStateStorageKey, JSON.stringify(buildViewState))
   }
 
+  function writeRulesState(nextRules: LocalRule[]) {
+    localStorage.setItem(rulesStorageKey, JSON.stringify(nextRules))
+  }
+
   function closeBuildModal() {
     setBuildModal('')
     setPendingDeleteTableId('')
@@ -805,7 +809,7 @@ function App() {
     })
   }
 
-  function applyGridView(view: LocalGridView) {
+  function applyGridView(view: LocalGridView, buildStateUpdates: Partial<StoredBuildViewState> = {}) {
     const table = base.tables.find((tableItem) => tableItem.id === view.tableId)
     const nextRecord = getRecordsForTable(base, view.tableId)[0]
 
@@ -821,6 +825,15 @@ function App() {
     setGridGroupFieldId(view.groupFieldId)
     setActiveGridViewId(view.id)
     setRecordDraft(getEmptyRecordValues(base, view.tableId))
+    writeBuildViewState({
+      selectedBuildTableId: view.tableId,
+      visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [view.tableId]: view.visibleFieldIds },
+      gridFilter: view.filter,
+      gridSortFieldId: view.sortFieldId,
+      gridGroupFieldId: view.groupFieldId,
+      activeGridViewId: view.id,
+      ...buildStateUpdates,
+    })
   }
 
   function openPinnedGridView(view: LocalGridView) {
@@ -841,6 +854,19 @@ function App() {
       return
     }
 
+    const nextGridViews = localGridViews.map((view) =>
+      view.id === viewId
+        ? {
+            ...view,
+            tableId: selectedBuildTable.id,
+            filter: gridFilter,
+            sortFieldId: gridSortFieldId,
+            groupFieldId: gridGroupFieldId,
+            visibleFieldIds,
+          }
+        : view,
+    )
+
     setLocalGridViews((current) =>
       current.map((view) =>
         view.id === viewId
@@ -856,6 +882,10 @@ function App() {
       ),
     )
     setActiveGridViewId(viewId)
+    writeBuildViewState({
+      localGridViews: nextGridViews,
+      activeGridViewId: viewId,
+    })
   }
 
   function togglePinnedGridView(viewId: string) {
@@ -883,7 +913,10 @@ function App() {
 
     setLocalGridViews((current) => [copy, ...current])
     setViewRenameDrafts((current) => ({ ...current, [copy.id]: copy.name }))
-    applyGridView(copy)
+    applyGridView(copy, {
+      localGridViews: [copy, ...localGridViews],
+      viewRenameDrafts: { ...viewRenameDrafts, [copy.id]: copy.name },
+    })
   }
 
   function resetActiveGridView() {
@@ -904,9 +937,16 @@ function App() {
     setLocalGridViews((current) =>
       current.map((view) => (view.id === viewId ? { ...view, name: nextName } : view)),
     )
+    writeBuildViewState({
+      localGridViews: localGridViews.map((view) => (view.id === viewId ? { ...view, name: nextName } : view)),
+    })
   }
 
   function deleteGridView(viewId: string) {
+    const nextGridViews = localGridViews.filter((view) => view.id !== viewId)
+    const nextDrafts = { ...viewRenameDrafts }
+
+    delete nextDrafts[viewId]
     setLocalGridViews((current) => current.filter((view) => view.id !== viewId))
     if (activeGridViewId === viewId) {
       setActiveGridViewId('')
@@ -916,6 +956,11 @@ function App() {
       delete nextDrafts[viewId]
 
       return nextDrafts
+    })
+    writeBuildViewState({
+      localGridViews: nextGridViews,
+      viewRenameDrafts: nextDrafts,
+      activeGridViewId: activeGridViewId === viewId ? '' : activeGridViewId,
     })
   }
 
@@ -930,20 +975,29 @@ function App() {
         action: 'showInScreen',
         destination: 'today',
       }
+      const nextRules = [rule, ...current]
 
-      return [rule, ...current]
+      writeRulesState(nextRules)
+
+      return nextRules
     })
   }
 
   function updateLocalRule(ruleId: string, updates: Partial<LocalRule>) {
-    setLocalRules((current) => current.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule)))
+    setLocalRules((current) => {
+      const nextRules = current.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule))
+
+      writeRulesState(nextRules)
+
+      return nextRules
+    })
   }
 
   function updateLocalRuleField(ruleId: string, tableId: string, fieldId: string) {
     const field = base.fields.find((fieldItem) => fieldItem.tableId === tableId && fieldItem.id === fieldId)
 
-    setLocalRules((current) =>
-      current.map((rule) => {
+    setLocalRules((current) => {
+      const nextRules = current.map((rule) => {
         if (rule.id !== ruleId) {
           return rule
         }
@@ -960,12 +1014,22 @@ function App() {
           operator,
           value: '',
         }
-      }),
-    )
+      })
+
+      writeRulesState(nextRules)
+
+      return nextRules
+    })
   }
 
   function deleteLocalRule(ruleId: string) {
-    setLocalRules((current) => current.filter((rule) => rule.id !== ruleId))
+    setLocalRules((current) => {
+      const nextRules = current.filter((rule) => rule.id !== ruleId)
+
+      writeRulesState(nextRules)
+
+      return nextRules
+    })
   }
 
   function getDependencySummary(recordId: string) {
@@ -993,21 +1057,33 @@ function App() {
       reason: dependencyDraft.reason.trim() || 'No reason set.',
     }
 
-    setBase((current) => ({
-      ...current,
-      dependencies: [...current.dependencies, dependency],
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        dependencies: [...current.dependencies, dependency],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     setDependencyDraft({ toRecordId: '', relationship: 'dependsOn', reason: '' })
     setDependencySearch('')
   }
 
   function updateDependency(dependencyId: string, updates: Partial<DependencyLink>) {
-    setBase((current) => ({
-      ...current,
-      dependencies: current.dependencies.map((dependency) =>
-        dependency.id === dependencyId ? { ...dependency, ...updates } : dependency,
-      ),
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        dependencies: current.dependencies.map((dependency) =>
+          dependency.id === dependencyId ? { ...dependency, ...updates } : dependency,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
   }
 
   function flipDependencyDirection(dependencyId: string) {
@@ -1032,7 +1108,7 @@ function App() {
         return current
       }
 
-      return {
+      const nextBase = {
         ...current,
         dependencies: current.dependencies.map((dependency) =>
           dependency.id === dependencyId
@@ -1044,14 +1120,24 @@ function App() {
             : dependency,
         ),
       }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
     })
   }
 
   function deleteDependency(dependencyId: string) {
-    setBase((current) => ({
-      ...current,
-      dependencies: current.dependencies.filter((dependency) => dependency.id !== dependencyId),
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        dependencies: current.dependencies.filter((dependency) => dependency.id !== dependencyId),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
   }
 
   function getRulePreview(rule: LocalRule) {
@@ -2580,7 +2666,7 @@ function App() {
             </div>
             <div className="rules editable-rules">
               {localRules.map((rule) => (
-                <article key={rule.id}>
+                <article data-testid="local-rule-row" key={rule.id}>
                   <label>
                     <span>Table</span>
                     <select

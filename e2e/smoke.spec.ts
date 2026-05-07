@@ -122,6 +122,27 @@ test('Build adds and removes a dependency link', async ({ page }) => {
   await expect(dependencyRow).toBeHidden()
 })
 
+test('Build dependencies persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+
+  const editor = page.getByTestId('dependency-editor')
+
+  await editor.getByPlaceholder('Search records').fill('permit')
+  await editor.getByRole('button', { name: /Permit approval/ }).click()
+  await editor.getByPlaceholder('Why this link matters').fill('Permit needs agenda context.')
+  await editor.getByRole('button', { name: 'Add dependency' }).click()
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+
+  const dependencyRow = page.locator('.editable-dependency-list li').filter({ hasText: 'Permit approval' })
+
+  await expect(dependencyRow.getByRole('button', { name: 'Depends on Permit approval.' })).toBeVisible()
+  await expect(dependencyRow.getByText('Permit needs agenda context.')).toBeVisible()
+})
+
 test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -146,6 +167,32 @@ test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
   await expect(page.getByLabel('Pinned Build views')).toBeHidden()
 })
 
+test('Build view rename, update, copy, and reset persist locally', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByLabel('Filter').fill('permit')
+  await page.getByRole('button', { name: 'Save view' }).click()
+
+  const savedView = page.getByTestId('local-view-row').first()
+
+  await savedView.getByLabel('View name').fill('Permit watch')
+  await savedView.getByRole('button', { name: 'Rename' }).click()
+  await page.getByLabel('Filter').fill('coi')
+  await savedView.getByRole('button', { name: 'Update' }).click()
+  await page.getByLabel('Filter').fill('zzz')
+  await savedView.getByRole('button', { name: 'Reset' }).click()
+  await expect(page.getByLabel('Filter')).toHaveValue('coi')
+
+  await savedView.getByRole('button', { name: 'Copy' }).click()
+  await expect(page.getByTestId('local-view-row')).toHaveCount(2)
+  await expect(page.getByTestId('local-view-row').first().getByLabel('View name')).toHaveValue('Permit watch copy 1')
+
+  await page.reload()
+  await expect(page.getByTestId('local-view-row')).toHaveCount(2)
+  await expect(page.getByTestId('local-view-row').first().getByLabel('View name')).toHaveValue('Permit watch copy 1')
+  await expect(page.getByLabel('Filter')).toHaveValue('coi')
+})
+
 test('Build pinned views persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -159,6 +206,51 @@ test('Build pinned views persist across reloads', async ({ page }) => {
 
   await expect(page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ })).toBeVisible()
   await expect(page.getByLabel('Filter')).toHaveValue('permit')
+})
+
+test('Build Rule edits persist as read-only previews', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('rules-panel').getByRole('button', { name: 'New rule' }).click()
+
+  const rule = page.getByTestId('local-rule-row').first()
+
+  await rule.getByLabel('Field').selectOption('status')
+  await rule.getByLabel('Operator').selectOption('is')
+  await rule.getByLabel('Value').fill('Blocked')
+  await rule.getByLabel('Destination').selectOption('today')
+  await expect(rule.getByText('Tasks.Status is "Blocked". show in screen: Today.')).toBeVisible()
+  await expect(rule.getByText('1 matching records')).toBeVisible()
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+
+  const persistedRule = page.getByTestId('local-rule-row').first()
+
+  await expect(persistedRule.getByText('Tasks.Status is "Blocked". show in screen: Today.')).toBeVisible()
+  await expect(persistedRule.getByText('1 matching records')).toBeVisible()
+  await page.goto('/#today')
+  await expect(page.getByTestId('today-rule-receipts').getByText('No automation ran').first()).toBeVisible()
+})
+
+test('Build edits reflect in Today and Timeline after reload', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await modal.getByLabel('Title').fill('Reflection smoke task')
+  await modal.getByLabel('Status').selectOption('Blocked')
+  await modal.getByLabel('Due date').fill('2026-05-10')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await page.reload()
+  await page.goto('/#today')
+
+  await expect(page.getByTestId('today-lane-now').getByText('Reflection smoke task')).toBeVisible()
+  await page.goto('/#timeline')
+  await page.getByPlaceholder('Find records').fill('reflection')
+  await expect(page.getByTestId('timeline-list').getByText('Reflection smoke task')).toBeVisible()
 })
 
 test('Timeline filters records and keeps rule receipts visible', async ({ page }) => {
