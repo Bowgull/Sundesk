@@ -128,6 +128,27 @@ test('Build field header menu exposes view and field actions', async ({ page }) 
   await expect(page.getByRole('columnheader', { name: /Title copy/ }).first()).toBeVisible()
 })
 
+test('Build toolbar exposes ordered view controls and persists density', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await expect(page.getByLabel('View')).toBeVisible()
+  await expect(page.getByLabel('Fields')).toBeVisible()
+  await expect(page.getByLabel('Filter')).toBeVisible()
+  await expect(page.getByLabel('Sort')).toBeVisible()
+  await expect(page.getByLabel('Group')).toBeVisible()
+  await expect(page.getByLabel('Colour')).toBeVisible()
+  await expect(page.getByLabel('Density')).toBeVisible()
+
+  await page.getByLabel('Density').selectOption('compact')
+  await expect(page.locator('.record-table').first()).toHaveClass(/density-compact/)
+
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByLabel('Density')).toHaveValue('compact')
+  await expect(page.locator('.record-table').first()).toHaveClass(/density-compact/)
+})
+
 test('Build grid linked-record editor searches and commits readable records', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()

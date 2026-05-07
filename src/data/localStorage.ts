@@ -56,6 +56,8 @@ export type LocalGridView = {
   sortFieldId: string
   sortDirection?: 'asc' | 'desc'
   groupFieldId: string
+  colorFieldId?: string
+  density?: 'compact' | 'comfortable' | 'expanded'
   visibleFieldIds: string[]
   pinned?: boolean
 }
@@ -68,6 +70,8 @@ export type StoredBuildViewState = {
   gridSortFieldId: string
   gridSortDirection: 'asc' | 'desc'
   gridGroupFieldId: string
+  gridColorFieldId: string
+  gridDensity: 'compact' | 'comfortable' | 'expanded'
   localGridViews: LocalGridView[]
   viewRenameDrafts: Record<string, string>
   activeGridViewId: string
@@ -181,6 +185,8 @@ function isLocalGridView(value: unknown): value is LocalGridView {
     typeof view.sortFieldId === 'string' &&
     (!view.sortDirection || view.sortDirection === 'asc' || view.sortDirection === 'desc') &&
     typeof view.groupFieldId === 'string' &&
+    (!view.colorFieldId || typeof view.colorFieldId === 'string') &&
+    (!view.density || view.density === 'compact' || view.density === 'comfortable' || view.density === 'expanded') &&
     Array.isArray(view.visibleFieldIds) &&
     view.visibleFieldIds.every((fieldId) => typeof fieldId === 'string')
 }
@@ -321,6 +327,8 @@ export function readStoredBuildViewState(): Partial<StoredBuildViewState> {
       gridSortFieldId: typeof state.gridSortFieldId === 'string' ? state.gridSortFieldId : 'title',
       gridSortDirection: state.gridSortDirection === 'desc' ? 'desc' : 'asc',
       gridGroupFieldId: typeof state.gridGroupFieldId === 'string' ? state.gridGroupFieldId : 'level',
+      gridColorFieldId: typeof state.gridColorFieldId === 'string' ? state.gridColorFieldId : '',
+      gridDensity: state.gridDensity === 'compact' || state.gridDensity === 'expanded' ? state.gridDensity : 'comfortable',
       localGridViews,
       viewRenameDrafts,
       activeGridViewId: typeof state.activeGridViewId === 'string' ? state.activeGridViewId : '',

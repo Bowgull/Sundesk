@@ -151,6 +151,7 @@ const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
 ]
 type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record' | 'resetLocalData'
 type GridSortDirection = 'asc' | 'desc'
+type GridDensity = 'compact' | 'comfortable' | 'expanded'
 type GridCell = {
   recordId: string
   fieldId: string
@@ -287,6 +288,8 @@ function App() {
   const [gridSortFieldId, setGridSortFieldId] = useState(() => initialBuildViewState.gridSortFieldId || 'title')
   const [gridSortDirection, setGridSortDirection] = useState<GridSortDirection>(() => initialBuildViewState.gridSortDirection || 'asc')
   const [gridGroupFieldId, setGridGroupFieldId] = useState(() => initialBuildViewState.gridGroupFieldId || 'level')
+  const [gridColorFieldId, setGridColorFieldId] = useState(() => initialBuildViewState.gridColorFieldId || '')
+  const [gridDensity, setGridDensity] = useState<GridDensity>(() => initialBuildViewState.gridDensity || 'comfortable')
   const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>(() => initialBuildViewState.localGridViews || [])
   const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>(
     () => initialBuildViewState.viewRenameDrafts || {},
@@ -388,6 +391,8 @@ function App() {
       activeGridView.sortFieldId !== gridSortFieldId ||
       (activeGridView.sortDirection || 'asc') !== gridSortDirection ||
       activeGridView.groupFieldId !== gridGroupFieldId ||
+      (activeGridView.colorFieldId || '') !== gridColorFieldId ||
+      (activeGridView.density || 'comfortable') !== gridDensity ||
       activeGridView.visibleFieldIds.join('|') !== visibleFieldIds.join('|')
     : false
   const canDeleteSelectedBuildTable = Boolean(
@@ -424,6 +429,8 @@ function App() {
       gridSortFieldId,
       gridSortDirection,
       gridGroupFieldId,
+      gridColorFieldId,
+      gridDensity,
       localGridViews,
       viewRenameDrafts,
       activeGridViewId,
@@ -507,6 +514,8 @@ function App() {
       gridSortFieldId: 'name',
       gridSortDirection: 'asc',
       gridGroupFieldId: '',
+      gridColorFieldId: '',
+      gridDensity,
       activeGridViewId: '',
     })
     closeBuildModal()
@@ -620,6 +629,7 @@ function App() {
     setGridSortFieldId(nextBuildTable.primaryFieldId)
     setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '')
+    setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, nextBuildTable.id))
     setVisibleFieldIdsByTable(nextVisibleFields)
@@ -633,6 +643,7 @@ function App() {
       gridSortFieldId: nextBuildTable.primaryFieldId,
       gridSortDirection: 'asc',
       gridGroupFieldId: base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '',
+      gridColorFieldId: '',
       localGridViews: nextGridViews,
       viewRenameDrafts: nextDrafts,
       activeGridViewId: '',
@@ -780,6 +791,7 @@ function App() {
     const nextWidths = { ...columnWidths }
     const nextSortFieldId = gridSortFieldId === field.id ? selectedBuildTable.primaryFieldId : gridSortFieldId
     const nextGroupFieldId = gridGroupFieldId === field.id ? '' : gridGroupFieldId
+    const nextColorFieldId = gridColorFieldId === field.id ? '' : gridColorFieldId
 
     delete nextWidths[field.id]
     setRecordDraft((current) => {
@@ -799,12 +811,16 @@ function App() {
     if (gridGroupFieldId === field.id) {
       setGridGroupFieldId('')
     }
+    if (gridColorFieldId === field.id) {
+      setGridColorFieldId('')
+    }
     setOpenFieldMenuId('')
     writeBuildViewState({
       visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
       gridSortFieldId: nextSortFieldId,
       gridSortDirection: gridSortFieldId === field.id ? 'asc' : gridSortDirection,
       gridGroupFieldId: nextGroupFieldId,
+      gridColorFieldId: nextColorFieldId,
       columnWidths: nextWidths,
     })
     closeBuildModal()
@@ -819,6 +835,7 @@ function App() {
     setGridSortFieldId(base.tables.find((table) => table.id === tableId)?.primaryFieldId || '')
     setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
   }
@@ -837,6 +854,7 @@ function App() {
     setGridSortFieldId(table.primaryFieldId)
     setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(false)
@@ -891,6 +909,8 @@ function App() {
       sortFieldId: gridSortFieldId,
       sortDirection: gridSortDirection,
       groupFieldId: gridGroupFieldId,
+      colorFieldId: gridColorFieldId,
+      density: gridDensity,
       visibleFieldIds,
     }
 
@@ -919,6 +939,8 @@ function App() {
     setGridSortFieldId(view.sortFieldId)
     setGridSortDirection(view.sortDirection || 'asc')
     setGridGroupFieldId(view.groupFieldId)
+    setGridColorFieldId(view.colorFieldId || '')
+    setGridDensity(view.density || 'comfortable')
     setActiveGridViewId(view.id)
     setRecordDraft(getEmptyRecordValues(base, view.tableId))
     writeBuildViewState({
@@ -928,6 +950,8 @@ function App() {
       gridSortFieldId: view.sortFieldId,
       gridSortDirection: view.sortDirection || 'asc',
       gridGroupFieldId: view.groupFieldId,
+      gridColorFieldId: view.colorFieldId || '',
+      gridDensity: view.density || 'comfortable',
       activeGridViewId: view.id,
       ...buildStateUpdates,
     })
@@ -960,6 +984,8 @@ function App() {
             sortFieldId: gridSortFieldId,
             sortDirection: gridSortDirection,
             groupFieldId: gridGroupFieldId,
+            colorFieldId: gridColorFieldId,
+            density: gridDensity,
             visibleFieldIds,
           }
         : view,
@@ -975,6 +1001,8 @@ function App() {
               sortFieldId: gridSortFieldId,
               sortDirection: gridSortDirection,
               groupFieldId: gridGroupFieldId,
+              colorFieldId: gridColorFieldId,
+              density: gridDensity,
               visibleFieldIds,
             }
           : view,
@@ -2201,6 +2229,8 @@ function App() {
       gridFilter,
       gridSortFieldId,
       gridSortDirection,
+      gridColorFieldId,
+      gridDensity,
       gridGroupFieldId,
       localGridViews,
       viewRenameDrafts,
@@ -2213,6 +2243,8 @@ function App() {
     activeGridViewId,
     columnWidths,
     gridFilter,
+    gridColorFieldId,
+    gridDensity,
     gridGroupFieldId,
     gridSortFieldId,
     gridSortDirection,
@@ -3010,7 +3042,35 @@ function App() {
                 </button>
               ))}
             </div>
-            <div className="grid-toolbar">
+            <div className="grid-toolbar build-toolbar">
+              <label>
+                <span>View</span>
+                <select
+                  value={activeGridViewId}
+                  onChange={(event) => {
+                    const view = localGridViews.find((gridView) => gridView.id === event.target.value)
+
+                    if (view) {
+                      applyGridView(view)
+                    } else {
+                      setActiveGridViewId('')
+                    }
+                  }}
+                >
+                  <option value="">Current view</option>
+                  {localGridViews.map((view) => (
+                    <option key={view.id} value={view.id}>
+                      {view.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Fields</span>
+                <button className="toolbar-field-count" type="button" onClick={() => setBuildModal('field')}>
+                  {visibleFieldsForGrid.length} shown
+                </button>
+              </label>
               <label>
                 <span>Filter</span>
                 <input
@@ -3052,6 +3112,25 @@ function App() {
                       {field.label}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                <span>Colour</span>
+                <select value={gridColorFieldId} onChange={(event) => setGridColorFieldId(event.target.value)}>
+                  <option value="">None</option>
+                  {fieldsForSelectedTable.map((field) => (
+                    <option key={field.id} value={field.id}>
+                      {field.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Density</span>
+                <select value={gridDensity} onChange={(event) => setGridDensity(event.target.value as GridDensity)}>
+                  <option value="compact">Compact</option>
+                  <option value="comfortable">Comfortable</option>
+                  <option value="expanded">Expanded</option>
                 </select>
               </label>
             </div>
@@ -3100,7 +3179,7 @@ function App() {
                   </div>
                 )}
                 <div className="record-table-wrap">
-                  <table className="record-table">
+                  <table className={`record-table density-${gridDensity}`}>
                     <thead>
                       <tr>
                         {visibleFieldsForGrid.map((field) => (

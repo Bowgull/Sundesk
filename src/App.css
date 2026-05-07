@@ -1598,9 +1598,16 @@ h2 {
   margin-top: 14px;
 }
 
+.grid-toolbar.build-toolbar {
+  grid-template-columns: minmax(150px, 0.9fr) minmax(110px, 0.5fr) minmax(180px, 1fr) repeat(5, minmax(128px, 0.7fr));
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
 .grid-toolbar label {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 .grid-toolbar span {
@@ -1611,7 +1618,8 @@ h2 {
 }
 
 .grid-toolbar input,
-.grid-toolbar select {
+.grid-toolbar select,
+.toolbar-field-count {
   width: 100%;
   min-height: 38px;
   padding: 9px 10px;
@@ -1622,6 +1630,11 @@ h2 {
   font: inherit;
   font-size: 13px;
   font-weight: 750;
+}
+
+.toolbar-field-count {
+  justify-content: flex-start;
+  color: var(--ink);
 }
 
 .timeline-toolbar {
@@ -1775,15 +1788,24 @@ h2 {
 }
 
 .record-table {
+  --grid-row-height: 40px;
   width: 100%;
   min-width: 760px;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
+.record-table.density-compact {
+  --grid-row-height: 32px;
+}
+
+.record-table.density-expanded {
+  --grid-row-height: 56px;
+}
+
 .record-table th,
 .record-table td {
-  height: 40px;
+  height: var(--grid-row-height);
   padding: 0;
   border-bottom: 1px solid var(--line);
   text-align: left;
@@ -1959,7 +1981,7 @@ h2 {
 .grid-cell-button {
   display: block;
   width: 100%;
-  min-height: 40px;
+  min-height: var(--grid-row-height);
   padding: 5px 11px;
   border: 0;
   border-radius: 0;
@@ -1981,7 +2003,7 @@ h2 {
 }
 
 .grid-cell-editor {
-  min-height: 40px;
+  min-height: var(--grid-row-height);
   padding: 3px 6px;
   background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 64%, transparent);
