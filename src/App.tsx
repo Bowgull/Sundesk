@@ -3,7 +3,6 @@ import { useEffect, useState, type PointerEvent } from 'react'
 import {
   automationRules,
   buildFieldTypes,
-  communities,
   priorityItems,
   savedViews,
   type Priority,
@@ -37,18 +36,18 @@ const themes = [
   { label: 'Light', value: 'light' },
 ]
 
-const starterTaskFields = [
-  'Title',
-  'Table',
-  'Community',
-  'Status',
-  'Due date',
-  'Priority',
-  'Depends on',
-  'Linked records',
-]
+const mainScreens = [
+  { id: 'today', label: 'Today', group: 'Work' },
+  { id: 'communities', label: 'Communities', group: 'Work' },
+  { id: 'tasks', label: 'Tasks', group: 'Work' },
+  { id: 'followups', label: 'Follow-ups', group: 'Work' },
+  { id: 'meetings', label: 'Meetings', group: 'Work' },
+  { id: 'timeline', label: 'Timeline', group: 'Work' },
+  { id: 'build', label: 'Build', group: 'System' },
+  { id: 'settings', label: 'Settings', group: 'System' },
+] as const
 
-const selectOptions = ['Missing', 'Requested', 'Received', 'Not needed']
+type AppScreen = (typeof mainScreens)[number]['id']
 
 const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'Text', value: 'text' },
@@ -96,6 +95,7 @@ const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
   { label: 'Gold', value: 'gold' },
   { label: 'Graphite', value: 'graphite' },
 ]
+const buildTableOrder = ['risks', 'tasks', 'followups', 'approvals', 'meetings', 'people']
 
 type LocalGridView = {
   id: string
@@ -105,6 +105,19 @@ type LocalGridView = {
   sortFieldId: string
   groupFieldId: string
   visibleFieldIds: string[]
+}
+
+type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record'
+
+function getScreenFromHash(): AppScreen {
+  if (typeof window === 'undefined') {
+    return 'today'
+  }
+
+  const screenId = window.location.hash.replace('#', '')
+  const screen = mainScreens.find((item) => item.id === screenId)
+
+  return screen?.id || 'today'
 }
 
 function toSlug(value: string) {
@@ -171,6 +184,26 @@ function getOptionColorClass(value: string) {
   return optionColorClassNames[colorIndex]
 }
 
+function getStringValue(record: BaseRecord, fieldId: string) {
+  const value = record.values[fieldId]
+
+  return typeof value === 'string' ? value : ''
+}
+
+function getNumberValue(record: BaseRecord, fieldId: string) {
+  const value = record.values[fieldId]
+
+  return typeof value === 'number' ? value : 0
+}
+
+function getFirstDateValue(record: BaseRecord) {
+  return getStringValue(record, 'dueDate') || getStringValue(record, 'eventDate') || getStringValue(record, 'date')
+}
+
+function sortRecordsByDate(records: BaseRecord[]) {
+  return [...records].sort((firstRecord, secondRecord) => getFirstDateValue(firstRecord).localeCompare(getFirstDateValue(secondRecord)))
+}
+
 function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
   if (icon === 'star') {
     return (
@@ -227,9 +260,14 @@ function App() {
   const [selectedTheme, setSelectedTheme] = useState(
     () => localStorage.getItem('sundesk-theme') || 'sunrise-soft',
   )
+  const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
   const [base, setBase] = useState(() => cloneWorkbase(workbase))
-  const [selectedBuildTableId, setSelectedBuildTableId] = useState('communities')
+  const [selectedBuildTableId, setSelectedBuildTableId] = useState('risks')
   const [tableDraft, setTableDraft] = useState({
+    label: '',
+    description: '',
+  })
+  const [tableSettingsDraft, setTableSettingsDraft] = useState({
     label: '',
     description: '',
   })
@@ -245,19 +283,24 @@ function App() {
     sourceFieldId: '',
   })
   const [recordDraft, setRecordDraft] = useState<Record<string, RecordValue>>(() => getEmptyRecordValues(workbase, 'tasks'))
-  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('community_halifax')
+  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('risk_venue_halifax')
   const [visibleFieldIdsByTable, setVisibleFieldIdsByTable] = useState<Record<string, string[]>>(() => ({
     communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
     tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
   }))
   const [gridFilter, setGridFilter] = useState('')
-  const [gridSortFieldId, setGridSortFieldId] = useState('dueDate')
-  const [gridGroupFieldId, setGridGroupFieldId] = useState('status')
+  const [gridSortFieldId, setGridSortFieldId] = useState('title')
+  const [gridGroupFieldId, setGridGroupFieldId] = useState('level')
   const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>([])
   const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>({})
   const [activeGridViewId, setActiveGridViewId] = useState('')
   const [openFieldMenuId, setOpenFieldMenuId] = useState('')
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
+  const [buildModal, setBuildModal] = useState<BuildModal>('')
+  const [pendingDeleteTableId, setPendingDeleteTableId] = useState('')
+  const [selectedFieldSettingsId, setSelectedFieldSettingsId] = useState('')
+  const [pendingDeleteFieldId, setPendingDeleteFieldId] = useState('')
+  const [isCreatingRecord, setIsCreatingRecord] = useState(false)
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -270,10 +313,71 @@ function App() {
     recordCount: getRecordsForTable(base, table.id).length,
     fieldCount: base.fields.filter((field) => field.tableId === table.id).length,
   }))
+  const buildTableRows = localTableRows
+    .filter((table) => table.id !== 'communities')
+    .sort((firstTable, secondTable) => {
+      const firstIndex = buildTableOrder.includes(firstTable.id) ? buildTableOrder.indexOf(firstTable.id) : buildTableOrder.length
+      const secondIndex = buildTableOrder.includes(secondTable.id) ? buildTableOrder.indexOf(secondTable.id) : buildTableOrder.length
+
+      return firstIndex - secondIndex
+    })
   const selectedBuildTable = base.tables.find((table) => table.id === selectedBuildTableId) || base.tables[0]
   const fieldsForSelectedTable = base.fields.filter((field) => field.tableId === selectedBuildTable?.id)
   const editableFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => !computedFieldTypes.includes(field.type))
   const recordsForSelectedTable = selectedBuildTable ? getRecordsForTable(base, selectedBuildTable.id) : []
+  const taskRecords = getRecordsForTable(base, 'tasks')
+  const approvalRecords = getRecordsForTable(base, 'approvals')
+  const riskRecords = getRecordsForTable(base, 'risks')
+  const followupRecords = getRecordsForTable(base, 'followups')
+  const meetingRecords = getRecordsForTable(base, 'meetings')
+  const communityRecords = getRecordsForTable(base, 'communities')
+  const openTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') !== 'Done')
+  const blockedTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') === 'Blocked')
+  const waitingTaskRecords = taskRecords.filter((record) => getStringValue(record, 'status') === 'Waiting')
+  const waitingFollowupRecords = followupRecords.filter((record) => getStringValue(record, 'status') === 'Waiting')
+  const openApprovalRecords = approvalRecords.filter((record) => !['Received', 'Not needed'].includes(getStringValue(record, 'status')))
+  const highRiskRecords = riskRecords.filter((record) => getStringValue(record, 'level') === 'High')
+  const atRiskCommunityRecords = communityRecords.filter((record) => {
+    const status = getStringValue(record, 'status')
+
+    return status === 'At risk' || status === 'Blocked' || getNumberValue(record, 'readiness') < 70
+  })
+  const nextMeetingRecord = sortRecordsByDate(meetingRecords)[0]
+  const nextMeetingLinkedTasks = nextMeetingRecord ? getLinkedRecordsForRecord(base, nextMeetingRecord.id).filter((link) => link.record.tableId === 'tasks') : []
+  const dailyTimelineRecords = sortRecordsByDate([
+    ...communityRecords,
+    ...openTaskRecords,
+    ...waitingFollowupRecords,
+    ...meetingRecords,
+  ])
+  const todayLanes = [
+    {
+      id: 'now',
+      label: 'Now',
+      title: 'Move the work that can burn the day.',
+      records: [...blockedTaskRecords, ...highRiskRecords].slice(0, 4),
+    },
+    {
+      id: 'waiting',
+      label: 'Waiting',
+      title: 'Hold every open loop that depends on someone else.',
+      records: [...waitingFollowupRecords, ...waitingTaskRecords, ...openApprovalRecords].slice(0, 4),
+    },
+    {
+      id: 'next',
+      label: 'Next',
+      title: 'Pull work forward before it becomes urgent.',
+      records: sortRecordsByDate([...meetingRecords, ...openTaskRecords]).slice(0, 4),
+    },
+  ]
+  const screenStats = [
+    { label: 'Communities', value: communityRecords.length, detail: `${atRiskCommunityRecords.length} need attention` },
+    { label: 'Open tasks', value: openTaskRecords.length, detail: `${blockedTaskRecords.length} blocked` },
+    { label: 'Waiting loops', value: waitingFollowupRecords.length, detail: `${openApprovalRecords.length} open approvals` },
+    { label: 'Risks', value: riskRecords.length, detail: `${highRiskRecords.length} high` },
+  ]
+  const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
+  const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
   const visibleFieldIds = selectedBuildTable
     ? visibleFieldIdsByTable[selectedBuildTable.id] || getDefaultVisibleFieldIds(fieldsForSelectedTable)
     : []
@@ -336,6 +440,27 @@ function App() {
       activeGridView.groupFieldId !== gridGroupFieldId ||
       activeGridView.visibleFieldIds.join('|') !== visibleFieldIds.join('|')
     : false
+  const canDeleteSelectedBuildTable = Boolean(
+    selectedBuildTable && selectedBuildTable.id !== 'communities' && buildTableRows.length > 1,
+  )
+  const settingsField = fieldsForSelectedTable.find((field) => field.id === selectedFieldSettingsId)
+  const pendingDeleteField = fieldsForSelectedTable.find((field) => field.id === pendingDeleteFieldId)
+  const pendingDeleteTable = base.tables.find((table) => table.id === pendingDeleteTableId)
+
+  function closeBuildModal() {
+    setBuildModal('')
+    setPendingDeleteTableId('')
+    setSelectedFieldSettingsId('')
+    setPendingDeleteFieldId('')
+    setIsCreatingRecord(false)
+  }
+
+  function parseOptions(value: string) {
+    return value
+      .split(/[,\n]/)
+      .map((option) => option.trim())
+      .filter(Boolean)
+  }
 
   function createTable() {
     const label = tableDraft.label.trim()
@@ -377,6 +502,119 @@ function App() {
     setActiveGridViewId('')
     setRecordDraft({ name: '' })
     setTableDraft({ label: '', description: '' })
+    closeBuildModal()
+  }
+
+  function openTableSettings() {
+    if (!selectedBuildTable) {
+      return
+    }
+
+    setTableSettingsDraft({
+      label: selectedBuildTable.label,
+      description: selectedBuildTable.description,
+    })
+    setBuildModal('tableSettings')
+  }
+
+  function renameTable() {
+    const tableId = selectedBuildTable?.id
+    const label = tableSettingsDraft.label.trim()
+
+    if (!tableId || !label) {
+      return
+    }
+
+    setBase((current) => ({
+      ...current,
+      tables: current.tables.map((table) =>
+        table.id === tableId
+          ? {
+              ...table,
+              label,
+              description: tableSettingsDraft.description.trim() || table.description,
+            }
+          : table,
+      ),
+    }))
+    closeBuildModal()
+  }
+
+  function requestDeleteTable() {
+    if (!selectedBuildTable || !canDeleteSelectedBuildTable) {
+      return
+    }
+
+    setPendingDeleteTableId(selectedBuildTable.id)
+    setBuildModal('deleteTable')
+  }
+
+  function deleteTable(tableId: string) {
+    const recordsToDelete = base.records.filter((record) => record.tableId === tableId).map((record) => record.id)
+    const fieldsToDelete = base.fields.filter((field) => field.tableId === tableId).map((field) => field.id)
+    const nextBuildTable = buildTableRows.find((table) => table.id !== tableId)
+
+    if (!nextBuildTable) {
+      return
+    }
+
+    setBase((current) => ({
+      ...current,
+      tables: current.tables.filter((table) => table.id !== tableId),
+      fields: current.fields
+        .filter((field) => field.tableId !== tableId)
+        .map((field) => (field.linkedTableId === tableId ? { ...field, linkedTableId: undefined } : field)),
+      records: current.records
+        .filter((record) => record.tableId !== tableId)
+        .map((record) => {
+          const values = Object.fromEntries(
+            Object.entries(record.values).map(([fieldId, value]) => [
+              fieldId,
+              Array.isArray(value) ? value.filter((recordId) => !recordsToDelete.includes(recordId)) : value,
+            ]),
+          )
+
+          return { ...record, values }
+        }),
+      dependencies: current.dependencies.filter(
+        (dependency) =>
+          !recordsToDelete.includes(dependency.fromRecordId) && !recordsToDelete.includes(dependency.toRecordId),
+      ),
+    }))
+    setSelectedBuildTableId(nextBuildTable.id)
+    setSelectedBuildRecordId(getRecordsForTable(base, nextBuildTable.id)[0]?.id || '')
+    setGridFilter('')
+    setGridSortFieldId(nextBuildTable.primaryFieldId)
+    setGridGroupFieldId(base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, nextBuildTable.id))
+    setVisibleFieldIdsByTable((current) => {
+      const nextVisibleFields = { ...current }
+      delete nextVisibleFields[tableId]
+
+      return nextVisibleFields
+    })
+    setColumnWidths((current) => {
+      const nextWidths = { ...current }
+
+      fieldsToDelete.forEach((fieldId) => {
+        delete nextWidths[fieldId]
+      })
+
+      return nextWidths
+    })
+    setLocalGridViews((current) => current.filter((view) => view.tableId !== tableId))
+    setViewRenameDrafts((current) => {
+      const deletedViewIds = localGridViews.filter((view) => view.tableId === tableId).map((view) => view.id)
+      const nextDrafts = { ...current }
+
+      deletedViewIds.forEach((viewId) => {
+        delete nextDrafts[viewId]
+      })
+
+      return nextDrafts
+    })
+    closeBuildModal()
   }
 
   function createField() {
@@ -391,12 +629,7 @@ function App() {
     const id = base.fields.some((field) => field.tableId === tableId && field.id === baseId)
       ? `${baseId}_${fieldsForSelectedTable.length + 1}`
       : baseId
-    const options = optionFieldTypes.includes(fieldDraft.type)
-      ? fieldDraft.options
-          .split(/[,\n]/)
-          .map((option) => option.trim())
-          .filter(Boolean)
-      : undefined
+    const options = optionFieldTypes.includes(fieldDraft.type) ? parseOptions(fieldDraft.options) : undefined
     const field: FieldDefinition = {
       id,
       tableId,
@@ -443,6 +676,38 @@ function App() {
       }))
     }
     setFieldDraft((current) => ({ ...current, label: '' }))
+    closeBuildModal()
+  }
+
+  function updateField(fieldId: string, updates: Partial<FieldDefinition>) {
+    const tableId = selectedBuildTable?.id
+
+    if (!tableId) {
+      return
+    }
+
+    setBase((current) => ({
+      ...current,
+      fields: current.fields.map((field) =>
+        field.tableId === tableId && field.id === fieldId ? { ...field, ...updates } : field,
+      ),
+    }))
+  }
+
+  function openFieldSettings(field: FieldDefinition) {
+    setSelectedFieldSettingsId(field.id)
+    setOpenFieldMenuId('')
+    setBuildModal('fieldSettings')
+  }
+
+  function requestDeleteField(field: FieldDefinition) {
+    if (field.id === selectedBuildTable?.primaryFieldId) {
+      return
+    }
+
+    setPendingDeleteFieldId(field.id)
+    setOpenFieldMenuId('')
+    setBuildModal('deleteField')
   }
 
   function deleteField(field: FieldDefinition) {
@@ -489,6 +754,7 @@ function App() {
       setGridGroupFieldId('')
     }
     setOpenFieldMenuId('')
+    closeBuildModal()
   }
 
   function selectBuildTable(tableId: string) {
@@ -518,7 +784,12 @@ function App() {
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
-    window.requestAnimationFrame(() => document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+    setIsCreatingRecord(false)
+    setBuildModal('record')
+  }
+
+  function openDailyRecord(record: BaseRecord) {
+    openBuildRecord(record.tableId, record.id)
   }
 
   function toggleVisibleField(fieldId: string) {
@@ -682,6 +953,23 @@ function App() {
     }))
     setSelectedBuildRecordId(record.id)
     setRecordDraft(getEmptyRecordValues(base, tableId))
+    setIsCreatingRecord(false)
+  }
+
+  function openCreateRecordModal() {
+    if (!selectedBuildTable) {
+      return
+    }
+
+    setRecordDraft(getEmptyRecordValues(base, selectedBuildTable.id))
+    setIsCreatingRecord(true)
+    setBuildModal('record')
+  }
+
+  function openEditRecordModal(recordId: string) {
+    setSelectedBuildRecordId(recordId)
+    setIsCreatingRecord(false)
+    setBuildModal('record')
   }
 
   function updateSelectedRecord(fieldId: string, value: RecordValue) {
@@ -728,7 +1016,7 @@ function App() {
     document.addEventListener('pointerup', stopResize)
   }
 
-  function renderGridHeader(field: FieldDefinition) {
+  function renderGridHeader(field: FieldDefinition, menuKey: string) {
     const isPrimaryField = selectedBuildTable?.primaryFieldId === field.id
 
     return (
@@ -738,21 +1026,22 @@ function App() {
           type="button"
           onClick={(event) => {
             event.stopPropagation()
-            setOpenFieldMenuId(openFieldMenuId === field.id ? '' : field.id)
+            setOpenFieldMenuId(openFieldMenuId === menuKey ? '' : menuKey)
           }}
         >
           <span>{field.label}</span>
           {isPrimaryField && <small>Name field</small>}
           <strong>⌄</strong>
         </button>
-        {openFieldMenuId === field.id && (
+        {openFieldMenuId === menuKey && (
           <div className="grid-field-menu">
             <button type="button" onClick={() => toggleVisibleField(field.id)}>Hide field</button>
+            <button type="button" onClick={() => openFieldSettings(field)}>Field settings</button>
             <button
               className="danger"
               disabled={isPrimaryField}
               type="button"
-              onClick={() => deleteField(field)}
+              onClick={() => requestDeleteField(field)}
             >
               Delete field
             </button>
@@ -944,187 +1233,150 @@ function App() {
     )
   }
 
-  function renderGridCellInput(record: BaseRecord, field: FieldDefinition) {
+  function renderSavedGridCell(record: BaseRecord, field: FieldDefinition) {
     const value = record.values[field.id]
 
-    if (computedFieldTypes.includes(field.type)) {
-      return <span className="grid-cell-readonly">{getFieldDisplayValue(record, field)}</span>
-    }
-
-    if (field.type === 'linkedRecord') {
-      const linkedRecords = field.linkedTableId ? getRecordsForTable(base, field.linkedTableId) : []
-      const selectedLinkedIds = Array.isArray(value) ? value : []
-      const availableRecords = linkedRecords.filter((linkedRecord) => !selectedLinkedIds.includes(linkedRecord.id))
-
-      if (!field.allowMultiple) {
-        return (
-          <select
-            aria-label={field.label}
-            value={selectedLinkedIds[0] || ''}
-            onChange={(event) => {
-              setSelectedBuildRecordId(record.id)
-              updateRecordField(record.id, field.id, event.target.value ? [event.target.value] : [])
-            }}
-          >
-            <option value="">Choose</option>
-            {linkedRecords.map((linkedRecord) => (
-              <option key={linkedRecord.id} value={linkedRecord.id}>
-                {getRecordTitle(base, linkedRecord)}
-              </option>
-            ))}
-          </select>
-        )
-      }
-
+    if (field.type === 'checkbox') {
       return (
-        <div className="grid-linked-editor" aria-label={`${field.label} linked records`}>
-          <div className="grid-linked-pills">
-            {selectedLinkedIds.length === 0 && <span className="grid-linked-empty">Empty</span>}
-            {selectedLinkedIds.map((linkedRecordId) => {
-              const linkedRecord = getRecord(base, linkedRecordId)
-
-              return (
-                <button
-                  aria-label={`Remove ${linkedRecord ? getRecordTitle(base, linkedRecord) : linkedRecordId}`}
-                  key={linkedRecordId}
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setSelectedBuildRecordId(record.id)
-                    updateRecordField(record.id, field.id, selectedLinkedIds.filter((selectedLinkedId) => selectedLinkedId !== linkedRecordId))
-                  }}
-                >
-                  {linkedRecord ? getRecordTitle(base, linkedRecord) : linkedRecordId}
-                </button>
-              )
-            })}
-          </div>
-          <select
-            aria-label={`Add ${field.label} link`}
-            disabled={availableRecords.length === 0}
-            value=""
-            onClick={(event) => event.stopPropagation()}
-            onChange={(event) => {
-              const nextRecordId = event.target.value
-
-              if (!nextRecordId) {
-                return
-              }
-
-              setSelectedBuildRecordId(record.id)
-              updateRecordField(record.id, field.id, [...selectedLinkedIds, nextRecordId])
-            }}
-          >
-            <option value="">{availableRecords.length === 0 ? 'All linked' : 'Add link'}</option>
-            {availableRecords.map((linkedRecord) => (
-              <option key={linkedRecord.id} value={linkedRecord.id}>
-                {getRecordTitle(base, linkedRecord)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <span className={`saved-check check-${field.checkboxColor || 'lime'} ${value ? 'checked' : ''}`}>
+          {value ? renderCheckboxIcon(field.checkboxIcon) : 'No'}
+        </span>
       )
     }
 
-    if (field.type === 'multiSelect' && field.options) {
-      const selectedOptions = Array.isArray(value) ? value : []
-
+    if (field.type === 'multiSelect' && Array.isArray(value)) {
       return (
-        <div className="grid-option-list" aria-label={`${field.label} options`}>
-          {field.options.map((option) => {
-            const isSelected = selectedOptions.includes(option)
-
-            return (
-                <button
-                  className={`${getOptionColorClass(option)} ${isSelected ? 'selected' : ''}`}
-                  key={option}
-                  type="button"
-                onClick={() => {
-                  setSelectedBuildRecordId(record.id)
-                  updateRecordField(record.id, field.id, toggleListValue(selectedOptions, option))
-                }}
-              >
-                {option}
-              </button>
-            )
-          })}
-        </div>
+        <span className="saved-pill-list">
+          {value.length === 0 && <span className="grid-linked-empty">Empty</span>}
+          {value.map((option) => (
+            <span className={`select-tag ${getOptionColorClass(option)}`} key={option}>{option}</span>
+          ))}
+        </span>
       )
     }
 
     if (field.options) {
       const selectedValue = typeof value === 'string' ? value : ''
 
+      return selectedValue ? <span className={`select-tag ${getOptionColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>
+    }
+
+    if (field.type === 'linkedRecord' && Array.isArray(value)) {
       return (
-        <div className="grid-single-select">
-          {selectedValue ? <span className={`select-tag ${getOptionColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>}
-          <select
-            aria-label={field.label}
-            value={selectedValue}
-            onChange={(event) => {
-              setSelectedBuildRecordId(record.id)
-              updateRecordField(record.id, field.id, event.target.value)
-            }}
-          >
-            <option value="">Choose</option>
-            {field.options.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+        <span className="saved-pill-list">
+          {value.length === 0 && <span className="grid-linked-empty">Empty</span>}
+          {value.map((recordId) => {
+            const linkedRecord = getRecord(base, recordId)
+
+            return (
+              <span className="linked-display-pill" key={recordId}>
+                {linkedRecord ? getRecordTitle(base, linkedRecord) : recordId}
+              </span>
+            )
+          })}
+        </span>
       )
     }
 
-    if (field.type === 'checkbox') {
-      return (
-        <button
-          aria-label={field.label}
-          className={`grid-check-button check-${field.checkboxColor || 'lime'} ${value ? 'checked' : ''}`}
-          type="button"
-          onClick={() => {
-            setSelectedBuildRecordId(record.id)
-            updateRecordField(record.id, field.id, !value)
-          }}
-        >
-          {value ? renderCheckboxIcon(field.checkboxIcon) : ''}
-        </button>
-      )
-    }
+    return <span className={computedFieldTypes.includes(field.type) ? 'grid-cell-readonly' : 'saved-cell-value'}>{getFieldDisplayValue(record, field)}</span>
+  }
 
-    if (field.type === 'longText') {
-      return (
-        <textarea
-          aria-label={field.label}
-          rows={2}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => {
-            setSelectedBuildRecordId(record.id)
-            updateRecordField(record.id, field.id, event.target.value)
-          }}
-        />
-      )
+  function renderRecordModal() {
+    if (buildModal !== 'record') {
+      return null
     }
-
-    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
 
     return (
-      <input
-        aria-label={field.label}
-        type={inputType}
-        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-        onChange={(event) => {
-          setSelectedBuildRecordId(record.id)
-          updateRecordField(record.id, field.id, inputType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)
-        }}
-      />
+      <div className="modal-backdrop" role="presentation">
+        <section className="build-modal record-modal" role="dialog" aria-modal="true" aria-label="Record">
+          <div className="modal-header">
+            <div>
+              <span className="eyebrow">{selectedBuildTable?.label}</span>
+              <h2>{isCreatingRecord || !selectedBuildRecord ? 'New record.' : getRecordTitle(base, selectedBuildRecord)}</h2>
+            </div>
+            <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+          </div>
+          <div className="record-form">
+            {isCreatingRecord || !selectedBuildRecord
+              ? editableFieldsForSelectedTable.map((field) =>
+                  renderRecordInput(field, recordDraft[field.id], updateRecordDraft),
+                )
+              : editableFieldsForSelectedTable.map((field) =>
+                  renderRecordInput(field, selectedBuildRecord.values[field.id], updateSelectedRecord),
+                )}
+          </div>
+          {!isCreatingRecord && selectedBuildRecord && (
+            <div className="record-modal-links">
+              <section>
+                <strong>Backlinks</strong>
+                <div className="linked-list">
+                  {drawerBacklinks.length === 0 && <p className="empty-note">No records point here.</p>}
+                  {drawerBacklinks.map((backlink) => (
+                    <button
+                      className="linked-record-card"
+                      key={`${backlink.fromRecord.id}-${backlink.fieldId}`}
+                      type="button"
+                      onClick={() => openBuildRecord(backlink.fromRecord.tableId, backlink.fromRecord.id)}
+                    >
+                      <span className="pill prep">{backlink.fromRecord.tableLabel}</span>
+                      <strong>{backlink.fromRecord.title}</strong>
+                      <small>{backlink.fieldLabel}. {backlink.fromRecord.context}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <strong>Linked records</strong>
+                <div className="linked-list">
+                  {drawerLinkedRecords.length === 0 && <p className="empty-note">No linked records selected.</p>}
+                  {drawerLinkedRecords.map((link) => (
+                    <button
+                      className="linked-record-card"
+                      key={`${link.fieldId}-${link.record.id}`}
+                      type="button"
+                      onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
+                    >
+                      <span className="pill waiting">{link.record.tableLabel}</span>
+                      <strong>{link.record.title}</strong>
+                      <small>{link.fieldLabel}. {link.record.context}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          )}
+          <div className="modal-actions">
+            <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+            {isCreatingRecord ? (
+              <button className="primary" type="button" onClick={createRecord}>Add record</button>
+            ) : (
+              <button className="primary" type="button" onClick={closeBuildModal}>Done</button>
+            )}
+          </div>
+        </section>
+      </div>
     )
   }
 
   useEffect(() => {
     localStorage.setItem('sundesk-theme', selectedTheme)
   }, [selectedTheme])
+
+  useEffect(() => {
+    function syncScreenFromHash() {
+      setActiveScreen(getScreenFromHash())
+      setBuildModal('')
+      setPendingDeleteTableId('')
+      setSelectedFieldSettingsId('')
+      setPendingDeleteFieldId('')
+      setIsCreatingRecord(false)
+    }
+
+    window.addEventListener('hashchange', syncScreenFromHash)
+    syncScreenFromHash()
+
+    return () => window.removeEventListener('hashchange', syncScreenFromHash)
+  }, [])
 
   return (
     <main className="app" data-theme={selectedTheme}>
@@ -1139,14 +1391,29 @@ function App() {
 
         <nav className="main-nav">
           <span>Work</span>
-          <a className="active" href="#today">Today</a>
-          <a href="#communities">Communities</a>
-          <a href="#followups">Follow-ups</a>
-          <a href="#meetings">Meetings</a>
-          <a href="#timeline">Timeline</a>
+          {mainScreens
+            .filter((screen) => screen.group === 'Work')
+            .map((screen) => (
+              <a
+                className={activeScreen === screen.id ? 'active' : ''}
+                href={`#${screen.id}`}
+                key={screen.id}
+              >
+                {screen.label}
+              </a>
+            ))}
           <span>System</span>
-          <a href="#build">Build</a>
-          <a href="#settings">Settings</a>
+          {mainScreens
+            .filter((screen) => screen.group === 'System')
+            .map((screen) => (
+              <a
+                className={activeScreen === screen.id ? 'active' : ''}
+                href={`#${screen.id}`}
+                key={screen.id}
+              >
+                {screen.label}
+              </a>
+            ))}
         </nav>
 
         <section className="privacy-card">
@@ -1157,6 +1424,8 @@ function App() {
       </aside>
 
       <section className="desk">
+        {activeScreen === 'today' && (
+          <>
         <section className="onboarding-callout" aria-label="Onboarding status">
           <div>
             <span className="eyebrow">First run</span>
@@ -1169,9 +1438,9 @@ function App() {
         <header className="hero" id="today">
           <div>
             <span className="eyebrow">Today</span>
-            <h1>4 items need attention. 1 is a fire.</h1>
+            <h1>Today builds the day.</h1>
             <p>
-              The queue reads due dates, blockers, dependencies, follow-ups, event dates, and saved rules.
+              First the fire. Then the waiting loops. Then the work that should not become urgent.
             </p>
           </div>
           <article className="digest-card">
@@ -1182,12 +1451,34 @@ function App() {
           </article>
         </header>
 
+        <section className="today-lane-grid" aria-label="Today lanes">
+          {todayLanes.map((lane) => (
+            <article className={`today-lane ${lane.id}`} key={lane.id}>
+              <div className="lane-head">
+                <span>{lane.label}</span>
+                <strong>{lane.records.length}</strong>
+              </div>
+              <h2>{lane.title}</h2>
+              <ol>
+                {lane.records.map((record) => (
+                  <li key={record.id}>
+                    <button className="lane-record-link" type="button" onClick={() => openDailyRecord(record)}>
+                      <strong>{getRecordTitle(base, record)}</strong>
+                    </button>
+                    <span>{getRecordContext(record)}</span>
+                  </li>
+                ))}
+              </ol>
+            </article>
+          ))}
+        </section>
+
         <section className="command-grid">
           <article className="queue-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Priority queue</span>
-                <h2>Start here.</h2>
+                <span className="eyebrow">Why it surfaced</span>
+                <h2>The system shows its work.</h2>
               </div>
               <button className="ghost">Adjust rules</button>
             </div>
@@ -1224,23 +1515,6 @@ function App() {
               <p>Everything else can move after the COI status is handled.</p>
             </article>
 
-            <article className="community-signal" id="communities">
-              <div className="panel-title compact">
-                <div>
-                  <span className="eyebrow">Communities</span>
-                  <h2>Risk map</h2>
-                </div>
-              </div>
-              <div className="signal-grid">
-                {communities.map((community) => (
-                  <button className={community.status} key={community.id}>
-                    {community.name}
-                    <span>{community.readiness}%</span>
-                  </button>
-                ))}
-              </div>
-            </article>
-
             <article className="next-meeting" id="meetings">
               <span className="eyebrow">Next meeting</span>
               <strong>Charlottetown. Tomorrow.</strong>
@@ -1250,26 +1524,87 @@ function App() {
           </aside>
         </section>
 
-        <section className="task-zone" id="tasks">
-          <article className="task-creator">
+        <section className="data-summary-grid" aria-label="Workbase status">
+          {screenStats.map((stat) => (
+            <article key={stat.label}>
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+              <small>{stat.detail}</small>
+            </article>
+          ))}
+        </section>
+          </>
+        )}
+
+        {activeScreen === 'communities' && (
+        <section className="screen-grid" id="communities">
+          <article className="screen-panel wide">
+            <div className="panel-title compact">
+              <div>
+                <span className="eyebrow">Communities</span>
+                <h2>Daily map.</h2>
+              </div>
+              <span className="metric-pill">{communityRecords.length} records</span>
+            </div>
+            <div className="record-card-grid three">
+                {communityRecords.map((record) => {
+                const readiness = getNumberValue(record, 'readiness')
+                const status = getStringValue(record, 'status')
+
+                return (
+                <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                  <span>{status || 'No status'}</span>
+                  <strong>{getRecordTitle(base, record)}</strong>
+                  <small>{readiness}% ready. {getStringValue(record, 'eventDate') || 'No date set'}.</small>
+                </button>
+                )
+              })}
+            </div>
+          </article>
+
+          <article className="screen-panel">
+            <div className="panel-title compact">
+              <div>
+                <span className="eyebrow">At risk</span>
+                <h2>Watch these first.</h2>
+              </div>
+              <span className="metric-pill">{atRiskCommunityRecords.length}</span>
+            </div>
+            <div className="record-list">
+              {atRiskCommunityRecords.map((record) => (
+                <article key={record.id}>
+                  <span>{getStringValue(record, 'status') || 'No status'}</span>
+                  <strong>{getRecordTitle(base, record)}</strong>
+                  <small>{getNumberValue(record, 'readiness')}% ready.</small>
+                </article>
+              ))}
+            </div>
+          </article>
+        </section>
+        )}
+
+        {activeScreen === 'tasks' && (
+        <section className="screen-grid" id="tasks">
+          <article className="screen-panel wide">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Tasks</span>
-                <h2>Create work. Link it to the system.</h2>
+                <h2>Open work.</h2>
               </div>
               <button className="primary">New task</button>
             </div>
-            <div className="task-form-preview" aria-label="Task creation fields">
-              {starterTaskFields.map((field) => (
-                <div key={field}>
-                  <span>{field}</span>
-                  <strong>{field === 'Depends on' ? 'Pick another record' : 'Ready'}</strong>
-                </div>
+            <div className="record-card-grid">
+              {openTaskRecords.map((record) => (
+                <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                  <span>{getStringValue(record, 'status') || 'No status'}</span>
+                  <strong>{getRecordTitle(base, record)}</strong>
+                  <small>{getStringValue(record, 'priority') || 'No priority'}. Due {getStringValue(record, 'dueDate') || 'not set'}.</small>
+                </button>
               ))}
             </div>
           </article>
 
-          <article className="dependency-panel">
+          <article className="screen-panel">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Dependencies</span>
@@ -1288,6 +1623,80 @@ function App() {
             </div>
           </article>
         </section>
+        )}
+
+        {activeScreen === 'followups' && (
+          <section className="screen-grid" id="followups">
+            <article className="screen-panel wide">
+              <div className="panel-title">
+                <div>
+                  <span className="eyebrow">Follow-ups</span>
+                  <h2>Waiting loops.</h2>
+                </div>
+                <button className="primary">New follow-up</button>
+              </div>
+              <div className="record-card-grid">
+                {followupRecords.map((record) => (
+                  <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <span>{getRecordContext(record)}</span>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{followupCommunityField ? getFieldDisplayValue(record, followupCommunityField) : 'No community set'}</small>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className="screen-panel">
+              <div className="panel-title">
+                <div>
+                  <span className="eyebrow">Daily rule</span>
+                  <h2>Waiting needs an owner.</h2>
+                </div>
+                <button>Adjust rule</button>
+              </div>
+              <div className="rules">
+                <p><span>When</span> a follow-up is waiting and due today. <span>Do</span> show it in Today.</p>
+                <p><span>When</span> a follow-up points to a community at risk. <span>Do</span> raise its priority.</p>
+              </div>
+            </article>
+          </section>
+        )}
+
+        {activeScreen === 'meetings' && (
+          <section className="screen-grid" id="meetings">
+            <article className="screen-panel">
+              <span className="eyebrow">Meetings</span>
+              <strong>Prep comes from records.</strong>
+              <p>Meetings read linked communities, tasks, risks, and follow-ups. The agenda should be deterministic before it is written.</p>
+              <button>Generate prep</button>
+            </article>
+
+            <article className="screen-panel wide">
+              <div className="panel-title">
+                <div>
+                  <span className="eyebrow">Meeting records</span>
+                  <h2>Scheduled work.</h2>
+                </div>
+                <span className="metric-pill">{meetingRecords.length} records</span>
+              </div>
+              <div className="record-card-grid">
+                {meetingRecords.map((record) => (
+                  <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <span>{getRecordContext(record)}</span>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{meetingTasksField ? getFieldDisplayValue(record, meetingTasksField) : 'No tasks linked'}</small>
+                  </button>
+                ))}
+              </div>
+              {nextMeetingRecord && (
+                <div className="local-state-strip">
+                  <span>Next prep</span>
+                  <strong>{getRecordTitle(base, nextMeetingRecord)} reads {nextMeetingLinkedTasks.length} linked tasks.</strong>
+                </div>
+              )}
+            </article>
+          </section>
+        )}
 
         <section className="record-drawer" id="record">
           <div className="drawer-header">
@@ -1450,16 +1859,17 @@ function App() {
           </article>
         </section>
 
-        <section className="mode-grid" id="views">
+        {activeScreen === 'timeline' && (
+        <section className="mode-grid" id="timeline">
           <article className="mode-card">
             <div className="mode-head">
               <span>Kanban</span>
                 <strong>Move work across statuses.</strong>
             </div>
             <div className="kanban-preview">
-              <div><b>Waiting</b><p>Permit update</p></div>
-              <div><b>Blocked</b><p>COI status</p></div>
-              <div><b>In progress</b><p>Meeting prep</p></div>
+              <div><b>Waiting</b><p>{waitingTaskRecords.length + waitingFollowupRecords.length} records</p></div>
+              <div><b>Blocked</b><p>{blockedTaskRecords.length} records</p></div>
+              <div><b>In progress</b><p>{openTaskRecords.filter((record) => getStringValue(record, 'status') === 'In progress').length} records</p></div>
             </div>
           </article>
 
@@ -1469,285 +1879,40 @@ function App() {
                 <strong>See meetings and deadlines by date.</strong>
             </div>
             <div className="calendar-preview">
-              <div>12<span>COI</span></div>
-              <div>13<span>Permit</span></div>
-              <div>14<span>Prep</span></div>
-              <div>15<span>Status</span></div>
+              {dailyTimelineRecords.slice(0, 4).map((record) => (
+                <div key={record.id}>
+                  {getFirstDateValue(record).slice(8, 10) || 'Now'}
+                  <span>{getRecordTitle(base, record)}</span>
+                </div>
+              ))}
             </div>
           </article>
 
-          <article className="mode-card wide" id="timeline">
+          <article className="mode-card wide">
             <div className="mode-head">
               <span>Gantt</span>
               <strong>See what blocks what.</strong>
             </div>
             <div className="gantt-preview">
-              <div><span>Halifax</span><i className="bar firebar" /><em>COI blocks venue readiness</em></div>
-              <div><span>Moncton</span><i className="bar waitbar" /><em>Permit gates site map review</em></div>
-              <div><span>Charlottetown</span><i className="bar prepbar" /><em>Meeting prep feeds action list</em></div>
+              {dailyTimelineRecords.slice(0, 5).map((record, index) => (
+                <div key={record.id}>
+                  <span>{getRecordTitle(base, record)}</span>
+                  <i className={`bar ${index % 3 === 0 ? 'firebar' : index % 3 === 1 ? 'waitbar' : 'prepbar'}`} />
+                  <em>{getRecordContext(record)}</em>
+                </div>
+              ))}
             </div>
           </article>
         </section>
+        )}
 
-        <section className="build-zone" id="build">
-          <article className="builder-panel wide">
+        {activeScreen === 'build' && (
+        <section className="build-zone build-reset" id="build">
+          <article className="builder-panel wide build-workbench">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Build</span>
-                <h2>Tables Lindsay can create and change.</h2>
-              </div>
-              <button className="primary" onClick={createTable}>Create table</button>
-            </div>
-            <p className="panel-copy">Build is where the system changes. Today stays for the work.</p>
-            <div className="build-form table-builder-form">
-              <label>
-                <span>Table name</span>
-                <input
-                  value={tableDraft.label}
-                  onChange={(event) => setTableDraft((current) => ({ ...current, label: event.target.value }))}
-                  placeholder="Partners"
-                />
-              </label>
-              <label>
-                <span>Purpose</span>
-                <input
-                  value={tableDraft.description}
-                  onChange={(event) => setTableDraft((current) => ({ ...current, description: event.target.value }))}
-                  placeholder="People or groups tied to the work."
-                />
-              </label>
-            </div>
-            <div className="table-list">
-              {localTableRows.map((table) => (
-                <article
-                  className={table.id === selectedBuildTable?.id ? 'selected-row' : ''}
-                  key={table.id}
-                  onClick={() => selectBuildTable(table.id)}
-                >
-                  <div>
-                    <strong>{table.label}</strong>
-                    <p>{table.description}</p>
-                  </div>
-                  <span>{table.recordCount} records · {table.fieldCount} fields</span>
-                </article>
-              ))}
-            </div>
-          </article>
-
-          <article className="builder-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Fields</span>
-                <h2>Field types that connect records.</h2>
-              </div>
-              <button onClick={createField}>Create field</button>
-            </div>
-            <div className="selected-table-strip">
-              <span>Editing</span>
-              <strong>{selectedBuildTable?.label}</strong>
-            </div>
-            <div className="build-form field-builder-form">
-              <label>
-                <span>Field name</span>
-                <input
-                  value={fieldDraft.label}
-                  onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
-                  placeholder="COI status"
-                />
-              </label>
-              <label>
-                <span>Type</span>
-                <select
-                  value={fieldDraft.type}
-                  onChange={(event) => {
-                    const type = event.target.value as FieldType
-                    setFieldDraft((current) => ({
-                      ...current,
-                      type,
-                      sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
-                      sourceFieldId: '',
-                    }))
-                  }}
-                >
-                  {fieldTypeOptions.map((fieldType) => (
-                    <option key={fieldType.value} value={fieldType.value}>
-                      {fieldType.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {optionFieldTypes.includes(fieldDraft.type) && (
-                <label className="full-row">
-                  <span>Options</span>
-                  <textarea
-                    value={fieldDraft.options}
-                    onChange={(event) => setFieldDraft((current) => ({ ...current, options: event.target.value }))}
-                    rows={3}
-                  />
-                </label>
-              )}
-              {fieldDraft.type === 'checkbox' && (
-                <>
-                  <label className="full-row">
-                    <span>Icon</span>
-                    <div className="checkbox-style-grid">
-                      {checkboxIconOptions.map((option) => (
-                        <button
-                          aria-label={option.label}
-                          className={fieldDraft.checkboxIcon === option.value ? 'selected' : ''}
-                          key={option.value}
-                          type="button"
-                          onClick={() => setFieldDraft((current) => ({ ...current, checkboxIcon: option.value }))}
-                        >
-                          {renderCheckboxIcon(option.value)}
-                        </button>
-                      ))}
-                    </div>
-                  </label>
-                  <label className="full-row">
-                    <span>Colour</span>
-                    <div className="checkbox-color-grid">
-                      {checkboxColorOptions.map((option) => (
-                        <button
-                          aria-label={option.label}
-                          className={`check-${option.value} ${fieldDraft.checkboxColor === option.value ? 'selected' : ''}`}
-                          key={option.value}
-                          type="button"
-                          onClick={() => setFieldDraft((current) => ({ ...current, checkboxColor: option.value }))}
-                        />
-                      ))}
-                    </div>
-                  </label>
-                </>
-              )}
-              {fieldDraft.type === 'linkedRecord' && (
-                <>
-                  <label>
-                    <span>Linked table</span>
-                    <select
-                      value={fieldDraft.linkedTableId}
-                      onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
-                    >
-                      {base.tables
-                        .filter((table) => table.id !== selectedBuildTable?.id)
-                        .map((table) => (
-                          <option key={table.id} value={table.id}>
-                            {table.label}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label className="checkbox-row">
-                    <span>Allow multiple linked records</span>
-                    <input
-                      checked={fieldDraft.allowMultiple}
-                      type="checkbox"
-                      onChange={(event) => setFieldDraft((current) => ({ ...current, allowMultiple: event.target.checked }))}
-                    />
-                  </label>
-                </>
-              )}
-              {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count') && (
-                <label>
-                  <span>Source link</span>
-                  <select
-                    value={effectiveSourceLinkedFieldId}
-                    onChange={(event) => setFieldDraft((current) => ({ ...current, sourceLinkedFieldId: event.target.value, sourceFieldId: '' }))}
-                  >
-                    {linkedFieldsForSelectedTable.map((field) => (
-                      <option key={field.id} value={field.id}>
-                        {field.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') && (
-                <label>
-                  <span>Source field</span>
-                  <select
-                    value={fieldDraft.sourceFieldId || sourceFields[0]?.id || ''}
-                    onChange={(event) => setFieldDraft((current) => ({ ...current, sourceFieldId: event.target.value }))}
-                  >
-                    {sourceFields.map((field) => (
-                      <option key={field.id} value={field.id}>
-                        {field.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
-            <div className="build-grid field-grid">
-              {buildFieldTypes.map((fieldType) => (
-                <button key={fieldType}>{fieldType}</button>
-              ))}
-            </div>
-            <div className="field-list">
-              {fieldsForSelectedTable.map((field) => (
-                <article key={field.id}>
-                  <strong>{field.label}</strong>
-                  <span>{field.type}</span>
-                  {field.linkedTableId && <small>Links to {base.tables.find((table) => table.id === field.linkedTableId)?.label}</small>}
-                  {field.options && <small>{field.options.join(', ')}</small>}
-                </article>
-              ))}
-            </div>
-            <div className="select-builder">
-              <span className="eyebrow">Single select example</span>
-              <strong>COI status</strong>
-              <div>
-                {selectOptions.map((option) => (
-                  <small key={option}>{option}</small>
-                ))}
-              </div>
-            </div>
-            <div className="select-builder">
-              <span className="eyebrow">Linked field example</span>
-              <strong>Task → Community</strong>
-              <div>
-                {selectedTaskLinks.map((link) => (
-                  <small key={`${link.fieldId}-${link.record.id}`}>{link.fieldLabel}: {link.record.title}</small>
-                ))}
-              </div>
-            </div>
-          </article>
-
-          <article className="builder-panel wide">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Records</span>
-                <h2>Create records in {selectedBuildTable?.label}.</h2>
-              </div>
-              <button className="primary" onClick={createRecord}>Create record</button>
-            </div>
-            <div className="record-builder-grid">
-              <div className="record-form">
-                {editableFieldsForSelectedTable.map((field) =>
-                  renderRecordInput(field, recordDraft[field.id], updateRecordDraft),
-                )}
-              </div>
-              <div className="record-list">
-                {recordsForSelectedTable.map((record) => (
-                  <article
-                    className={record.id === selectedBuildRecord?.id ? 'selected-row' : ''}
-                    key={record.id}
-                    onClick={() => setSelectedBuildRecordId(record.id)}
-                  >
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <span>{selectedBuildTable?.label}</span>
-                    <small>{Object.keys(record.values).length} fields set</small>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </article>
-
-          <article className="builder-panel wide">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Grid</span>
-                <h2>{selectedBuildTable?.label} records as a table.</h2>
+                <h2>{selectedBuildTable?.label}</h2>
               </div>
               <div className="drawer-actions">
                 <span className="metric-pill">{sortedAndFilteredRecords.length} shown</span>
@@ -1756,8 +1921,25 @@ function App() {
                     {activeGridViewChanged ? 'View changed' : 'View active'}: {activeGridView.name}
                   </span>
                 )}
+                <button onClick={() => setBuildModal('table')}>Add table</button>
+                <button onClick={openTableSettings}>Rename table</button>
+                <button className="danger" disabled={!canDeleteSelectedBuildTable} onClick={requestDeleteTable}>Delete table</button>
+                <button onClick={() => setBuildModal('field')}>Add field</button>
                 <button onClick={saveGridView}>Save view</button>
               </div>
+            </div>
+            <div className="table-tabs" aria-label="Tables">
+              {buildTableRows.map((table) => (
+                <button
+                  className={table.id === selectedBuildTable?.id ? 'selected' : ''}
+                  key={table.id}
+                  type="button"
+                  onClick={() => selectBuildTable(table.id)}
+                >
+                  <strong>{table.label}</strong>
+                  <span>{table.recordCount}</span>
+                </button>
+              ))}
             </div>
             <div className="grid-toolbar">
               <label>
@@ -1791,17 +1973,31 @@ function App() {
                 </select>
               </label>
             </div>
-            <div className="visible-field-list">
-              {fieldsForSelectedTable.map((field) => (
-                <button
-                  className={visibleFieldIds.includes(field.id) ? 'selected' : ''}
-                  key={field.id}
-                  type="button"
-                  onClick={() => toggleVisibleField(field.id)}
-                >
-                  {field.label}
-                </button>
-              ))}
+            <div className="view-bar">
+              <div className="visible-field-list">
+                {fieldsForSelectedTable.map((field) => (
+                  <button
+                    className={visibleFieldIds.includes(field.id) ? 'selected' : ''}
+                    key={field.id}
+                    type="button"
+                    onClick={() => toggleVisibleField(field.id)}
+                  >
+                    {field.label}
+                  </button>
+                ))}
+              </div>
+              <div className="view-actions">
+                {localGridViews.map((view) => (
+                  <button
+                    className={view.id === activeGridViewId ? 'selected' : ''}
+                    key={view.id}
+                    type="button"
+                    onClick={() => applyGridView(view)}
+                  >
+                    {view.name}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="local-state-strip">
               <span>Local only</span>
@@ -1821,9 +2017,10 @@ function App() {
                       <tr>
                         {visibleFieldsForGrid.map((field) => (
                           <th key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
-                            {renderGridHeader(field)}
+                            {renderGridHeader(field, `${group.label || 'all'}:${field.id}`)}
                           </th>
                         ))}
+                        <th className="row-action-column">Saved</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1832,14 +2029,23 @@ function App() {
                           className={record.id === selectedBuildRecord?.id ? 'selected-row' : ''}
                           key={record.id}
                           onClick={() => setSelectedBuildRecordId(record.id)}
+                          onDoubleClick={() => openEditRecordModal(record.id)}
                         >
                           {visibleFieldsForGrid.map((field) => (
                             <td key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
-                              {renderGridCellInput(record, field)}
+                              {renderSavedGridCell(record, field)}
                             </td>
                           ))}
+                          <td className="row-action-cell">
+                            <button type="button" onClick={() => openEditRecordModal(record.id)}>Edit</button>
+                          </td>
                         </tr>
                       ))}
+                      <tr className="add-record-row">
+                        <td colSpan={visibleFieldsForGrid.length + 1}>
+                          <button type="button" onClick={openCreateRecordModal}>+ Add record</button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -1848,7 +2054,7 @@ function App() {
             {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match this filter.</p>}
           </article>
 
-          <article className="builder-panel">
+          <article className="automation-panel build-sidecar">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Views</span>
@@ -1856,7 +2062,7 @@ function App() {
               </div>
               <span className="metric-pill">{localGridViews.length} local</span>
             </div>
-            <p className="panel-copy">Local views are working copies. Refresh clears them.</p>
+            <p className="panel-copy">Saved views keep table context. Pinning comes later.</p>
             {localGridViews.length > 0 && (
               <div className="view-list">
                 {localGridViews.map((view) => (
@@ -1902,53 +2108,400 @@ function App() {
             </div>
           </article>
 
-          <article className="automation-panel">
+          <article className="automation-panel build-sidecar">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Automations</span>
-                <h2>Plain rules she can edit.</h2>
+                <span className="eyebrow">Rules</span>
+                <h2>When this happens, do this.</h2>
               </div>
               <button className="primary">New rule</button>
             </div>
             <div className="rules">
               {automationRules.map((rule) => (
                 <p key={rule.id}>
-                  <span>When</span> {rule.when}. <span>Then</span> {rule.then}.
+                  <span>When</span> {rule.when}. <span>Do</span> {rule.then}.
                 </p>
               ))}
             </div>
           </article>
 
-          <article className="onboarding-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Templates</span>
-                <h2>Starts she can reuse.</h2>
-              </div>
+          {buildModal === 'table' && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add table">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Table</span>
+                    <h2>Add table.</h2>
+                  </div>
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+                </div>
+                <div className="build-form table-builder-form">
+                  <label>
+                    <span>Table name</span>
+                    <input
+                      value={tableDraft.label}
+                      onChange={(event) => setTableDraft((current) => ({ ...current, label: event.target.value }))}
+                      placeholder="Partners"
+                    />
+                  </label>
+                  <label>
+                    <span>Purpose</span>
+                    <input
+                      value={tableDraft.description}
+                      onChange={(event) => setTableDraft((current) => ({ ...current, description: event.target.value }))}
+                      placeholder="People or groups tied to the work."
+                    />
+                  </label>
+                </div>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="primary" type="button" onClick={createTable}>Add table</button>
+                </div>
+              </section>
             </div>
-            <div className="setup-steps">
-              <p><strong>Community setup.</strong> Starter checklist for each location.</p>
-              <p><strong>Weekly meeting.</strong> Agenda from open work and risks.</p>
-              <p><strong>Approval chase.</strong> Follow-up path for permits and confirmations.</p>
-              <p><strong>Event readiness.</strong> Final status check before event week.</p>
-            </div>
-          </article>
+          )}
 
-          <article className="onboarding-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Exports</span>
-                <h2>Take out the current view.</h2>
-              </div>
+          {buildModal === 'tableSettings' && selectedBuildTable && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Table settings">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Table</span>
+                    <h2>Rename table.</h2>
+                  </div>
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+                </div>
+                <div className="build-form table-builder-form">
+                  <label>
+                    <span>Table name</span>
+                    <input
+                      value={tableSettingsDraft.label}
+                      onChange={(event) => setTableSettingsDraft((current) => ({ ...current, label: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Purpose</span>
+                    <input
+                      value={tableSettingsDraft.description}
+                      onChange={(event) => setTableSettingsDraft((current) => ({ ...current, description: event.target.value }))}
+                    />
+                  </label>
+                </div>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="primary" type="button" onClick={renameTable}>Save table</button>
+                </div>
+              </section>
             </div>
-            <div className="setup-steps">
-              <p><strong>Current view.</strong> Export the records on screen.</p>
-              <p><strong>Meeting prep.</strong> Export agenda text from linked work.</p>
-              <p><strong>Digest text.</strong> Export the daily summary before it sends.</p>
+          )}
+
+          {buildModal === 'deleteTable' && pendingDeleteTable && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete table">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Delete</span>
+                    <h2>Delete {pendingDeleteTable.label}.</h2>
+                  </div>
+                </div>
+                <p>This removes the table, its fields, its records, its saved views, and any links pointing to those records.</p>
+                <p>This cannot be undone in this local build.</p>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="danger" type="button" onClick={() => deleteTable(pendingDeleteTable.id)}>Delete table</button>
+                </div>
+              </section>
             </div>
-          </article>
+          )}
+
+          {buildModal === 'field' && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add field">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Field</span>
+                    <h2>Add field.</h2>
+                  </div>
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+                </div>
+                <div className="build-form field-builder-form">
+                  <label>
+                    <span>Field name</span>
+                    <input
+                      value={fieldDraft.label}
+                      onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
+                      placeholder="COI status"
+                    />
+                  </label>
+                  <label>
+                    <span>Type</span>
+                    <select
+                      value={fieldDraft.type}
+                      onChange={(event) => {
+                        const type = event.target.value as FieldType
+                        setFieldDraft((current) => ({
+                          ...current,
+                          type,
+                          sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
+                          sourceFieldId: '',
+                        }))
+                      }}
+                    >
+                      {fieldTypeOptions.map((fieldType) => (
+                        <option key={fieldType.value} value={fieldType.value}>
+                          {fieldType.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {optionFieldTypes.includes(fieldDraft.type) && (
+                    <label className="full-row">
+                      <span>Options</span>
+                      <textarea
+                        value={fieldDraft.options}
+                        onChange={(event) => setFieldDraft((current) => ({ ...current, options: event.target.value }))}
+                        rows={3}
+                      />
+                    </label>
+                  )}
+                  {fieldDraft.type === 'checkbox' && (
+                    <>
+                      <label className="full-row">
+                        <span>Icon</span>
+                        <div className="checkbox-style-grid">
+                          {checkboxIconOptions.map((option) => (
+                            <button
+                              aria-label={option.label}
+                              className={fieldDraft.checkboxIcon === option.value ? 'selected' : ''}
+                              key={option.value}
+                              type="button"
+                              onClick={() => setFieldDraft((current) => ({ ...current, checkboxIcon: option.value }))}
+                            >
+                              {renderCheckboxIcon(option.value)}
+                            </button>
+                          ))}
+                        </div>
+                      </label>
+                      <label className="full-row">
+                        <span>Colour</span>
+                        <div className="checkbox-color-grid">
+                          {checkboxColorOptions.map((option) => (
+                            <button
+                              aria-label={option.label}
+                              className={`check-${option.value} ${fieldDraft.checkboxColor === option.value ? 'selected' : ''}`}
+                              key={option.value}
+                              type="button"
+                              onClick={() => setFieldDraft((current) => ({ ...current, checkboxColor: option.value }))}
+                            />
+                          ))}
+                        </div>
+                      </label>
+                    </>
+                  )}
+                  {fieldDraft.type === 'linkedRecord' && (
+                    <>
+                      <label>
+                        <span>Linked table</span>
+                        <select
+                          value={fieldDraft.linkedTableId}
+                          onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
+                        >
+                          {base.tables
+                            .filter((table) => table.id !== selectedBuildTable?.id)
+                            .map((table) => (
+                              <option key={table.id} value={table.id}>
+                                {table.label}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <label className="checkbox-row">
+                        <span>Allow multiple linked records</span>
+                        <input
+                          checked={fieldDraft.allowMultiple}
+                          type="checkbox"
+                          onChange={(event) => setFieldDraft((current) => ({ ...current, allowMultiple: event.target.checked }))}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count') && (
+                    <label>
+                      <span>Source link</span>
+                      <select
+                        value={effectiveSourceLinkedFieldId}
+                        onChange={(event) => setFieldDraft((current) => ({ ...current, sourceLinkedFieldId: event.target.value, sourceFieldId: '' }))}
+                      >
+                        {linkedFieldsForSelectedTable.map((field) => (
+                          <option key={field.id} value={field.id}>
+                            {field.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') && (
+                    <label>
+                      <span>Source field</span>
+                      <select
+                        value={fieldDraft.sourceFieldId || sourceFields[0]?.id || ''}
+                        onChange={(event) => setFieldDraft((current) => ({ ...current, sourceFieldId: event.target.value }))}
+                      >
+                        {sourceFields.map((field) => (
+                          <option key={field.id} value={field.id}>
+                            {field.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+                <div className="build-grid field-grid modal-field-types">
+                  {buildFieldTypes.map((fieldType) => (
+                    <button key={fieldType} type="button">{fieldType}</button>
+                  ))}
+                </div>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="primary" type="button" onClick={createField}>Add field</button>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {buildModal === 'fieldSettings' && settingsField && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Field settings">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Field settings</span>
+                    <h2>{settingsField.label}</h2>
+                  </div>
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+                </div>
+                <div className="build-form field-builder-form">
+                  <label>
+                    <span>Field name</span>
+                    <input
+                      value={settingsField.label}
+                      onChange={(event) => updateField(settingsField.id, { label: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Type</span>
+                    <select
+                      value={settingsField.type}
+                      onChange={(event) => updateField(settingsField.id, { type: event.target.value as FieldType })}
+                    >
+                      {fieldTypeOptions.map((fieldType) => (
+                        <option key={fieldType.value} value={fieldType.value}>
+                          {fieldType.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {optionFieldTypes.includes(settingsField.type) && (
+                    <label className="full-row">
+                      <span>Options</span>
+                      <textarea
+                        value={(settingsField.options || []).join(', ')}
+                        rows={3}
+                        onChange={(event) => updateField(settingsField.id, { options: parseOptions(event.target.value) })}
+                      />
+                    </label>
+                  )}
+                  {settingsField.type === 'checkbox' && (
+                    <>
+                      <label className="full-row">
+                        <span>Icon</span>
+                        <div className="checkbox-style-grid">
+                          {checkboxIconOptions.map((option) => (
+                            <button
+                              aria-label={option.label}
+                              className={(settingsField.checkboxIcon || 'check') === option.value ? 'selected' : ''}
+                              key={option.value}
+                              type="button"
+                              onClick={() => updateField(settingsField.id, { checkboxIcon: option.value })}
+                            >
+                              {renderCheckboxIcon(option.value)}
+                            </button>
+                          ))}
+                        </div>
+                      </label>
+                      <label className="full-row">
+                        <span>Colour</span>
+                        <div className="checkbox-color-grid">
+                          {checkboxColorOptions.map((option) => (
+                            <button
+                              aria-label={option.label}
+                              className={`check-${option.value} ${(settingsField.checkboxColor || 'lime') === option.value ? 'selected' : ''}`}
+                              key={option.value}
+                              type="button"
+                              onClick={() => updateField(settingsField.id, { checkboxColor: option.value })}
+                            />
+                          ))}
+                        </div>
+                      </label>
+                    </>
+                  )}
+                  {settingsField.type === 'linkedRecord' && (
+                    <>
+                      <label>
+                        <span>Linked table</span>
+                        <select
+                          value={settingsField.linkedTableId || ''}
+                          onChange={(event) => updateField(settingsField.id, { linkedTableId: event.target.value })}
+                        >
+                          {base.tables
+                            .filter((table) => table.id !== selectedBuildTable?.id)
+                            .map((table) => (
+                              <option key={table.id} value={table.id}>
+                                {table.label}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <label className="checkbox-row">
+                        <span>Allow multiple linked records</span>
+                        <input
+                          checked={settingsField.allowMultiple ?? true}
+                          type="checkbox"
+                          onChange={(event) => updateField(settingsField.id, { allowMultiple: event.target.checked })}
+                        />
+                      </label>
+                    </>
+                  )}
+                </div>
+                <div className="modal-actions">
+                  <button className="primary" type="button" onClick={closeBuildModal}>Done</button>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {buildModal === 'deleteField' && pendingDeleteField && (
+            <div className="modal-backdrop" role="presentation">
+              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete field">
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">Delete</span>
+                    <h2>Delete field.</h2>
+                  </div>
+                </div>
+                <p>This removes the field from every record in this table.</p>
+                <p>This cannot be undone in this local build.</p>
+                <div className="modal-actions">
+                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
+                  <button className="danger" type="button" onClick={() => deleteField(pendingDeleteField)}>Delete field</button>
+                </div>
+              </section>
+            </div>
+          )}
+
         </section>
+        )}
 
+        {activeScreen === 'settings' && (
         <section className="settings-zone" id="settings">
           <article className="settings-panel">
             <div className="panel-title">
@@ -2017,6 +2570,8 @@ function App() {
             </div>
           </article>
         </section>
+        )}
+        {renderRecordModal()}
       </section>
     </main>
   )

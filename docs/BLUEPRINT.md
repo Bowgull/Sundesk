@@ -44,6 +44,40 @@ The core engines are schema, records, fields, relationships, views, interfaces, 
 
 The power belongs in Build. The calm belongs in Today.
 
+Tables are the core logic. Build is where that logic becomes visible.
+
+Today is not separate from Build. Today is computed from the tables, fields, linked records, views, and rules that Build controls.
+
+## Main Screen Model
+
+Sundesk is an app shell, not a long scrolling page.
+
+The sidebar opens screens:
+
+- Today.
+- Communities.
+- Tasks.
+- Follow-ups.
+- Meetings.
+- Timeline.
+- Build.
+- Settings.
+
+Each sidebar item is a separate window, tab, or screen in the user's mental model.
+
+Screens can contain their own tabs and views. Build contains table tabs. Tables contain saved views. Records open in modals. Those are nested surfaces.
+
+Do not turn the app into a document with anchors.
+
+The competitor model is visual and structural:
+
+- Airtable: base, tables, records, fields, and table-specific views.
+- Notion: pages, database views, linked database views, and focused records.
+- SmartSuite: saved views and relationship clarity.
+- Monday: boards, groups, items, columns, and quick scan.
+
+Sundesk should keep the daily path easier than all of them. One screen. One job. Clear next action.
+
 ## V1 Rule
 
 Track operational status. Not files.
@@ -110,9 +144,40 @@ Build stays visible in the sidebar. It is not renamed.
 
 Build is not developer mode. It is the user-editable workshop.
 
-Build opens to Communities.
+Build opens to Risks.
+
+Communities already has a daily sidebar surface. Build should not open by surfacing Communities again.
+
+Default Build table order:
+
+- Risks.
+- Tasks.
+- Follow-ups.
+- Approvals.
+- Meetings.
+- People.
+- Custom tables.
 
 The main Build surface is the grid. Table creation, field creation, field settings, and record creation should live in menus or modals, not always-visible panels.
+
+Saved records should look saved.
+
+Build default state:
+
+- Table tabs visible.
+- Active table clear.
+- Saved rows static by default.
+- Edit button opens the record modal.
+- Field menu opens field settings.
+- Add table and Add field stay visible.
+
+This is the hybrid model:
+
+- Airtable-level table logic.
+- Notion-level record focus.
+- SmartSuite-level relationship display.
+- Monday-level scan speed.
+- Sundesk-level daily judgment.
 
 Views such as Kanban, calendar, and Gantt belong to the View Engine. They can be pinned to the left nav when they become regular check-in or update surfaces. A pinned view should keep its table context, such as `Community Calendar`, `Approvals Kanban`, `Event Timeline`, `Waiting Follow-ups`, or `Meeting Prep`. Views should not become permanent nav clutter by default.
 
@@ -219,6 +284,12 @@ Inputs include:
 - At-risk communities.
 - Saved views.
 - Automation rules.
+
+Output is organized as:
+
+- Now.
+- Waiting.
+- Next.
 
 Today is not a hand-authored dashboard. It is an interface over the base.
 

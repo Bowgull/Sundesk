@@ -14,6 +14,18 @@ Build is the workshop.
 
 Today shows what needs attention. Build edits the structure that makes Today possible.
 
+Build is important because tables are the core product logic.
+
+Every daily surface depends on tables:
+
+- Today reads records, fields, links, dates, status, priority, and rules.
+- Communities reads the Communities table and every record linked to it.
+- Meeting prep reads Meetings, Tasks, Follow-ups, Risks, and Approvals.
+- Rules read field changes and route records into the right lane.
+- Views decide how records are scanned, grouped, filtered, and saved.
+
+The interface can feel simple only if the table engine underneath is real.
+
 This boundary is mandatory:
 
 - Today has no table setup controls.
@@ -32,6 +44,40 @@ Sundesk is a hybrid, not a clone.
 - SmartSuite in linked-record display: related work can show compact, expanded, or grid-like later.
 - Monday only where it helps visual clarity: lanes, status colour, and quick scanning.
 - Sundesk on top: Today, Communities, meeting prep, and open loops shaped for event coordination.
+
+From the user perspective, the reference products do not feel like one long page.
+
+- Airtable feels like a base with tables and views inside each table.
+- Notion feels like pages, databases, linked database views, and records that open as pages.
+- SmartSuite feels like solutions, tables, records, saved views, and clear relationship surfaces.
+- Monday feels like workspaces, boards, groups, items, columns, and board views.
+
+Sundesk should learn from that shape.
+
+Main sidebar items are app screens:
+
+- Today.
+- Communities.
+- Tasks.
+- Follow-ups.
+- Meetings.
+- Timeline.
+- Build.
+- Settings.
+
+They are not anchors inside one scrolling document.
+
+Each screen has one job. Each screen may contain tabs, views, modals, or drawers inside it. Build has table tabs. A table has saved views. A record has a modal. Those are nested surfaces, not new top-level app screens by default.
+
+The hybrid rule:
+
+- Airtable owns the database logic.
+- Notion owns the readable record moment.
+- SmartSuite owns relationship clarity.
+- Monday owns scan speed.
+- Sundesk decides what matters today.
+
+This means Build must feel like a table workshop, not a developer console. It should expose enough power to shape the system without making daily work feel like database maintenance.
 
 ## Core Engines
 
@@ -105,8 +151,14 @@ Sundesk needs 7 engines to function like real software.
 ### 6. Interface Engine
 
 - Today.
-- Communities dashboard.
+- Communities screen.
+- Tasks screen.
+- Follow-ups screen.
+- Meetings screen.
+- Timeline screen.
 - Meeting prep.
+- Build screen.
+- Settings screen.
 - Record modal.
 - Open loops.
 - No schema language outside Build.
@@ -156,23 +208,73 @@ Guardrails:
 
 ## Build UX
 
-Build opens to Communities.
+Build opens to Risks.
+
+Communities already has a sidebar surface. Build should not open by surfacing Communities again.
+
+Default Build table order:
+
+- Risks.
+- Tasks.
+- Follow-ups.
+- Approvals.
+- Meetings.
+- People.
+- Custom tables.
 
 The main Build surface is the grid.
+
+Build is the primary place to see and edit tables.
+
+The table list must remain obvious:
+
+- Tables are visible as tabs.
+- The active table is clear.
+- The current view belongs to the active table.
+- Fields are table structure.
+- Records are saved objects.
+- Editing a saved record is intentional.
+- Creating a table is a visible command.
+- Creating a field is a visible command.
 
 Build should contain:
 
 - Table tabs across the top.
 - `Add table`.
+- `Add field`.
 - View bar.
 - Grid.
-- `Add field` column.
 - `Add record` row.
+- Static saved records.
+- Explicit `Edit` actions.
 - Record modal.
 
 Always-visible builder panels should be removed.
 
 Table setup, field setup, and record creation should live in menus or modals.
+
+### Saved State Rule
+
+Saved records render as saved records.
+
+The grid should not look like a form by default.
+
+Default state:
+
+- Cell values are readable.
+- Select values render as tags.
+- Linked records render as pills.
+- Checkboxes render as marks.
+- Computed fields render as read-only values.
+
+Edit state:
+
+- Row opens through `Edit`.
+- Record modal shows editable fields.
+- Field settings open through the column menu.
+- Table setup opens through table actions.
+
+This keeps Build powerful without making the app feel unfinished.
 
 ### Table Actions
 
@@ -380,18 +482,31 @@ Onboarding should make Build understandable without turning it into a tutorial w
 
 ## Build Sequence
 
+### Current checkpoint
+
+Done locally:
+
 1. Reset Build layout.
 2. Implement table tabs and grid-first Build.
 3. Move add table, add field, and field settings into modals.
 4. Add editable field settings after creation.
 5. Add delete confirmations.
-6. Replace inline linked-record editing with a picker.
-7. Add record modal.
+6. Add record modal.
+7. Make saved Build rows render as static saved values.
 8. Rebuild Today as Now, Waiting, Next.
-9. Add pinned views.
-10. Add deterministic meeting prep.
-11. Add Rules.
-12. Add Firestore persistence.
+9. Set Build to open on Risks.
+10. Remove Communities from the Build tabs.
+
+Next:
+
+1. Add table actions: rename table, delete table, duplicate table later.
+2. Replace linked-record editing inside the record modal with a stronger picker.
+3. Add real view persistence: visible fields, widths, filter, sort, group.
+4. Add pinned views.
+5. Add deterministic meeting prep.
+6. Add Rules.
+7. Add Firestore persistence.
+8. Add activity history later.
 
 ## Stance
 

@@ -74,6 +74,12 @@ button.ghost {
   color: var(--night);
 }
 
+button.danger {
+  border-color: color-mix(in srgb, var(--coral) 42%, var(--line));
+  background: var(--coral-2);
+  color: color-mix(in srgb, var(--coral) 72%, var(--ink));
+}
+
 a {
   color: inherit;
 }
