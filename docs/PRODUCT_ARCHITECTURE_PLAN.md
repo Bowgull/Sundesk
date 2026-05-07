@@ -464,6 +464,35 @@ Starter rule types:
 
 Rules are editable.
 
+## UI/UX Polish
+
+The final polish target lives in [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md).
+
+This spec is mandatory for final polish. It covers:
+
+- Product feel.
+- Today as a morning brief with 3 lanes underneath.
+- Build as grid-first and inline editable.
+- Record drawer structure.
+- Typography.
+- Theme behaviour.
+- Button types, sizes, and states.
+- Dropdowns, action menus, view menus, and picker popovers.
+- Build toolbar.
+- Field header menus.
+- Inputs.
+- Chips.
+- Modals.
+- Tabs.
+- Empty states.
+- Toasts.
+- Mobile.
+- Accessibility.
+
+Final polish is done when Lindsay can open Today, understand the day, and open the right record without learning the database.
+
+Final polish is also done when she can open Build, edit the structure, and see exactly how it changes Today.
+
 ## Onboarding
 
 Start with sample tables based on the work.

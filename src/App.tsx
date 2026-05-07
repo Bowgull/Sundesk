@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useState, type PointerEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import {
   buildFieldTypes,
   savedViews,
@@ -150,6 +150,11 @@ const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
   { label: 'Graphite', value: 'graphite' },
 ]
 type BuildModal = '' | 'table' | 'tableSettings' | 'deleteTable' | 'field' | 'fieldSettings' | 'deleteField' | 'record' | 'resetLocalData'
+type GridSortDirection = 'asc' | 'desc'
+type GridCell = {
+  recordId: string
+  fieldId: string
+}
 
 function getScreenFromHash(): AppScreen {
   if (typeof window === 'undefined') {
@@ -280,6 +285,7 @@ function App() {
   )
   const [gridFilter, setGridFilter] = useState(() => initialBuildViewState.gridFilter || '')
   const [gridSortFieldId, setGridSortFieldId] = useState(() => initialBuildViewState.gridSortFieldId || 'title')
+  const [gridSortDirection, setGridSortDirection] = useState<GridSortDirection>(() => initialBuildViewState.gridSortDirection || 'asc')
   const [gridGroupFieldId, setGridGroupFieldId] = useState(() => initialBuildViewState.gridGroupFieldId || 'level')
   const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>(() => initialBuildViewState.localGridViews || [])
   const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>(
@@ -287,6 +293,9 @@ function App() {
   )
   const [activeGridViewId, setActiveGridViewId] = useState(() => initialBuildViewState.activeGridViewId || '')
   const [openFieldMenuId, setOpenFieldMenuId] = useState('')
+  const [selectedGridCell, setSelectedGridCell] = useState<GridCell | null>(null)
+  const [editingGridCell, setEditingGridCell] = useState<GridCell | null>(null)
+  const [gridEditDraft, setGridEditDraft] = useState<RecordValue>('')
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
     () => initialBuildViewState.columnWidths || {},
   )
@@ -342,6 +351,7 @@ function App() {
     visibleFieldIdsByTable,
     gridFilter,
     gridSortFieldId,
+    gridSortDirection,
     gridGroupFieldId,
   )
   const visibleFieldIds = buildGridDerivation.visibleFieldIds
@@ -353,6 +363,16 @@ function App() {
   const drawerBacklinks = selectedBuildRecord ? getBacklinksForRecord(base, selectedBuildRecord.id) : []
   const drawerLinkedRecords = selectedBuildRecord ? getLinkedRecordsForRecord(base, selectedBuildRecord.id) : []
   const drawerDependencies = selectedBuildRecord ? getDependencyReferencesForRecord(base, selectedBuildRecord.id) : []
+  const drawerKeyFields = selectedBuildRecord
+    ? fieldsForSelectedTable.filter((field) =>
+        field.id === selectedBuildTable?.primaryFieldId ||
+        ['status', 'level', 'priority', 'dueDate', 'date', 'eventDate'].includes(field.id),
+      )
+    : []
+  const drawerStatusText = selectedBuildRecord
+    ? getStringValue(selectedBuildRecord, 'status') || getStringValue(selectedBuildRecord, 'level') || getStringValue(selectedBuildRecord, 'priority') || 'No status'
+    : 'No status'
+  const drawerDateText = selectedBuildRecord ? getFirstDateValue(selectedBuildRecord) || 'No date' : 'No date'
   const selectedDependencyTargetRecord = dependencyDraft.toRecordId ? getRecord(base, dependencyDraft.toRecordId) : null
   const dependencyPickerRecords = getDependencyPickerRecords(base, selectedBuildRecord?.id || '', dependencySearch)
   const linkedFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => field.type === 'linkedRecord' && field.linkedTableId)
@@ -366,6 +386,7 @@ function App() {
     ? activeGridView.tableId !== selectedBuildTable?.id ||
       activeGridView.filter !== gridFilter ||
       activeGridView.sortFieldId !== gridSortFieldId ||
+      (activeGridView.sortDirection || 'asc') !== gridSortDirection ||
       activeGridView.groupFieldId !== gridGroupFieldId ||
       activeGridView.visibleFieldIds.join('|') !== visibleFieldIds.join('|')
     : false
@@ -401,6 +422,7 @@ function App() {
       visibleFieldIdsByTable,
       gridFilter,
       gridSortFieldId,
+      gridSortDirection,
       gridGroupFieldId,
       localGridViews,
       viewRenameDrafts,
@@ -473,6 +495,7 @@ function App() {
     setVisibleFieldIdsByTable((current) => ({ ...current, [uniqueId]: ['name'] }))
     setGridFilter('')
     setGridSortFieldId('name')
+    setGridSortDirection('asc')
     setGridGroupFieldId('')
     setActiveGridViewId('')
     setRecordDraft({ name: '' })
@@ -482,6 +505,7 @@ function App() {
       visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [uniqueId]: ['name'] },
       gridFilter: '',
       gridSortFieldId: 'name',
+      gridSortDirection: 'asc',
       gridGroupFieldId: '',
       activeGridViewId: '',
     })
@@ -594,6 +618,7 @@ function App() {
     setSelectedBuildRecordId(getRecordsForTable(base, nextBuildTable.id)[0]?.id || '')
     setGridFilter('')
     setGridSortFieldId(nextBuildTable.primaryFieldId)
+    setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, nextBuildTable.id))
@@ -606,6 +631,7 @@ function App() {
       visibleFieldIdsByTable: nextVisibleFields,
       gridFilter: '',
       gridSortFieldId: nextBuildTable.primaryFieldId,
+      gridSortDirection: 'asc',
       gridGroupFieldId: base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '',
       localGridViews: nextGridViews,
       viewRenameDrafts: nextDrafts,
@@ -777,6 +803,7 @@ function App() {
     writeBuildViewState({
       visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
       gridSortFieldId: nextSortFieldId,
+      gridSortDirection: gridSortFieldId === field.id ? 'asc' : gridSortDirection,
       gridGroupFieldId: nextGroupFieldId,
       columnWidths: nextWidths,
     })
@@ -790,6 +817,7 @@ function App() {
     setSelectedBuildRecordId(nextRecord?.id || '')
     setGridFilter('')
     setGridSortFieldId(base.tables.find((table) => table.id === tableId)?.primaryFieldId || '')
+    setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
@@ -807,6 +835,7 @@ function App() {
     setSelectedBuildRecordId(recordId)
     setGridFilter('')
     setGridSortFieldId(table.primaryFieldId)
+    setGridSortDirection('asc')
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
@@ -830,10 +859,16 @@ function App() {
       const nextFieldIds = currentFieldIds.includes(fieldId)
         ? currentFieldIds.filter((currentFieldId) => currentFieldId !== fieldId)
         : [...currentFieldIds, fieldId]
+      const safeFieldIds = nextFieldIds.length > 0 ? nextFieldIds : currentFieldIds
 
+      writeBuildViewState({
+        visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: safeFieldIds },
+      })
+
+      setOpenFieldMenuId('')
       return {
         ...current,
-        [tableId]: nextFieldIds.length > 0 ? nextFieldIds : currentFieldIds,
+        [tableId]: safeFieldIds,
       }
     })
   }
@@ -854,6 +889,7 @@ function App() {
       tableId: selectedBuildTable.id,
       filter: gridFilter,
       sortFieldId: gridSortFieldId,
+      sortDirection: gridSortDirection,
       groupFieldId: gridGroupFieldId,
       visibleFieldIds,
     }
@@ -881,6 +917,7 @@ function App() {
     setVisibleFieldIdsByTable((current) => ({ ...current, [view.tableId]: view.visibleFieldIds }))
     setGridFilter(view.filter)
     setGridSortFieldId(view.sortFieldId)
+    setGridSortDirection(view.sortDirection || 'asc')
     setGridGroupFieldId(view.groupFieldId)
     setActiveGridViewId(view.id)
     setRecordDraft(getEmptyRecordValues(base, view.tableId))
@@ -889,6 +926,7 @@ function App() {
       visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [view.tableId]: view.visibleFieldIds },
       gridFilter: view.filter,
       gridSortFieldId: view.sortFieldId,
+      gridSortDirection: view.sortDirection || 'asc',
       gridGroupFieldId: view.groupFieldId,
       activeGridViewId: view.id,
       ...buildStateUpdates,
@@ -920,6 +958,7 @@ function App() {
             tableId: selectedBuildTable.id,
             filter: gridFilter,
             sortFieldId: gridSortFieldId,
+            sortDirection: gridSortDirection,
             groupFieldId: gridGroupFieldId,
             visibleFieldIds,
           }
@@ -934,6 +973,7 @@ function App() {
               tableId: selectedBuildTable.id,
               filter: gridFilter,
               sortFieldId: gridSortFieldId,
+              sortDirection: gridSortDirection,
               groupFieldId: gridGroupFieldId,
               visibleFieldIds,
             }
@@ -1346,6 +1386,154 @@ function App() {
     })
   }
 
+  function getGridCellKey(cell: GridCell) {
+    return `${cell.recordId}:${cell.fieldId}`
+  }
+
+  function isSameGridCell(firstCell: GridCell | null, secondCell: GridCell | null) {
+    return Boolean(firstCell && secondCell && firstCell.recordId === secondCell.recordId && firstCell.fieldId === secondCell.fieldId)
+  }
+
+  function cloneRecordValue(value: RecordValue): RecordValue {
+    return Array.isArray(value) ? [...value] : value
+  }
+
+  function focusGridCell(cell: GridCell) {
+    window.setTimeout(() => {
+      document.querySelector<HTMLButtonElement>(`[data-grid-cell="${CSS.escape(getGridCellKey(cell))}"]`)?.focus()
+    }, 0)
+  }
+
+  function selectGridCell(recordId: string, fieldId: string) {
+    const nextCell = { recordId, fieldId }
+
+    setSelectedGridCell(nextCell)
+    focusGridCell(nextCell)
+  }
+
+  function startGridCellEdit(record: BaseRecord, field: FieldDefinition) {
+    if (computedFieldTypes.includes(field.type)) {
+      return
+    }
+
+    const nextCell = { recordId: record.id, fieldId: field.id }
+
+    setSelectedGridCell(nextCell)
+    setEditingGridCell(nextCell)
+    setGridEditDraft(cloneRecordValue(record.values[field.id]))
+  }
+
+  function commitGridCellEdit() {
+    if (!editingGridCell) {
+      return
+    }
+
+    updateRecordField(editingGridCell.recordId, editingGridCell.fieldId, gridEditDraft)
+    setEditingGridCell(null)
+  }
+
+  function cancelGridCellEdit() {
+    setEditingGridCell(null)
+  }
+
+  function moveGridCell(recordId: string, fieldId: string, rowOffset: number, fieldOffset: number) {
+    const gridRecords = groupedRecords.flatMap((group) => group.records)
+    const rowIndex = gridRecords.findIndex((record) => record.id === recordId)
+    const fieldIndex = visibleFieldsForGrid.findIndex((field) => field.id === fieldId)
+
+    if (rowIndex < 0 || fieldIndex < 0 || visibleFieldsForGrid.length === 0 || gridRecords.length === 0) {
+      return
+    }
+
+    let nextRowIndex = rowIndex + rowOffset
+    let nextFieldIndex = fieldIndex + fieldOffset
+
+    if (nextFieldIndex >= visibleFieldsForGrid.length) {
+      nextFieldIndex = 0
+      nextRowIndex += 1
+    }
+
+    if (nextFieldIndex < 0) {
+      nextFieldIndex = visibleFieldsForGrid.length - 1
+      nextRowIndex -= 1
+    }
+
+    nextRowIndex = Math.max(0, Math.min(gridRecords.length - 1, nextRowIndex))
+
+    const nextCell = {
+      recordId: gridRecords[nextRowIndex].id,
+      fieldId: visibleFieldsForGrid[nextFieldIndex].id,
+    }
+
+    setSelectedGridCell(nextCell)
+    focusGridCell(nextCell)
+  }
+
+  function handleSavedGridCellKeyDown(record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startGridCellEdit(record, field)
+      return
+    }
+
+    if (event.key === ' ') {
+      event.preventDefault()
+      setSelectedBuildRecordId(record.id)
+      return
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      moveGridCell(record.id, field.id, 0, event.shiftKey ? -1 : 1)
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      moveGridCell(record.id, field.id, 0, 1)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      moveGridCell(record.id, field.id, 0, -1)
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveGridCell(record.id, field.id, 1, 0)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveGridCell(record.id, field.id, -1, 0)
+    }
+  }
+
+  function handleGridEditorKeyDown(record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      cancelGridCellEdit()
+      focusGridCell({ recordId: record.id, fieldId: field.id })
+      return
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      commitGridCellEdit()
+      moveGridCell(record.id, field.id, 0, event.shiftKey ? -1 : 1)
+      return
+    }
+
+    if (event.key === 'Enter' && field.type !== 'longText') {
+      event.preventDefault()
+      commitGridCellEdit()
+      focusGridCell({ recordId: record.id, fieldId: field.id })
+    }
+  }
+
   function resizeColumn(fieldId: string, event: PointerEvent<HTMLButtonElement>) {
     const startX = event.clientX
     const startWidth = columnWidths[fieldId] || 180
@@ -1363,6 +1551,72 @@ function App() {
 
     document.addEventListener('pointermove', updateWidth)
     document.addEventListener('pointerup', stopResize)
+  }
+
+  function sortGridByField(fieldId: string, direction: GridSortDirection) {
+    setGridSortFieldId(fieldId)
+    setGridSortDirection(direction)
+    setOpenFieldMenuId('')
+    writeBuildViewState({
+      gridSortFieldId: fieldId,
+      gridSortDirection: direction,
+    })
+  }
+
+  function groupGridByField(fieldId: string) {
+    setGridGroupFieldId(fieldId)
+    setOpenFieldMenuId('')
+    writeBuildViewState({
+      gridGroupFieldId: fieldId,
+    })
+  }
+
+  function duplicateField(field: FieldDefinition) {
+    const tableId = selectedBuildTable?.id
+
+    if (!tableId) {
+      return
+    }
+
+    const baseId = toSlug(`${field.label} copy`)
+    const id = getUniqueSlug(baseId, fieldsForSelectedTable.map((fieldItem) => fieldItem.id))
+    const duplicatedField: FieldDefinition = {
+      ...field,
+      id,
+      label: `${field.label} copy`,
+      options: field.options ? [...field.options] : undefined,
+    }
+    const nextVisibleFieldIds = [...visibleFieldIds, id]
+
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        fields: [...current.fields, duplicatedField],
+        records: current.records.map((record) =>
+          record.tableId === tableId && !computedFieldTypes.includes(field.type)
+            ? {
+                ...record,
+                values: {
+                  ...record.values,
+                  [id]: cloneRecordValue(record.values[field.id] ?? getEmptyFieldValue(field.type)),
+                },
+              }
+            : record,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    setVisibleFieldIdsByTable((current) => ({
+      ...current,
+      [tableId]: nextVisibleFieldIds,
+    }))
+    setOpenFieldMenuId('')
+    writeBuildViewState({
+      visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
+    })
   }
 
   function renderGridHeader(field: FieldDefinition, menuKey: string) {
@@ -1384,8 +1638,14 @@ function App() {
         </button>
         {openFieldMenuId === menuKey && (
           <div className="grid-field-menu">
-            <button type="button" onClick={() => toggleVisibleField(field.id)}>Hide field</button>
-            <button type="button" onClick={() => openFieldSettings(field)}>Field settings</button>
+            <button type="button" onClick={() => openFieldSettings(field)}>Edit field</button>
+            <button type="button" onClick={() => openFieldSettings(field)}>Rename</button>
+            <button type="button" onClick={() => openFieldSettings(field)}>Change type</button>
+            <button type="button" onClick={() => toggleVisibleField(field.id)}>Hide from view</button>
+            <button type="button" onClick={() => sortGridByField(field.id, 'asc')}>Sort ascending</button>
+            <button type="button" onClick={() => sortGridByField(field.id, 'desc')}>Sort descending</button>
+            <button type="button" onClick={() => groupGridByField(field.id)}>Group by this field</button>
+            <button type="button" onClick={() => duplicateField(field)}>Duplicate field</button>
             <button
               className="danger"
               disabled={isPrimaryField}
@@ -1408,6 +1668,13 @@ function App() {
 
   function getFieldDisplayValue(record: BaseRecord, field: FieldDefinition) {
     return getRecordFieldDisplayValue(base, record, field)
+  }
+
+  function getPickerRecordLabel(record: BaseRecord) {
+    const status = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority')
+    const date = getFirstDateValue(record)
+
+    return [getRecordTitle(base, record), status, date].filter(Boolean).join(' · ')
   }
 
   function renderRecordInput(
@@ -1488,7 +1755,7 @@ function App() {
                         type="button"
                         onClick={() => onChange(field.id, toggleListValue(selectedLinkedIds, record.id, field.allowMultiple))}
                       >
-                        <strong>{getRecordTitle(base, record)}</strong>
+                        <strong>{getPickerRecordLabel(record)}</strong>
                         <small>{getRecordContext(record)}</small>
                       </button>
                     )
@@ -1636,6 +1903,202 @@ function App() {
     return <span className={computedFieldTypes.includes(field.type) ? 'grid-cell-readonly' : 'saved-cell-value'}>{getFieldDisplayValue(record, field)}</span>
   }
 
+  function renderGridCellEditor(field: FieldDefinition) {
+    const value = gridEditDraft
+
+    if (field.type === 'checkbox') {
+      return (
+        <input
+          autoFocus
+          aria-label={`${field.label} editor`}
+          checked={Boolean(value)}
+          type="checkbox"
+          onChange={(event) => setGridEditDraft(event.target.checked)}
+        />
+      )
+    }
+
+    if (field.type === 'multiSelect' && field.options) {
+      const selectedOptions = Array.isArray(value) ? value : []
+
+      return (
+        <div className="grid-option-list" aria-label={`${field.label} editor`}>
+          {field.options.map((option) => (
+            <button
+              className={selectedOptions.includes(option) ? 'selected' : ''}
+              key={option}
+              type="button"
+              onClick={() => setGridEditDraft(toggleListValue(selectedOptions, option))}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    if (field.options) {
+      return (
+        <select
+          autoFocus
+          aria-label={`${field.label} editor`}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => setGridEditDraft(event.target.value)}
+        >
+          <option value="">Choose</option>
+          {field.options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )
+    }
+
+    if (field.type === 'linkedRecord' && field.linkedTableId) {
+      const selectedLinkedIds = Array.isArray(value) ? value : []
+      const searchKey = `grid:${field.tableId}:${field.id}`
+      const searchTerm = linkedRecordFilters[searchKey] || ''
+      const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+      const linkedRecords = getRecordsForTable(base, field.linkedTableId)
+      const selectedRecords = selectedLinkedIds.map((recordId) => getRecord(base, recordId)).filter(Boolean) as BaseRecord[]
+      const filteredLinkedRecords = linkedRecords.filter((linkedRecord) => {
+        if (!normalizedSearchTerm) {
+          return true
+        }
+
+        return [
+          getPickerRecordLabel(linkedRecord),
+          getRecordContext(linkedRecord),
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearchTerm)
+      })
+
+      return (
+        <div className="grid-linked-editor" aria-label={`${field.label} editor`}>
+          <div className="grid-linked-editor-head">
+            <strong>{base.tables.find((table) => table.id === field.linkedTableId)?.label || 'Linked records'}</strong>
+            <small>{selectedLinkedIds.length} selected</small>
+          </div>
+          <input
+            autoFocus
+            aria-label={`Search ${field.label}`}
+            placeholder="Search records"
+            type="search"
+            value={searchTerm}
+            onChange={(event) =>
+              setLinkedRecordFilters((current) => ({
+                ...current,
+                [searchKey]: event.target.value,
+              }))
+            }
+          />
+          {selectedRecords.length > 0 && (
+            <div className="grid-linked-selected" aria-label={`Selected ${field.label}`}>
+              {selectedRecords.map((selectedRecord) => (
+                <button
+                  key={selectedRecord.id}
+                  type="button"
+                  onClick={() => setGridEditDraft(selectedLinkedIds.filter((recordId) => recordId !== selectedRecord.id))}
+                >
+                  {getPickerRecordLabel(selectedRecord)}
+                  <small>Remove</small>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="grid-linked-pills">
+            {filteredLinkedRecords.length === 0 && <small>No records match.</small>}
+            {filteredLinkedRecords.map((linkedRecord) => {
+              const isSelected = selectedLinkedIds.includes(linkedRecord.id)
+
+              return (
+                <button
+                  className={isSelected ? 'selected' : ''}
+                  key={linkedRecord.id}
+                  type="button"
+                  onClick={() => setGridEditDraft(toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple))}
+                >
+                  {getPickerRecordLabel(linkedRecord)}
+                </button>
+              )
+            })}
+          </div>
+          <button type="button" onClick={commitGridCellEdit}>Done</button>
+        </div>
+      )
+    }
+
+    if (field.type === 'longText') {
+      return (
+        <textarea
+          autoFocus
+          aria-label={`${field.label} editor`}
+          rows={2}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => setGridEditDraft(event.target.value)}
+        />
+      )
+    }
+
+    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
+
+    return (
+      <input
+        autoFocus
+        aria-label={`${field.label} editor`}
+        type={inputType}
+        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
+        onChange={(event) => setGridEditDraft(inputType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
+      />
+    )
+  }
+
+  function renderEditableGridCell(record: BaseRecord, field: FieldDefinition) {
+    const cell = { recordId: record.id, fieldId: field.id }
+    const isSelected = isSameGridCell(selectedGridCell, cell)
+    const isEditing = isSameGridCell(editingGridCell, cell)
+
+    if (isEditing) {
+      return (
+        <div
+          className="grid-cell-editor"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => handleGridEditorKeyDown(record, field, event)}
+        >
+          {renderGridCellEditor(field)}
+        </div>
+      )
+    }
+
+    return (
+      <button
+        aria-label={`${getRecordTitle(base, record)} ${field.label}`}
+        className={`grid-cell-button ${isSelected ? 'selected-cell' : ''} ${computedFieldTypes.includes(field.type) ? 'readonly-cell' : ''}`}
+        data-grid-cell={getGridCellKey(cell)}
+        data-testid={`grid-cell-${record.id}-${field.id}`}
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation()
+          if (editingGridCell && !isSameGridCell(editingGridCell, cell)) {
+            commitGridCellEdit()
+          }
+          selectGridCell(record.id, field.id)
+          setSelectedBuildRecordId(record.id)
+        }}
+        onDoubleClick={(event) => {
+          event.stopPropagation()
+          startGridCellEdit(record, field)
+        }}
+        onKeyDown={(event) => handleSavedGridCellKeyDown(record, field, event)}
+      >
+        {renderSavedGridCell(record, field)}
+      </button>
+    )
+  }
+
   function renderRecordModal() {
     if (buildModal !== 'record') {
       return null
@@ -1737,6 +2200,7 @@ function App() {
       visibleFieldIdsByTable,
       gridFilter,
       gridSortFieldId,
+      gridSortDirection,
       gridGroupFieldId,
       localGridViews,
       viewRenameDrafts,
@@ -1751,6 +2215,7 @@ function App() {
     gridFilter,
     gridGroupFieldId,
     gridSortFieldId,
+    gridSortDirection,
     localGridViews,
     selectedBuildTableId,
     viewRenameDrafts,
@@ -2150,8 +2615,14 @@ function App() {
 
           {selectedBuildRecord ? (
             <>
+              <div className="drawer-status-strip" aria-label="Record status">
+                <span>{drawerStatusText}</span>
+                <strong>{drawerDateText}</strong>
+                <small>{drawerLinkedRecords.length} linked. {drawerBacklinks.length} backlinks. {drawerDependencies.length} dependencies.</small>
+              </div>
+
               <div className="drawer-grid">
-                {fieldsForSelectedTable.map((field) => (
+                {drawerKeyFields.map((field) => (
                   <article className="field-strip" key={field.id}>
                     <span>{field.label}</span>
                     <strong>{getFieldDisplayValue(selectedBuildRecord, field)}</strong>
@@ -2177,7 +2648,7 @@ function App() {
                     <strong>Backlinks</strong>
                   </div>
                   <div className="linked-list">
-                    {drawerBacklinks.length === 0 && <p className="empty-note">No records point here.</p>}
+                    {drawerBacklinks.length === 0 && <p className="empty-line">No records point here.</p>}
                     {drawerBacklinks.map((backlink) => (
                       <button
                         className="linked-record-card"
@@ -2200,7 +2671,7 @@ function App() {
                     <strong>Linked records</strong>
                   </div>
                   <div className="linked-list">
-                    {drawerLinkedRecords.length === 0 && <p className="empty-note">No linked records selected.</p>}
+                    {drawerLinkedRecords.length === 0 && <p className="empty-line">No linked records selected.</p>}
                     {drawerLinkedRecords.map((link) => (
                       <button
                         className="linked-record-card"
@@ -2329,7 +2800,7 @@ function App() {
                       ))}
                     </ol>
                   ) : (
-                    <p className="empty-note">No dependency links for this record.</p>
+                    <p className="empty-line">No dependency links for this record.</p>
                   )}
                 </section>
               </div>
@@ -2550,13 +3021,26 @@ function App() {
               </label>
               <label>
                 <span>Sort</span>
-                <select value={gridSortFieldId} onChange={(event) => setGridSortFieldId(event.target.value)}>
+                <select
+                  value={gridSortFieldId}
+                  onChange={(event) => {
+                    setGridSortFieldId(event.target.value)
+                    setGridSortDirection('asc')
+                  }}
+                >
                   <option value="">Manual</option>
                   {fieldsForSelectedTable.map((field) => (
                     <option key={field.id} value={field.id}>
                       {field.label}
                     </option>
                   ))}
+                </select>
+              </label>
+              <label>
+                <span>Direction</span>
+                <select value={gridSortDirection} onChange={(event) => setGridSortDirection(event.target.value as GridSortDirection)}>
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
                 </select>
               </label>
               <label>
@@ -2624,6 +3108,9 @@ function App() {
                             {renderGridHeader(field, `${group.label || 'all'}:${field.id}`)}
                           </th>
                         ))}
+                        <th className="add-field-column">
+                          <button aria-label="Add field from grid" type="button" onClick={() => setBuildModal('field')}>+ Add field</button>
+                        </th>
                         <th className="row-action-column">Saved</th>
                       </tr>
                     </thead>
@@ -2636,17 +3123,22 @@ function App() {
                           onDoubleClick={() => openEditRecordModal(record.id)}
                         >
                           {visibleFieldsForGrid.map((field) => (
-                            <td key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
-                              {renderSavedGridCell(record, field)}
+                            <td
+                              className={isSameGridCell(selectedGridCell, { recordId: record.id, fieldId: field.id }) ? 'selected-grid-cell' : ''}
+                              key={field.id}
+                              style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}
+                            >
+                              {renderEditableGridCell(record, field)}
                             </td>
                           ))}
+                          <td className="add-field-cell" />
                           <td className="row-action-cell">
                             <button data-testid={`edit-record-${record.id}`} type="button" onClick={() => openEditRecordModal(record.id)}>Edit</button>
                           </td>
                         </tr>
                       ))}
                       <tr className="add-record-row">
-                        <td colSpan={visibleFieldsForGrid.length + 1}>
+                        <td colSpan={visibleFieldsForGrid.length + 2}>
                           <button data-testid="build-add-record" type="button" onClick={openCreateRecordModal}>+ Add record</button>
                         </td>
                       </tr>
@@ -2687,7 +3179,7 @@ function App() {
                       />
                     </label>
                     <p>
-                      Filter: {view.filter || 'none'}. Sort: {view.sortFieldId || 'manual'}. Group: {view.groupFieldId || 'none'}.
+                      Filter: {view.filter || 'none'}. Sort: {view.sortFieldId || 'manual'} {view.sortDirection || 'asc'}. Group: {view.groupFieldId || 'none'}.
                     </p>
                     <div className="view-actions">
                       <button onClick={() => applyGridView(view)}>Apply</button>

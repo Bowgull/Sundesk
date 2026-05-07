@@ -31,6 +31,8 @@ test('Build renders table workshop, record drawer, dependency editor, and Rules 
 
   await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible()
   await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('Blocked')
+  await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('2026-05-12')
   await expect(page.getByTestId('record-drawer').getByText('Linked records')).toBeVisible()
   await expect(page.getByTestId('dependency-editor')).toBeVisible()
   await expect(page.getByTestId('dependency-editor').getByPlaceholder('Search records')).toBeVisible()
@@ -58,7 +60,7 @@ test('Build linked-record edits persist across reloads', async ({ page }) => {
   const drawer = page.getByTestId('record-drawer')
 
   await drawer.getByRole('button', { name: 'Charlottetown Remove' }).click()
-  await drawer.getByRole('button', { name: /Halifax At risk/ }).click()
+  await drawer.getByRole('button', { name: /Halifax · At risk/ }).click()
   await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
 
   await page.reload()
@@ -82,6 +84,65 @@ test('Build creates a local record from the grid', async ({ page }) => {
   await expect(modal.getByRole('heading', { name: 'Book generator' })).toBeVisible()
   await modal.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByTestId('build-screen').getByText('Book generator')).toBeVisible()
+})
+
+test('Build grid supports inline cell editing and keyboard movement', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const titleCell = page.getByTestId('grid-cell-task_coi_halifax-title')
+
+  await titleCell.click()
+  await titleCell.press('Enter')
+  await page.getByLabel('Title editor').fill('Confirm COI certificate')
+  await page.getByLabel('Title editor').press('Escape')
+  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Confirm COI certificate/ })).toBeHidden()
+
+  await titleCell.press('Enter')
+  await page.getByLabel('Title editor').fill('Confirm COI certificate')
+  await page.getByLabel('Title editor').press('Tab')
+  await expect(page.getByRole('row', { name: /Confirm COI certificate/ })).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-status')).toBeFocused()
+})
+
+test('Build field header menu exposes view and field actions', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const titleHeader = page.getByRole('columnheader', { name: /Title/ }).first()
+
+  await titleHeader.locator('.grid-field-menu-trigger').click()
+  await expect(page.getByRole('button', { name: 'Edit field' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Rename', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Change type' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hide from view' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sort ascending' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sort descending' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Group by this field' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sort descending' }).click()
+  await expect(page.getByLabel('Direction')).toHaveValue('desc')
+
+  await titleHeader.locator('.grid-field-menu-trigger').click()
+  await page.getByRole('button', { name: 'Duplicate field' }).click()
+  await expect(page.getByRole('columnheader', { name: /Title copy/ }).first()).toBeVisible()
+})
+
+test('Build grid linked-record editor searches and commits readable records', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const communityCell = page.getByTestId('grid-cell-task_coi_halifax-community')
+
+  await communityCell.click()
+  await communityCell.press('Enter')
+
+  const editor = page.getByLabel('Community editor')
+
+  await editor.getByPlaceholder('Search records').fill('charlottetown')
+  await editor.getByRole('button', { name: /Charlottetown · Prep · 2026-05-28/ }).click()
+  await editor.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toContainText('Charlottetown')
 })
 
 test('Build created records persist across reloads', async ({ page }) => {
@@ -174,14 +235,14 @@ test('Build table delete repairs linked fields and persists', async ({ page }) =
   await page.getByTestId('build-table-tasks').click()
   await page.getByRole('row', { name: /Confirm COI status/ }).click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
-  await expect(page.getByTestId('record-drawer').getByText('Empty').first()).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 
   await page.reload()
   await expect(page.getByTestId('build-table-people')).toBeHidden()
   await page.getByTestId('build-table-tasks').click()
   await page.getByRole('row', { name: /Confirm COI status/ }).click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
-  await expect(page.getByTestId('record-drawer').getByText('Empty').first()).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 })
 
 test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
@@ -252,7 +313,7 @@ test('Build pinned views persist across reloads', async ({ page }) => {
 test('Build field create, edit, and delete persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('button', { name: 'Add field' }).click()
+  await page.getByRole('button', { name: 'Add field', exact: true }).click()
 
   const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
 
@@ -261,7 +322,7 @@ test('Build field create, edit, and delete persist across reloads', async ({ pag
   await addFieldModal.getByRole('button', { name: 'Add field' }).click()
   await expect(page.getByRole('columnheader', { name: /Notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Notes/ }).first().locator('.grid-field-menu-trigger').click()
-  await page.getByRole('button', { name: 'Field settings' }).click()
+  await page.getByRole('button', { name: 'Edit field' }).click()
 
   const settingsModal = page.getByRole('dialog', { name: 'Field settings' })
 

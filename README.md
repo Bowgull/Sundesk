@@ -29,6 +29,7 @@ npm run dev
 - [Privacy](docs/PRIVACY.md)
 - [Data model](docs/DATA_MODEL.md)
 - [V1 scope](docs/V1_SCOPE.md)
+- [UI/UX polish spec](docs/UI_UX_POLISH_SPEC.md)
 - [Firebase setup](docs/FIREBASE_SETUP.md)
 - [Digest bridge](docs/DIGEST_BRIDGE.md)
 - [Theme system](docs/THEME_SYSTEM.md)

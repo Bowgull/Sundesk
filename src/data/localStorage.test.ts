@@ -160,6 +160,7 @@ describe('local storage helpers', () => {
         },
         gridFilter: 'permit',
         gridSortFieldId: 'dueDate',
+        gridSortDirection: 'desc',
         gridGroupFieldId: 'status',
         localGridViews: [
           {
@@ -168,6 +169,7 @@ describe('local storage helpers', () => {
             tableId: 'tasks',
             filter: 'permit',
             sortFieldId: 'dueDate',
+            sortDirection: 'desc',
             groupFieldId: 'status',
             visibleFieldIds: ['title', 'status'],
             pinned: true,
@@ -190,6 +192,7 @@ describe('local storage helpers', () => {
 
     expect(state.selectedBuildTableId).toBe('tasks')
     expect(state.visibleFieldIdsByTable).toEqual({ tasks: ['title', 'status'] })
+    expect(state.gridSortDirection).toBe('desc')
     expect(state.localGridViews).toEqual([
       {
         id: 'tasks_view_1',
@@ -197,6 +200,7 @@ describe('local storage helpers', () => {
         tableId: 'tasks',
         filter: 'permit',
         sortFieldId: 'dueDate',
+        sortDirection: 'desc',
         groupFieldId: 'status',
         visibleFieldIds: ['title', 'status'],
         pinned: true,

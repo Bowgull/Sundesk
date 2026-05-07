@@ -42,6 +42,7 @@ describe('view read models', () => {
       { tasks: ['title', 'status'] },
       'permit',
       'dueDate',
+      'asc',
       'status',
     )
 

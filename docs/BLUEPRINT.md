@@ -301,11 +301,13 @@ V1 themes:
 - Sunset Bold.
 - Cloud Light.
 - Focus Dark.
-- Light.
+- Paper Light.
 
 Sunrise Soft is the default.
 
 The logo defines the visual source of truth: navy wordmark, sunrise grid, coral, peach, gold, cloud blue, and lavender table geometry.
+
+Theme behaviour, typography, button states, menus, grid editing, drawers, chips, and polish rules live in [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md).
 
 ## Build Memory
 
@@ -331,14 +333,23 @@ Bridgefour visibility is out of scope for this build plan.
 
 The final build session is UI and UX polish.
 
+It should implement [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md) as the acceptance target.
+
 It should review the whole app as a product Lindsay can use:
 
 - First screen clarity.
 - Today action flow.
 - Build power without daily noise.
+- Inline grid editing.
+- Field menus.
+- Dropdown and picker behaviour.
+- Button types, sizes, and states.
 - Record drawer readability.
 - Mobile layout.
 - Theme fit.
+- Typography.
+- Colour meaning.
+- Chip hierarchy.
 - Empty states.
 - Button labels.
 - Privacy copy.

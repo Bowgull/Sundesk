@@ -71,6 +71,7 @@ export function getBuildGridDerivation(
   visibleFieldIdsByTable: Record<string, string[]>,
   filterValue: string,
   sortFieldId: string,
+  sortDirection: 'asc' | 'desc',
   groupFieldId: string,
 ): BuildGridDerivation {
   const fieldsForSelectedTable = base.fields.filter((field) => field.tableId === tableId)
@@ -97,10 +98,12 @@ export function getBuildGridDerivation(
         return 0
       }
 
-      return getFieldDisplayValue(base, firstRecord, field).localeCompare(getFieldDisplayValue(base, secondRecord, field), undefined, {
+      const comparison = getFieldDisplayValue(base, firstRecord, field).localeCompare(getFieldDisplayValue(base, secondRecord, field), undefined, {
         numeric: true,
         sensitivity: 'base',
       })
+
+      return sortDirection === 'desc' ? comparison * -1 : comparison
     })
   const groupField = fieldsForSelectedTable.find((field) => field.id === groupFieldId)
   const groupedRecords = groupField
