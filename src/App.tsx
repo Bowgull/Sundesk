@@ -36,23 +36,16 @@ function App() {
         </div>
 
         <nav className="main-nav">
+          <span>Work</span>
           <a className="active" href="#today">Today</a>
           <a href="#communities">Communities</a>
-          <a href="#record">Record</a>
-          <a href="#views">Views</a>
+          <a href="#followups">Follow-ups</a>
+          <a href="#meetings">Meetings</a>
+          <a href="#timeline">Timeline</a>
+          <span>System</span>
           <a href="#build">Build</a>
+          <a href="#settings">Settings</a>
         </nav>
-
-        <section className="theme-card">
-          <span>Theme</span>
-          <div>
-            {themes.map((theme) => (
-              <button key={theme} className={theme === 'Sunrise Soft' ? 'selected' : ''}>
-                {theme}
-              </button>
-            ))}
-          </div>
-        </section>
 
         <section className="privacy-card">
           <span>Privacy boundary</span>
@@ -62,6 +55,15 @@ function App() {
       </aside>
 
       <section className="desk">
+        <section className="onboarding-callout" aria-label="Onboarding status">
+          <div>
+            <span className="eyebrow">First run</span>
+            <strong>Onboarding is required before real data.</strong>
+            <p>Confirm privacy rules, choose a theme, set digest time, then add the first communities.</p>
+          </div>
+          <button>View onboarding</button>
+        </section>
+
         <header className="hero" id="today">
           <div>
             <span className="eyebrow">Today</span>
@@ -86,7 +88,7 @@ function App() {
                 <span className="eyebrow">Priority queue</span>
                 <h2>Start here.</h2>
               </div>
-              <button className="ghost">Tune rules</button>
+              <button className="ghost">Adjust rules</button>
             </div>
 
             <div className="priority-list">
@@ -138,7 +140,7 @@ function App() {
               </div>
             </article>
 
-            <article className="next-meeting">
+            <article className="next-meeting" id="meetings">
               <span className="eyebrow">Next meeting</span>
               <strong>Charlottetown. Tomorrow.</strong>
               <p>Agenda can be generated from 2 tasks, 1 risk, and 1 follow-up.</p>
@@ -150,11 +152,11 @@ function App() {
         <section className="record-drawer" id="record">
           <div className="drawer-header">
             <div>
-              <span className="eyebrow">Selected record</span>
+                <span className="eyebrow">Community</span>
               <h2>Halifax community record.</h2>
             </div>
             <div className="drawer-actions">
-              <button>+ Field</button>
+              <button>+ Add detail</button>
               <button className="primary">Add linked record</button>
             </div>
           </div>
@@ -170,7 +172,7 @@ function App() {
           </div>
 
           <div className="linked-layout">
-            <section>
+            <section id="followups">
               <div className="mini-title">
                 <strong>Linked records</strong>
                 <button>Open table</button>
@@ -204,7 +206,7 @@ function App() {
           <article className="mode-card">
             <div className="mode-head">
               <span>Kanban</span>
-              <strong>Drag status. Trigger rules.</strong>
+                <strong>Move work across statuses.</strong>
             </div>
             <div className="kanban-preview">
               <div><b>Waiting</b><p>Permit update</p></div>
@@ -216,7 +218,7 @@ function App() {
           <article className="mode-card">
             <div className="mode-head">
               <span>Calendar</span>
-              <strong>Every date becomes visible.</strong>
+                <strong>See meetings and deadlines by date.</strong>
             </div>
             <div className="calendar-preview">
               <div>12<span>COI</span></div>
@@ -226,10 +228,10 @@ function App() {
             </div>
           </article>
 
-          <article className="mode-card wide">
+          <article className="mode-card wide" id="timeline">
             <div className="mode-head">
               <span>Gantt</span>
-              <strong>Dependencies show the critical path.</strong>
+              <strong>See what blocks what.</strong>
             </div>
             <div className="gantt-preview">
               <div><span>Halifax</span><i className="bar firebar" /><em>COI blocks venue readiness</em></div>
@@ -243,10 +245,11 @@ function App() {
           <article className="builder-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Build mode</span>
-                <h2>Customize without breaking the base.</h2>
+                <span className="eyebrow">Build</span>
+                <h2>Shape the system.</h2>
               </div>
             </div>
+            <p className="panel-copy">Add the details Lindsay needs to track. Keep the daily screen clean.</p>
             <div className="build-grid">
               {buildFieldTypes.map((fieldType) => (
                 <button key={fieldType}>{fieldType}</button>
@@ -258,14 +261,14 @@ function App() {
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Automations</span>
-                <h2>Rules she can edit.</h2>
+                <h2>Work rules she can edit.</h2>
               </div>
               <button className="primary">New rule</button>
             </div>
             <div className="rules">
               {automationRules.map((rule) => (
                 <p key={rule.id}>
-                  <span>When</span> {rule.when} <span>Then</span> {rule.then}.
+                  <span>When</span> {rule.when}. <span>Then</span> {rule.then}.
                 </p>
               ))}
             </div>
@@ -274,15 +277,47 @@ function App() {
           <article className="onboarding-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Onboarding</span>
-                <h2>First run sets the guardrails.</h2>
+                <span className="eyebrow">Templates</span>
+                <h2>Starts she can reuse.</h2>
               </div>
             </div>
             <div className="setup-steps">
-              <p><strong>1.</strong> Confirm privacy boundary.</p>
-              <p><strong>2.</strong> Choose starter tables.</p>
-              <p><strong>3.</strong> Pick fields and templates.</p>
-              <p><strong>4.</strong> Set digest time.</p>
+              <p><strong>Community setup.</strong> Starter checklist for each location.</p>
+              <p><strong>Weekly meeting.</strong> Agenda from open work and risks.</p>
+              <p><strong>Approval chase.</strong> Follow-up path for permits and confirmations.</p>
+              <p><strong>Event readiness.</strong> Final status check before event week.</p>
+            </div>
+          </article>
+        </section>
+
+        <section className="settings-zone" id="settings">
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Settings</span>
+                <h2>Theme belongs here.</h2>
+              </div>
+            </div>
+            <div className="theme-grid">
+              {themes.map((theme) => (
+                <button key={theme} className={theme === 'Sunrise Soft' ? 'selected' : ''}>
+                  {theme}
+                </button>
+              ))}
+            </div>
+          </article>
+
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Digest</span>
+                <h2>Morning summary.</h2>
+              </div>
+            </div>
+            <div className="settings-list">
+              <p><strong>Recipient.</strong> lindsaybelldesign@gmail.com</p>
+              <p><strong>Time.</strong> 7:30 AM</p>
+              <p><strong>Source.</strong> Today queue and overdue follow-ups.</p>
             </div>
           </article>
         </section>

@@ -111,28 +111,28 @@ export const selectedFields: FieldDefinition[] = [
 export const automationRules: AutomationRule[] = [
   {
     id: 'rule-overdue-followup',
-    when: 'follow-up is overdue',
-    then: 'add to Today and digest',
+    when: 'a follow-up is overdue',
+    then: 'put it in Today and include it in the morning digest',
   },
   {
     id: 'rule-blocked-status',
-    when: 'status becomes blocked',
-    then: 'mark community at risk',
+    when: 'an item gets blocked',
+    then: 'mark the community at risk',
   },
   {
     id: 'rule-meeting-tomorrow',
-    when: 'meeting is tomorrow',
-    then: 'generate prep view',
+    when: 'a meeting is tomorrow',
+    then: 'make a meeting prep list',
   },
 ]
 
 export const buildFieldTypes = [
-  'Text',
+  'Short note',
   'Status',
   'Date',
   'Phone',
-  'Linked record',
-  'Lookup',
-  'Rollup',
-  'Formula rule',
+  'Connect to another item',
+  'Show linked details',
+  'Count linked items',
+  'Calculated rule',
 ]

@@ -49,10 +49,18 @@
   font-weight: 800;
 }
 
-.main-nav,
-.theme-card div {
+.main-nav {
   display: grid;
   gap: 7px;
+}
+
+.main-nav span {
+  margin: 13px 12px 2px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .main-nav a {
@@ -70,7 +78,6 @@
   color: var(--ink);
 }
 
-.theme-card,
 .privacy-card {
   padding: 16px;
   border: 1px solid var(--line-strong);
@@ -78,7 +85,6 @@
   background: rgba(255, 255, 255, 0.72);
 }
 
-.theme-card span,
 .privacy-card span,
 .eyebrow {
   color: var(--accent);
@@ -86,20 +92,6 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.theme-card div {
-  margin-top: 12px;
-}
-
-.theme-card button {
-  justify-content: flex-start;
-  width: 100%;
-}
-
-.theme-card .selected {
-  border-color: var(--accent);
-  background: var(--sky-1);
 }
 
 .privacy-card {
@@ -123,6 +115,30 @@
   display: grid;
   gap: 18px;
   padding: 30px 32px 44px;
+}
+
+.onboarding-callout {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 242, 184, 0.46);
+  box-shadow: var(--aura);
+}
+
+.onboarding-callout strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+}
+
+.onboarding-callout p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .hero {
@@ -645,8 +661,16 @@ h2 {
 
 .build-zone {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(320px, 0.95fr);
   gap: 18px;
+}
+
+.panel-copy {
+  max-width: 48ch;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .build-grid {
@@ -686,6 +710,56 @@ h2 {
   margin-right: 8px;
 }
 
+.settings-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.settings-panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--aura);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.theme-grid button {
+  min-height: 46px;
+}
+
+.theme-grid .selected {
+  border-color: var(--accent);
+  background: var(--sky-1);
+}
+
+.settings-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.settings-list p {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.settings-list strong {
+  margin-right: 6px;
+}
+
 @media (max-width: 1180px) {
   .app {
     grid-template-columns: 1fr;
@@ -702,7 +776,8 @@ h2 {
 
   .command-grid,
   .linked-layout,
-  .build-zone {
+  .build-zone,
+  .settings-zone {
     grid-template-columns: 1fr;
   }
 
@@ -717,8 +792,11 @@ h2 {
   }
 
   .hero,
-  .mode-grid {
+  .mode-grid,
+  .onboarding-callout {
     grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   h1 {
@@ -734,7 +812,8 @@ h2 {
   .kanban-preview,
   .calendar-preview,
   .build-grid,
-  .signal-grid {
+  .signal-grid,
+  .theme-grid {
     grid-template-columns: 1fr;
   }
 }
