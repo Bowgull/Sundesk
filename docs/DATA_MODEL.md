@@ -67,10 +67,59 @@ Custom tables are V1.
   "label": "COI status",
   "type": "singleSelect",
   "options": ["Missing", "Requested", "Received", "Not needed"],
+  "optionColors": {
+    "Missing": "rose",
+    "Requested": "gold",
+    "Received": "lime",
+    "Not needed": "graphite"
+  },
   "required": false,
   "createdAt": "timestamp"
 }
 ```
+
+Select and tag options are user-editable. Option names and colours are not fixed product logic.
+
+## Checkbox Field Settings
+
+Checkbox fields store boolean values.
+
+The user can edit how checked values look.
+
+```json
+{
+  "id": "coiReceived",
+  "tableId": "approvals",
+  "label": "COI received",
+  "type": "checkbox",
+  "checkboxIcon": "check",
+  "checkboxColor": "lime",
+  "createdAt": "timestamp"
+}
+```
+
+Supported checkbox icons:
+
+- `check`
+- `star`
+- `heart`
+- `thumb`
+- `flag`
+
+Supported checkbox colours:
+
+- `lime`
+- `mint`
+- `cyan`
+- `blue`
+- `violet`
+- `pink`
+- `rose`
+- `orange`
+- `gold`
+- `graphite`
+
+The field name gives the checkbox meaning. Sundesk does not hard-code meanings for checkbox icons.
 
 ## Linked Record Field Shape
 
@@ -168,11 +217,12 @@ Links can be materialized when the UI or automations need fast graph reads.
 - Long text.
 - Status.
 - Single select.
-- Multi select.
+- Tags.
 - Date.
 - Date + time.
 - Checkbox.
 - Number.
+- Price.
 - Percent.
 - Rating.
 - Phone.

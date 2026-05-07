@@ -724,13 +724,22 @@ h2 {
   margin-top: 16px;
 }
 
-.linked-list article {
+.linked-list article,
+.linked-record-card {
   display: grid;
   gap: 7px;
+  justify-items: start;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.66);
+  color: inherit;
+  text-align: left;
+}
+
+.linked-record-card:hover {
+  border-color: var(--accent);
+  background: var(--sky-1);
 }
 
 .linked-list small {
@@ -988,6 +997,45 @@ h2 {
   min-height: 18px;
 }
 
+.checkbox-style-grid,
+.checkbox-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox-style-grid button,
+.checkbox-color-grid button {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--accent);
+}
+
+.checkbox-style-grid button {
+  display: grid;
+  place-items: center;
+}
+
+.checkbox-style-grid button.selected,
+.checkbox-color-grid button.selected {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.checkbox-style-grid svg,
+.grid-check-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.checkbox-color-grid button {
+  background: currentColor;
+}
+
 .selected-table-strip {
   display: flex;
   justify-content: space-between;
@@ -1238,11 +1286,11 @@ h2 {
   width: 100%;
   min-width: 760px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .record-table th,
 .record-table td {
-  max-width: 240px;
   padding: 11px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
@@ -1250,11 +1298,101 @@ h2 {
 }
 
 .record-table th {
+  position: relative;
   background: var(--sky-1);
   color: var(--muted);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.grid-header-cell {
+  position: relative;
+  display: grid;
+  min-height: 32px;
+}
+
+.grid-field-menu-trigger {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 18px 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.grid-field-menu-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid-field-menu-trigger small {
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.grid-field-menu-trigger strong {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.grid-field-menu {
+  position: absolute;
+  z-index: 8;
+  top: 34px;
+  left: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--aura);
+}
+
+.grid-field-menu button {
+  justify-content: flex-start;
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.grid-field-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.column-resizer {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  bottom: 0;
+  width: 10px;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.column-resizer:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .record-table td {
@@ -1291,10 +1429,102 @@ h2 {
   min-height: 18px;
 }
 
+.grid-check-button {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: currentColor;
+  line-height: 1;
+}
+
+.grid-check-button.checked {
+  border-color: transparent;
+  background: transparent;
+}
+
+.grid-check-button:not(.checked) {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+}
+
+.check-lime {
+  color: #19c84a;
+}
+
+.check-mint {
+  color: #16cfc5;
+}
+
+.check-cyan {
+  color: #16b9ec;
+}
+
+.check-blue {
+  color: #2f73dc;
+}
+
+.check-violet {
+  color: #8b49f6;
+}
+
+.check-pink {
+  color: #f20bb9;
+}
+
+.check-rose {
+  color: #f02d61;
+}
+
+.check-orange {
+  color: #ff7417;
+}
+
+.check-gold {
+  color: #f7b900;
+}
+
+.check-graphite {
+  color: #6c6c6c;
+}
+
 .grid-cell-readonly {
   display: block;
   min-height: 34px;
   padding: 7px 0;
+}
+
+.grid-linked-editor {
+  display: grid;
+  gap: 7px;
+  min-width: 200px;
+}
+
+.grid-linked-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.grid-linked-pills button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: var(--sky-1);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.grid-linked-empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
 }
 
 .grid-option-list {
@@ -1307,16 +1537,61 @@ h2 {
 .grid-option-list button {
   min-height: 28px;
   padding: 0 8px;
-  border-color: var(--line);
-  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
-  color: var(--muted);
   font-size: 11px;
 }
 
 .grid-option-list button.selected {
-  border-color: var(--accent);
-  background: var(--sky-1);
   color: var(--ink);
+}
+
+.grid-single-select {
+  display: grid;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.select-tag,
+.grid-option-list button {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.tag-blue {
+  border-color: color-mix(in srgb, #2f6fed 30%, var(--line));
+  background: color-mix(in srgb, #2f6fed 16%, white);
+}
+
+.tag-green {
+  border-color: color-mix(in srgb, #26815b 30%, var(--line));
+  background: color-mix(in srgb, #26815b 16%, white);
+}
+
+.tag-yellow {
+  border-color: color-mix(in srgb, #b87503 34%, var(--line));
+  background: color-mix(in srgb, #f3b33d 22%, white);
+}
+
+.tag-red {
+  border-color: color-mix(in srgb, #b44739 30%, var(--line));
+  background: color-mix(in srgb, #d9534f 16%, white);
+}
+
+.tag-purple {
+  border-color: color-mix(in srgb, #7256c8 30%, var(--line));
+  background: color-mix(in srgb, #7256c8 16%, white);
+}
+
+.tag-gray {
+  border-color: color-mix(in srgb, var(--muted) 26%, var(--line));
+  background: color-mix(in srgb, var(--muted) 12%, white);
 }
 
 .record-table tr {
@@ -1422,6 +1697,21 @@ h2 {
 
 .option-choice-grid button {
   min-height: 42px;
+}
+
+.dependency-record-link {
+  display: inline;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.dependency-record-link:hover {
+  color: var(--accent);
 }
 
 .rules,

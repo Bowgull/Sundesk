@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type PointerEvent } from 'react'
 import {
   automationRules,
   buildFieldTypes,
@@ -10,6 +10,8 @@ import {
 } from './data/demoData'
 import {
   type BaseRecord,
+  type CheckboxColor,
+  type CheckboxIcon,
   type FieldDefinition,
   type FieldType,
   type RecordValue,
@@ -53,11 +55,12 @@ const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'Long text', value: 'longText' },
   { label: 'Status', value: 'status' },
   { label: 'Single select', value: 'singleSelect' },
-  { label: 'Multi select', value: 'multiSelect' },
+  { label: 'Tags', value: 'multiSelect' },
   { label: 'Date', value: 'date' },
   { label: 'Date + time', value: 'dateTime' },
   { label: 'Checkbox', value: 'checkbox' },
   { label: 'Number', value: 'number' },
+  { label: 'Price', value: 'currency' },
   { label: 'Percent', value: 'percent' },
   { label: 'Rating', value: 'rating' },
   { label: 'Phone', value: 'phone' },
@@ -73,6 +76,26 @@ const fieldTypeOptions: { label: string; value: FieldType }[] = [
 
 const optionFieldTypes: FieldType[] = ['status', 'singleSelect', 'multiSelect']
 const computedFieldTypes: FieldType[] = ['lookup', 'rollup', 'count', 'systemFormula', 'createdTime', 'lastUpdatedTime']
+const optionColorClassNames = ['tag-blue', 'tag-green', 'tag-yellow', 'tag-red', 'tag-purple', 'tag-gray']
+const checkboxIconOptions: { label: string; value: CheckboxIcon }[] = [
+  { label: 'Check', value: 'check' },
+  { label: 'Star', value: 'star' },
+  { label: 'Heart', value: 'heart' },
+  { label: 'Thumb', value: 'thumb' },
+  { label: 'Flag', value: 'flag' },
+]
+const checkboxColorOptions: { label: string; value: CheckboxColor }[] = [
+  { label: 'Lime', value: 'lime' },
+  { label: 'Mint', value: 'mint' },
+  { label: 'Cyan', value: 'cyan' },
+  { label: 'Blue', value: 'blue' },
+  { label: 'Violet', value: 'violet' },
+  { label: 'Pink', value: 'pink' },
+  { label: 'Rose', value: 'rose' },
+  { label: 'Orange', value: 'orange' },
+  { label: 'Gold', value: 'gold' },
+  { label: 'Graphite', value: 'graphite' },
+]
 
 type LocalGridView = {
   id: string
@@ -142,6 +165,52 @@ function getDefaultVisibleFieldIds(fields: FieldDefinition[]) {
   return fields.slice(0, 5).map((field) => field.id)
 }
 
+function getOptionColorClass(value: string) {
+  const colorIndex = value.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0) % optionColorClassNames.length
+
+  return optionColorClassNames[colorIndex]
+}
+
+function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
+  if (icon === 'star') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="m12 2.8 2.76 5.58 6.16.9-4.46 4.34 1.05 6.13L12 16.86l-5.51 2.89 1.05-6.13-4.46-4.35 6.16-.89L12 2.8Z" />
+      </svg>
+    )
+  }
+
+  if (icon === 'heart') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 20.4S4 15.62 4 9.64C4 6.8 6.03 4.7 8.7 4.7c1.54 0 2.8.72 3.3 1.86.5-1.14 1.76-1.86 3.3-1.86 2.67 0 4.7 2.1 4.7 4.94 0 5.98-8 10.76-8 10.76Z" />
+      </svg>
+    )
+  }
+
+  if (icon === 'thumb') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M8.6 20.2h8.05c1.03 0 1.9-.72 2.1-1.73l1.05-5.28a2.16 2.16 0 0 0-2.12-2.58h-4.3l.66-3.15c.17-.83-.08-1.69-.66-2.3l-.45-.47a1.1 1.1 0 0 0-1.77.24L7.6 11.55v7.65c0 .55.45 1 1 1ZM4.2 11.5h2.1v8.7H4.2z" />
+      </svg>
+    )
+  }
+
+  if (icon === 'flag') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M5 21V4.2c0-.55.45-1 1-1h11.2c.48 0 .9.34.99.81l.92 4.78a1 1 0 0 1-.98 1.19H7v7.02h10.2c.48 0 .9.34.99.81l.92 4.78a1 1 0 0 1-.98 1.19H6a1 1 0 0 1-1-1Z" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M9.2 18.1 3.7 12.6l2.25-2.25 3.25 3.25 8.85-8.85 2.25 2.25L9.2 18.1Z" />
+    </svg>
+  )
+}
+
 function priorityLabel(priority: Priority) {
   const labels: Record<Priority, string> = {
     fire: 'Fire',
@@ -159,7 +228,7 @@ function App() {
     () => localStorage.getItem('sundesk-theme') || 'sunrise-soft',
   )
   const [base, setBase] = useState(() => cloneWorkbase(workbase))
-  const [selectedBuildTableId, setSelectedBuildTableId] = useState('tasks')
+  const [selectedBuildTableId, setSelectedBuildTableId] = useState('communities')
   const [tableDraft, setTableDraft] = useState({
     label: '',
     description: '',
@@ -168,13 +237,17 @@ function App() {
     label: '',
     type: 'text' as FieldType,
     options: 'Missing, Requested, Received, Not needed',
+    checkboxIcon: 'check' as CheckboxIcon,
+    checkboxColor: 'lime' as CheckboxColor,
     linkedTableId: 'communities',
+    allowMultiple: true,
     sourceLinkedFieldId: '',
     sourceFieldId: '',
   })
   const [recordDraft, setRecordDraft] = useState<Record<string, RecordValue>>(() => getEmptyRecordValues(workbase, 'tasks'))
-  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('task_coi_halifax')
+  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('community_halifax')
   const [visibleFieldIdsByTable, setVisibleFieldIdsByTable] = useState<Record<string, string[]>>(() => ({
+    communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
     tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
   }))
   const [gridFilter, setGridFilter] = useState('')
@@ -183,6 +256,8 @@ function App() {
   const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>([])
   const [viewRenameDrafts, setViewRenameDrafts] = useState<Record<string, string>>({})
   const [activeGridViewId, setActiveGridViewId] = useState('')
+  const [openFieldMenuId, setOpenFieldMenuId] = useState('')
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -330,9 +405,14 @@ function App() {
       options,
     }
 
+    if (fieldDraft.type === 'checkbox') {
+      field.checkboxIcon = fieldDraft.checkboxIcon
+      field.checkboxColor = fieldDraft.checkboxColor
+    }
+
     if (fieldDraft.type === 'linkedRecord') {
       field.linkedTableId = fieldDraft.linkedTableId
-      field.allowMultiple = true
+      field.allowMultiple = fieldDraft.allowMultiple
     }
 
     if (fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') {
@@ -365,6 +445,52 @@ function App() {
     setFieldDraft((current) => ({ ...current, label: '' }))
   }
 
+  function deleteField(field: FieldDefinition) {
+    const tableId = selectedBuildTable?.id
+
+    if (!tableId || field.id === selectedBuildTable.primaryFieldId) {
+      return
+    }
+
+    setBase((current) => ({
+      ...current,
+      fields: current.fields.filter((fieldItem) => !(fieldItem.tableId === field.tableId && fieldItem.id === field.id)),
+      records: current.records.map((record) => {
+        if (record.tableId !== tableId) {
+          return record
+        }
+
+        const nextValues = { ...record.values }
+        delete nextValues[field.id]
+
+        return { ...record, values: nextValues }
+      }),
+    }))
+    setRecordDraft((current) => {
+      const nextDraft = { ...current }
+      delete nextDraft[field.id]
+
+      return nextDraft
+    })
+    setVisibleFieldIdsByTable((current) => ({
+      ...current,
+      [tableId]: (current[tableId] || []).filter((fieldId) => fieldId !== field.id),
+    }))
+    setColumnWidths((current) => {
+      const nextWidths = { ...current }
+      delete nextWidths[field.id]
+
+      return nextWidths
+    })
+    if (gridSortFieldId === field.id) {
+      setGridSortFieldId(selectedBuildTable.primaryFieldId)
+    }
+    if (gridGroupFieldId === field.id) {
+      setGridGroupFieldId('')
+    }
+    setOpenFieldMenuId('')
+  }
+
   function selectBuildTable(tableId: string) {
     const nextRecord = getRecordsForTable(base, tableId)[0]
 
@@ -375,6 +501,24 @@ function App() {
     setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
+  }
+
+  function openBuildRecord(tableId: string, recordId: string) {
+    const table = base.tables.find((tableItem) => tableItem.id === tableId)
+    const record = getRecord(base, recordId)
+
+    if (!table || !record) {
+      return
+    }
+
+    setSelectedBuildTableId(tableId)
+    setSelectedBuildRecordId(recordId)
+    setGridFilter('')
+    setGridSortFieldId(table.primaryFieldId)
+    setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, tableId))
+    window.requestAnimationFrame(() => document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
   }
 
   function toggleVisibleField(fieldId: string) {
@@ -565,6 +709,65 @@ function App() {
     }))
   }
 
+  function resizeColumn(fieldId: string, event: PointerEvent<HTMLButtonElement>) {
+    const startX = event.clientX
+    const startWidth = columnWidths[fieldId] || 180
+
+    function updateWidth(pointerEvent: globalThis.PointerEvent) {
+      const nextWidth = Math.max(120, Math.min(420, startWidth + pointerEvent.clientX - startX))
+
+      setColumnWidths((current) => ({ ...current, [fieldId]: nextWidth }))
+    }
+
+    function stopResize() {
+      document.removeEventListener('pointermove', updateWidth)
+      document.removeEventListener('pointerup', stopResize)
+    }
+
+    document.addEventListener('pointermove', updateWidth)
+    document.addEventListener('pointerup', stopResize)
+  }
+
+  function renderGridHeader(field: FieldDefinition) {
+    const isPrimaryField = selectedBuildTable?.primaryFieldId === field.id
+
+    return (
+      <div className="grid-header-cell">
+        <button
+          className="grid-field-menu-trigger"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpenFieldMenuId(openFieldMenuId === field.id ? '' : field.id)
+          }}
+        >
+          <span>{field.label}</span>
+          {isPrimaryField && <small>Name field</small>}
+          <strong>⌄</strong>
+        </button>
+        {openFieldMenuId === field.id && (
+          <div className="grid-field-menu">
+            <button type="button" onClick={() => toggleVisibleField(field.id)}>Hide field</button>
+            <button
+              className="danger"
+              disabled={isPrimaryField}
+              type="button"
+              onClick={() => deleteField(field)}
+            >
+              Delete field
+            </button>
+          </div>
+        )}
+        <button
+          aria-label={`Resize ${field.label}`}
+          className="column-resizer"
+          type="button"
+          onPointerDown={(event) => resizeColumn(field.id, event)}
+        />
+      </div>
+    )
+  }
+
   function getFieldDisplayValue(record: BaseRecord, field: FieldDefinition) {
     if (field.type === 'lookup') {
       return String(getLookupPreview(base, record.id, field.id) || 'Empty')
@@ -613,6 +816,10 @@ function App() {
 
     if (value === null || value === '') {
       return 'Empty'
+    }
+
+    if (field.type === 'currency' && typeof value === 'number') {
+      return `$${value.toLocaleString()}`
     }
 
     return String(value)
@@ -723,7 +930,7 @@ function App() {
       )
     }
 
-    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
+    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
 
     return (
       <label key={field.id}>
@@ -740,8 +947,83 @@ function App() {
   function renderGridCellInput(record: BaseRecord, field: FieldDefinition) {
     const value = record.values[field.id]
 
-    if (computedFieldTypes.includes(field.type) || field.type === 'linkedRecord') {
+    if (computedFieldTypes.includes(field.type)) {
       return <span className="grid-cell-readonly">{getFieldDisplayValue(record, field)}</span>
+    }
+
+    if (field.type === 'linkedRecord') {
+      const linkedRecords = field.linkedTableId ? getRecordsForTable(base, field.linkedTableId) : []
+      const selectedLinkedIds = Array.isArray(value) ? value : []
+      const availableRecords = linkedRecords.filter((linkedRecord) => !selectedLinkedIds.includes(linkedRecord.id))
+
+      if (!field.allowMultiple) {
+        return (
+          <select
+            aria-label={field.label}
+            value={selectedLinkedIds[0] || ''}
+            onChange={(event) => {
+              setSelectedBuildRecordId(record.id)
+              updateRecordField(record.id, field.id, event.target.value ? [event.target.value] : [])
+            }}
+          >
+            <option value="">Choose</option>
+            {linkedRecords.map((linkedRecord) => (
+              <option key={linkedRecord.id} value={linkedRecord.id}>
+                {getRecordTitle(base, linkedRecord)}
+              </option>
+            ))}
+          </select>
+        )
+      }
+
+      return (
+        <div className="grid-linked-editor" aria-label={`${field.label} linked records`}>
+          <div className="grid-linked-pills">
+            {selectedLinkedIds.length === 0 && <span className="grid-linked-empty">Empty</span>}
+            {selectedLinkedIds.map((linkedRecordId) => {
+              const linkedRecord = getRecord(base, linkedRecordId)
+
+              return (
+                <button
+                  aria-label={`Remove ${linkedRecord ? getRecordTitle(base, linkedRecord) : linkedRecordId}`}
+                  key={linkedRecordId}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setSelectedBuildRecordId(record.id)
+                    updateRecordField(record.id, field.id, selectedLinkedIds.filter((selectedLinkedId) => selectedLinkedId !== linkedRecordId))
+                  }}
+                >
+                  {linkedRecord ? getRecordTitle(base, linkedRecord) : linkedRecordId}
+                </button>
+              )
+            })}
+          </div>
+          <select
+            aria-label={`Add ${field.label} link`}
+            disabled={availableRecords.length === 0}
+            value=""
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              const nextRecordId = event.target.value
+
+              if (!nextRecordId) {
+                return
+              }
+
+              setSelectedBuildRecordId(record.id)
+              updateRecordField(record.id, field.id, [...selectedLinkedIds, nextRecordId])
+            }}
+          >
+            <option value="">{availableRecords.length === 0 ? 'All linked' : 'Add link'}</option>
+            {availableRecords.map((linkedRecord) => (
+              <option key={linkedRecord.id} value={linkedRecord.id}>
+                {getRecordTitle(base, linkedRecord)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )
     }
 
     if (field.type === 'multiSelect' && field.options) {
@@ -753,10 +1035,10 @@ function App() {
             const isSelected = selectedOptions.includes(option)
 
             return (
-              <button
-                className={isSelected ? 'selected' : ''}
-                key={option}
-                type="button"
+                <button
+                  className={`${getOptionColorClass(option)} ${isSelected ? 'selected' : ''}`}
+                  key={option}
+                  type="button"
                 onClick={() => {
                   setSelectedBuildRecordId(record.id)
                   updateRecordField(record.id, field.id, toggleListValue(selectedOptions, option))
@@ -771,36 +1053,43 @@ function App() {
     }
 
     if (field.options) {
+      const selectedValue = typeof value === 'string' ? value : ''
+
       return (
-        <select
-          aria-label={field.label}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => {
-            setSelectedBuildRecordId(record.id)
-            updateRecordField(record.id, field.id, event.target.value)
-          }}
-        >
-          <option value="">Choose</option>
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+        <div className="grid-single-select">
+          {selectedValue ? <span className={`select-tag ${getOptionColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>}
+          <select
+            aria-label={field.label}
+            value={selectedValue}
+            onChange={(event) => {
+              setSelectedBuildRecordId(record.id)
+              updateRecordField(record.id, field.id, event.target.value)
+            }}
+          >
+            <option value="">Choose</option>
+            {field.options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
       )
     }
 
     if (field.type === 'checkbox') {
       return (
-        <input
+        <button
           aria-label={field.label}
-          checked={Boolean(value)}
-          type="checkbox"
-          onChange={(event) => {
+          className={`grid-check-button check-${field.checkboxColor || 'lime'} ${value ? 'checked' : ''}`}
+          type="button"
+          onClick={() => {
             setSelectedBuildRecordId(record.id)
-            updateRecordField(record.id, field.id, event.target.checked)
+            updateRecordField(record.id, field.id, !value)
           }}
-        />
+        >
+          {value ? renderCheckboxIcon(field.checkboxIcon) : ''}
+        </button>
       )
     }
 
@@ -818,7 +1107,7 @@ function App() {
       )
     }
 
-    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
+    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
 
     return (
       <input
@@ -1043,11 +1332,16 @@ function App() {
                   <div className="linked-list">
                     {drawerBacklinks.length === 0 && <p className="empty-note">No records point here.</p>}
                     {drawerBacklinks.map((backlink) => (
-                      <article key={`${backlink.fromRecord.id}-${backlink.fieldId}`}>
+                      <button
+                        className="linked-record-card"
+                        key={`${backlink.fromRecord.id}-${backlink.fieldId}`}
+                        type="button"
+                        onClick={() => openBuildRecord(backlink.fromRecord.tableId, backlink.fromRecord.id)}
+                      >
                         <span className="pill prep">{backlink.fromRecord.tableLabel}</span>
                         <strong>{backlink.fromRecord.title}</strong>
                         <small>{backlink.fieldLabel}. {backlink.fromRecord.context}</small>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 </section>
@@ -1061,11 +1355,16 @@ function App() {
                   <div className="linked-list">
                     {drawerLinkedRecords.length === 0 && <p className="empty-note">No linked records selected.</p>}
                     {drawerLinkedRecords.map((link) => (
-                      <article key={`${link.fieldId}-${link.record.id}`}>
+                      <button
+                        className="linked-record-card"
+                        key={`${link.fieldId}-${link.record.id}`}
+                        type="button"
+                        onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
+                      >
                         <span className="pill waiting">{link.record.tableLabel}</span>
                         <strong>{link.record.title}</strong>
                         <small>{link.fieldLabel}. {link.record.context}</small>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 </section>
@@ -1078,7 +1377,13 @@ function App() {
                     <ol>
                       {drawerDependencies.map((dependency) => (
                         <li key={dependency.id}>
-                          {dependency.direction === 'outgoing' ? 'Depends on' : 'Blocked by'} {dependency.record.title}.
+                          <button
+                            className="dependency-record-link"
+                            type="button"
+                            onClick={() => openBuildRecord(dependency.record.tableId, dependency.record.id)}
+                          >
+                            {dependency.direction === 'outgoing' ? 'Depends on' : 'Blocked by'} {dependency.record.title}.
+                          </button>
                         </li>
                       ))}
                     </ol>
@@ -1281,22 +1586,66 @@ function App() {
                   />
                 </label>
               )}
-              {fieldDraft.type === 'linkedRecord' && (
-                <label>
-                  <span>Linked table</span>
-                  <select
-                    value={fieldDraft.linkedTableId}
-                    onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
-                  >
-                    {base.tables
-                      .filter((table) => table.id !== selectedBuildTable?.id)
-                      .map((table) => (
-                        <option key={table.id} value={table.id}>
-                          {table.label}
-                        </option>
+              {fieldDraft.type === 'checkbox' && (
+                <>
+                  <label className="full-row">
+                    <span>Icon</span>
+                    <div className="checkbox-style-grid">
+                      {checkboxIconOptions.map((option) => (
+                        <button
+                          aria-label={option.label}
+                          className={fieldDraft.checkboxIcon === option.value ? 'selected' : ''}
+                          key={option.value}
+                          type="button"
+                          onClick={() => setFieldDraft((current) => ({ ...current, checkboxIcon: option.value }))}
+                        >
+                          {renderCheckboxIcon(option.value)}
+                        </button>
                       ))}
-                  </select>
-                </label>
+                    </div>
+                  </label>
+                  <label className="full-row">
+                    <span>Colour</span>
+                    <div className="checkbox-color-grid">
+                      {checkboxColorOptions.map((option) => (
+                        <button
+                          aria-label={option.label}
+                          className={`check-${option.value} ${fieldDraft.checkboxColor === option.value ? 'selected' : ''}`}
+                          key={option.value}
+                          type="button"
+                          onClick={() => setFieldDraft((current) => ({ ...current, checkboxColor: option.value }))}
+                        />
+                      ))}
+                    </div>
+                  </label>
+                </>
+              )}
+              {fieldDraft.type === 'linkedRecord' && (
+                <>
+                  <label>
+                    <span>Linked table</span>
+                    <select
+                      value={fieldDraft.linkedTableId}
+                      onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
+                    >
+                      {base.tables
+                        .filter((table) => table.id !== selectedBuildTable?.id)
+                        .map((table) => (
+                          <option key={table.id} value={table.id}>
+                            {table.label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="checkbox-row">
+                    <span>Allow multiple linked records</span>
+                    <input
+                      checked={fieldDraft.allowMultiple}
+                      type="checkbox"
+                      onChange={(event) => setFieldDraft((current) => ({ ...current, allowMultiple: event.target.checked }))}
+                    />
+                  </label>
+                </>
               )}
               {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count') && (
                 <label>
@@ -1471,7 +1820,9 @@ function App() {
                     <thead>
                       <tr>
                         {visibleFieldsForGrid.map((field) => (
-                          <th key={field.id}>{field.label}</th>
+                          <th key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
+                            {renderGridHeader(field)}
+                          </th>
                         ))}
                       </tr>
                     </thead>
@@ -1483,7 +1834,9 @@ function App() {
                           onClick={() => setSelectedBuildRecordId(record.id)}
                         >
                           {visibleFieldsForGrid.map((field) => (
-                            <td key={field.id}>{renderGridCellInput(record, field)}</td>
+                            <td key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
+                              {renderGridCellInput(record, field)}
+                            </td>
                           ))}
                         </tr>
                       ))}

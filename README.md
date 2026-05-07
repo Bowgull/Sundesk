@@ -25,6 +25,7 @@ npm run dev
 ## Docs
 
 - [Blueprint](docs/BLUEPRINT.md)
+- [Product architecture plan](docs/PRODUCT_ARCHITECTURE_PLAN.md)
 - [Privacy](docs/PRIVACY.md)
 - [Data model](docs/DATA_MODEL.md)
 - [V1 scope](docs/V1_SCOPE.md)

@@ -31,6 +31,11 @@
 - Kanban view.
 - Calendar view.
 - Gantt view.
+- Pinned views in navigation.
+- Field settings modal.
+- Editable checkbox icons and colours.
+- Editable select and tag options.
+- Editable linked-record one-vs-many behavior.
 - Template builder.
 - Custom automation templates.
 - Plain-language custom automation rules.
@@ -63,7 +68,7 @@
 
 ## Build Memory
 
-Obsidian is allowed only for per-session build notes for Cerebro.
+Obsidian is allowed only for per-session Sundesk build notes in the Sundesk Build History path.
 
 This is not product data sync.
 

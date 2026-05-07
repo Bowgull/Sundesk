@@ -27,6 +27,23 @@ It is:
 - Daily digest.
 - Privacy first by default.
 
+## Product Architecture
+
+The current product plan lives in [Product Architecture Plan](PRODUCT_ARCHITECTURE_PLAN.md).
+
+Sundesk is a hybrid:
+
+- Airtable underneath.
+- Notion in record focus.
+- Baserow in grid discipline.
+- SmartSuite in linked-record display.
+- Monday only where visual status helps.
+- Sundesk on top for Today, Communities, meeting prep, and open loops.
+
+The core engines are schema, records, fields, relationships, views, interfaces, and rules.
+
+The power belongs in Build. The calm belongs in Today.
+
 ## V1 Rule
 
 Track operational status. Not files.
@@ -90,6 +107,14 @@ It includes:
 Lindsay can customize the system without being forced to manage the system every day.
 
 Build stays visible in the sidebar. It is not renamed.
+
+Build is not developer mode. It is the user-editable workshop.
+
+Build opens to Communities.
+
+The main Build surface is the grid. Table creation, field creation, field settings, and record creation should live in menus or modals, not always-visible panels.
+
+Views such as Kanban, calendar, and Gantt belong to the View Engine. They can be pinned to the left nav when useful. They should not become permanent nav clutter by default.
 
 ## Airtable Logic Baseline
 

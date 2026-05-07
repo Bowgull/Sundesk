@@ -8,6 +8,7 @@ export type FieldType =
   | 'dateTime'
   | 'checkbox'
   | 'number'
+  | 'currency'
   | 'percent'
   | 'rating'
   | 'phone'
@@ -20,12 +21,17 @@ export type FieldType =
   | 'createdTime'
   | 'lastUpdatedTime'
 
+export type CheckboxIcon = 'check' | 'star' | 'heart' | 'thumb' | 'flag'
+export type CheckboxColor = 'lime' | 'mint' | 'cyan' | 'blue' | 'violet' | 'pink' | 'rose' | 'orange' | 'gold' | 'graphite'
+
 export type FieldDefinition = {
   id: string
   tableId: string
   label: string
   type: FieldType
   options?: string[]
+  checkboxIcon?: CheckboxIcon
+  checkboxColor?: CheckboxColor
   linkedTableId?: string
   allowMultiple?: boolean
   sourceLinkedFieldId?: string
