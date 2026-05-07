@@ -473,3 +473,15 @@ test('Settings exposes local engine and Rule destination health', async ({ page 
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Timeline')).toBeVisible()
 })
+
+test('Mobile keeps navigation and touch targets usable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#build')
+
+  const railPosition = await page.locator('.rail').evaluate((element) => window.getComputedStyle(element).position)
+  const buildLinkHeight = await page.getByRole('link', { name: 'Build' }).evaluate((element) => element.getBoundingClientRect().height)
+
+  expect(railPosition).toBe('fixed')
+  expect(buildLinkHeight).toBeGreaterThanOrEqual(44)
+  await expect(page.getByTestId('build-screen')).toBeVisible()
+})
