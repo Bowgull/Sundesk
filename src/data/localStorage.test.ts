@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   cloneWorkbase,
+  buildViewStateStorageKey,
   getEmptyFieldValue,
   getEmptyRecordValues,
+  readStoredBuildViewState,
   readStoredRules,
   readStoredWorkbase,
   rulesStorageKey,
@@ -84,5 +86,63 @@ describe('local storage helpers', () => {
 
     expect(rules.map((rule) => rule.id)).toContain('rule-blocked-status')
     expect(storedMigrationReport.rulesReset).toBe(true)
+  })
+
+  it('repairs malformed Build view state without losing valid saved views', () => {
+    stubLocalStorage({
+      [buildViewStateStorageKey]: JSON.stringify({
+        version: 1,
+        selectedBuildTableId: 'tasks',
+        visibleFieldIdsByTable: {
+          tasks: ['title', 'status'],
+          bad: [false],
+        },
+        gridFilter: 'permit',
+        gridSortFieldId: 'dueDate',
+        gridGroupFieldId: 'status',
+        localGridViews: [
+          {
+            id: 'tasks_view_1',
+            name: 'Tasks view 1',
+            tableId: 'tasks',
+            filter: 'permit',
+            sortFieldId: 'dueDate',
+            groupFieldId: 'status',
+            visibleFieldIds: ['title', 'status'],
+            pinned: true,
+          },
+          { id: 'bad-view' },
+        ],
+        viewRenameDrafts: {
+          tasks_view_1: 'Tasks view 1',
+          bad: false,
+        },
+        activeGridViewId: 'tasks_view_1',
+        columnWidths: {
+          title: 220,
+          bad: 'wide',
+        },
+      }),
+    })
+
+    const state = readStoredBuildViewState()
+
+    expect(state.selectedBuildTableId).toBe('tasks')
+    expect(state.visibleFieldIdsByTable).toEqual({ tasks: ['title', 'status'] })
+    expect(state.localGridViews).toEqual([
+      {
+        id: 'tasks_view_1',
+        name: 'Tasks view 1',
+        tableId: 'tasks',
+        filter: 'permit',
+        sortFieldId: 'dueDate',
+        groupFieldId: 'status',
+        visibleFieldIds: ['title', 'status'],
+        pinned: true,
+      },
+    ])
+    expect(state.viewRenameDrafts).toEqual({ tasks_view_1: 'Tasks view 1' })
+    expect(state.columnWidths).toEqual({ title: 220 })
+    expect(storedMigrationReport.buildViewReset).toBe(false)
   })
 })

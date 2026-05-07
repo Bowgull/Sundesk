@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getBuildGridDerivation,
   getBuildTableRows,
+  getDependencyPickerRecords,
   getLocalEngineStats,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
@@ -30,6 +32,39 @@ describe('view read models', () => {
       'approvals',
       'meetings',
       'people',
+    ])
+  })
+
+  it('derives Build grid filtering, sorting, grouping, and visible fields', () => {
+    const grid = getBuildGridDerivation(
+      workbase,
+      'tasks',
+      { tasks: ['title', 'status'] },
+      'permit',
+      'dueDate',
+      'status',
+    )
+
+    expect(grid.visibleFieldsForGrid.map((field) => field.id)).toEqual(['title', 'status'])
+    expect(grid.sortedAndFilteredRecords.map((record) => record.id)).toEqual(['task_permit_moncton'])
+    expect(grid.groupField?.id).toBe('status')
+    expect(grid.groupedRecords).toEqual([
+      {
+        label: 'Waiting',
+        records: [expect.objectContaining({ id: 'task_permit_moncton' })],
+      },
+    ])
+  })
+
+  it('derives dependency picker records without the active record', () => {
+    const records = getDependencyPickerRecords(workbase, 'task_coi_halifax', 'permit')
+
+    expect(records.map((record) => record.id)).toEqual([
+      'approval_permit_moncton',
+      'task_permit_moncton',
+    ])
+    expect(getDependencyPickerRecords(workbase, 'task_coi_halifax', 'coi').map((record) => record.id)).toEqual([
+      'approval_coi_halifax',
     ])
   })
 

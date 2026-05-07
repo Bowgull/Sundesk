@@ -69,7 +69,9 @@ import {
 } from './data/workbase'
 import {
   getBuildTableRows,
+  getBuildGridDerivation,
   getDailyTimelineRecords,
+  getDependencyPickerRecords,
   getLocalEngineStats,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
@@ -167,7 +169,19 @@ function toSlug(value: string) {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
 
-  return slug || `field_${Date.now()}`
+  return slug || 'local_item'
+}
+
+function getUniqueSlug(baseId: string, existingIds: string[]) {
+  let uniqueId = baseId
+  let suffix = 2
+
+  while (existingIds.includes(uniqueId)) {
+    uniqueId = `${baseId}_${suffix}`
+    suffix += 1
+  }
+
+  return uniqueId
 }
 
 function toggleListValue(values: string[], value: string, allowMultiple = true) {
@@ -322,74 +336,25 @@ function App() {
   const screenStats = getScreenStats(base)
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
-  const visibleFieldIds = selectedBuildTable
-    ? visibleFieldIdsByTable[selectedBuildTable.id] || getDefaultVisibleFieldIds(fieldsForSelectedTable)
-    : []
-  const visibleFieldsForGrid = fieldsForSelectedTable.filter((field) => visibleFieldIds.includes(field.id))
-  const sortedAndFilteredRecords = recordsForSelectedTable
-    .filter((record) => {
-      const filter = gridFilter.trim().toLowerCase()
-
-      if (!filter) {
-        return true
-      }
-
-      return fieldsForSelectedTable.some((field) => getFieldDisplayValue(record, field).toLowerCase().includes(filter))
-    })
-    .sort((firstRecord, secondRecord) => {
-      if (!gridSortFieldId) {
-        return 0
-      }
-
-      const field = fieldsForSelectedTable.find((fieldItem) => fieldItem.id === gridSortFieldId)
-
-      if (!field) {
-        return 0
-      }
-
-      return getFieldDisplayValue(firstRecord, field).localeCompare(getFieldDisplayValue(secondRecord, field), undefined, {
-        numeric: true,
-        sensitivity: 'base',
-      })
-    })
-  const groupField = fieldsForSelectedTable.find((field) => field.id === gridGroupFieldId)
-  const groupedRecords = groupField
-    ? sortedAndFilteredRecords.reduce<{ label: string; records: BaseRecord[] }[]>((groups, record) => {
-        const label = getFieldDisplayValue(record, groupField)
-        const existingGroup = groups.find((group) => group.label === label)
-
-        if (existingGroup) {
-          existingGroup.records.push(record)
-          return groups
-        }
-
-        return [...groups, { label, records: [record] }]
-      }, [])
-    : [{ label: '', records: sortedAndFilteredRecords }]
+  const buildGridDerivation = getBuildGridDerivation(
+    base,
+    selectedBuildTable?.id || '',
+    visibleFieldIdsByTable,
+    gridFilter,
+    gridSortFieldId,
+    gridGroupFieldId,
+  )
+  const visibleFieldIds = buildGridDerivation.visibleFieldIds
+  const visibleFieldsForGrid = buildGridDerivation.visibleFieldsForGrid
+  const sortedAndFilteredRecords = buildGridDerivation.sortedAndFilteredRecords
+  const groupField = buildGridDerivation.groupField
+  const groupedRecords = buildGridDerivation.groupedRecords
   const selectedBuildRecord = recordsForSelectedTable.find((record) => record.id === selectedBuildRecordId) || recordsForSelectedTable[0]
   const drawerBacklinks = selectedBuildRecord ? getBacklinksForRecord(base, selectedBuildRecord.id) : []
   const drawerLinkedRecords = selectedBuildRecord ? getLinkedRecordsForRecord(base, selectedBuildRecord.id) : []
   const drawerDependencies = selectedBuildRecord ? getDependencyReferencesForRecord(base, selectedBuildRecord.id) : []
   const selectedDependencyTargetRecord = dependencyDraft.toRecordId ? getRecord(base, dependencyDraft.toRecordId) : null
-  const dependencySearchTerm = dependencySearch.trim().toLowerCase()
-  const dependencyPickerRecords = base.records.filter((record) => {
-    if (record.id === selectedBuildRecord?.id) {
-      return false
-    }
-
-    if (!dependencySearchTerm) {
-      return true
-    }
-
-    return [
-      base.tables.find((table) => table.id === record.tableId)?.label || record.tableId,
-      getRecordTitle(base, record),
-      getRecordContext(record),
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(dependencySearchTerm)
-  })
+  const dependencyPickerRecords = getDependencyPickerRecords(base, selectedBuildRecord?.id || '', dependencySearch)
   const linkedFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => field.type === 'linkedRecord' && field.linkedTableId)
   const effectiveSourceLinkedFieldId = fieldDraft.sourceLinkedFieldId || linkedFieldsForSelectedTable[0]?.id || ''
   const selectedSourceLinkedField = fieldsForSelectedTable.find((field) => field.id === effectiveSourceLinkedFieldId)
@@ -420,6 +385,33 @@ function App() {
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
 
+  function writeWorkbaseState(nextBase: StoredWorkbaseState['base']) {
+    const workbaseState: StoredWorkbaseState = {
+      version: 1,
+      base: nextBase,
+    }
+
+    localStorage.setItem(workbaseStorageKey, JSON.stringify(workbaseState))
+  }
+
+  function writeBuildViewState(updates: Partial<StoredBuildViewState> = {}) {
+    const buildViewState: StoredBuildViewState = {
+      version: 1,
+      selectedBuildTableId,
+      visibleFieldIdsByTable,
+      gridFilter,
+      gridSortFieldId,
+      gridGroupFieldId,
+      localGridViews,
+      viewRenameDrafts,
+      activeGridViewId,
+      columnWidths,
+      ...updates,
+    }
+
+    localStorage.setItem(buildViewStateStorageKey, JSON.stringify(buildViewState))
+  }
+
   function closeBuildModal() {
     setBuildModal('')
     setPendingDeleteTableId('')
@@ -443,8 +435,7 @@ function App() {
       return
     }
 
-    const id = toSlug(label)
-    const uniqueId = base.tables.some((table) => table.id === id) ? `${id}_${base.tables.length + 1}` : id
+    const uniqueId = getUniqueSlug(toSlug(label), base.tables.map((table) => table.id))
 
     setBase((current) => ({
       ...current,
@@ -600,9 +591,7 @@ function App() {
     }
 
     const baseId = toSlug(label)
-    const id = base.fields.some((field) => field.tableId === tableId && field.id === baseId)
-      ? `${baseId}_${fieldsForSelectedTable.length + 1}`
-      : baseId
+    const id = getUniqueSlug(baseId, fieldsForSelectedTable.map((field) => field.id))
     const options = optionFieldTypes.includes(fieldDraft.type) ? parseOptions(fieldDraft.options) : undefined
     const field: FieldDefinition = {
       id,
@@ -792,8 +781,12 @@ function App() {
     }
 
     const viewCount = localGridViews.filter((view) => view.tableId === selectedBuildTable.id).length + 1
+    const viewId = getUniqueSlug(
+      `${selectedBuildTable.id}_view_${viewCount}`,
+      localGridViews.map((view) => view.id),
+    )
     const view: LocalGridView = {
-      id: `${selectedBuildTable.id}_view_${Date.now()}`,
+      id: viewId,
       name: `${selectedBuildTable.label} view ${viewCount}`,
       tableId: selectedBuildTable.id,
       filter: gridFilter,
@@ -805,6 +798,11 @@ function App() {
     setLocalGridViews((current) => [view, ...current])
     setViewRenameDrafts((current) => ({ ...current, [view.id]: view.name }))
     setActiveGridViewId(view.id)
+    writeBuildViewState({
+      localGridViews: [view, ...localGridViews],
+      viewRenameDrafts: { ...viewRenameDrafts, [view.id]: view.name },
+      activeGridViewId: view.id,
+    })
   }
 
   function applyGridView(view: LocalGridView) {
@@ -861,16 +859,23 @@ function App() {
   }
 
   function togglePinnedGridView(viewId: string) {
+    const nextGridViews = localGridViews.map((view) => (view.id === viewId ? { ...view, pinned: !view.pinned } : view))
+
     setLocalGridViews((current) =>
       current.map((view) => (view.id === viewId ? { ...view, pinned: !view.pinned } : view)),
     )
+    writeBuildViewState({ localGridViews: nextGridViews })
   }
 
   function duplicateGridView(view: LocalGridView) {
     const copyCount = localGridViews.filter((gridView) => gridView.name.startsWith(`${view.name} copy`)).length + 1
+    const copyId = getUniqueSlug(
+      `${view.id}_copy_${copyCount}`,
+      localGridViews.map((gridView) => gridView.id),
+    )
     const copy: LocalGridView = {
       ...view,
-      id: `${view.id}_copy_${Date.now()}`,
+      id: copyId,
       name: `${view.name} copy ${copyCount}`,
       pinned: false,
       visibleFieldIds: [...view.visibleFieldIds],
@@ -1111,15 +1116,21 @@ function App() {
     }
 
     const record: BaseRecord = {
-      id: `${tableId}_${Date.now()}`,
+      id: getUniqueSlug(`${tableId}_${toSlug(primaryValue)}`, base.records.map((baseRecord) => baseRecord.id)),
       tableId,
       values: { ...recordDraft },
     }
 
-    setBase((current) => ({
-      ...current,
-      records: [...current.records, record],
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        records: [...current.records, record],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     setSelectedBuildRecordId(record.id)
     setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(false)
@@ -1168,20 +1179,26 @@ function App() {
   }
 
   function updateRecordField(recordId: string, fieldId: string, value: RecordValue) {
-    setBase((current) => ({
-      ...current,
-      records: current.records.map((record) =>
-        record.id === recordId
-          ? {
-              ...record,
-              values: {
-                ...record.values,
-                [fieldId]: value,
-              },
-            }
-          : record,
-      ),
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        records: current.records.map((record) =>
+          record.id === recordId
+            ? {
+                ...record,
+                values: {
+                  ...record.values,
+                  [fieldId]: value,
+                },
+              }
+            : record,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
   }
 
   function resizeColumn(fieldId: string, event: PointerEvent<HTMLButtonElement>) {
@@ -2485,7 +2502,7 @@ function App() {
                       ))}
                       <tr className="add-record-row">
                         <td colSpan={visibleFieldsForGrid.length + 1}>
-                          <button type="button" onClick={openCreateRecordModal}>+ Add record</button>
+                          <button data-testid="build-add-record" type="button" onClick={openCreateRecordModal}>+ Add record</button>
                         </td>
                       </tr>
                     </tbody>
@@ -2496,7 +2513,7 @@ function App() {
             {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match this filter.</p>}
           </article>
 
-          <article className="automation-panel build-sidecar">
+          <article className="automation-panel build-sidecar" data-testid="build-views-panel">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Views</span>
@@ -2508,7 +2525,7 @@ function App() {
             {localGridViews.length > 0 && (
               <div className="view-list">
                 {localGridViews.map((view) => (
-                  <article className={`local-view-row ${view.id === activeGridViewId ? 'active-row' : ''}`} key={view.id}>
+                  <article className={`local-view-row ${view.id === activeGridViewId ? 'active-row' : ''}`} data-testid="local-view-row" key={view.id}>
                     <div className="view-row-top">
                       <span>{base.tables.find((table) => table.id === view.tableId)?.label || view.tableId}</span>
                       {view.pinned ? (

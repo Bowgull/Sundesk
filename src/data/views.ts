@@ -1,5 +1,6 @@
 import {
   type BaseRecord,
+  type FieldDefinition,
   type Workbase,
   getMaterializedLinks,
   getRecordContext,
@@ -8,9 +9,11 @@ import {
 } from './workbase'
 import {
   type LocalGridView,
+  getDefaultVisibleFieldIds,
 } from './localStorage'
 import {
   type LocalRule,
+  getFieldDisplayValue,
   getFirstDateValue,
   getNumberValue,
   getRuleMatchCount,
@@ -26,6 +29,21 @@ const buildTableOrder = ['risks', 'tasks', 'followups', 'approvals', 'meetings',
 export type RuleMatch = {
   rule: LocalRule
   record: BaseRecord
+}
+
+export type BuildGridGroup = {
+  label: string
+  records: BaseRecord[]
+}
+
+export type BuildGridDerivation = {
+  fieldsForSelectedTable: FieldDefinition[]
+  visibleFieldIds: string[]
+  visibleFieldsForGrid: FieldDefinition[]
+  recordsForSelectedTable: BaseRecord[]
+  sortedAndFilteredRecords: BaseRecord[]
+  groupField?: FieldDefinition
+  groupedRecords: BuildGridGroup[]
 }
 
 export function getLocalTableRows(base: Workbase) {
@@ -45,6 +63,92 @@ export function getBuildTableRows(base: Workbase) {
 
       return firstIndex - secondIndex
     })
+}
+
+export function getBuildGridDerivation(
+  base: Workbase,
+  tableId: string,
+  visibleFieldIdsByTable: Record<string, string[]>,
+  filterValue: string,
+  sortFieldId: string,
+  groupFieldId: string,
+): BuildGridDerivation {
+  const fieldsForSelectedTable = base.fields.filter((field) => field.tableId === tableId)
+  const visibleFieldIds = visibleFieldIdsByTable[tableId] || getDefaultVisibleFieldIds(fieldsForSelectedTable)
+  const visibleFieldsForGrid = fieldsForSelectedTable.filter((field) => visibleFieldIds.includes(field.id))
+  const recordsForSelectedTable = getRecordsForTable(base, tableId)
+  const filter = filterValue.trim().toLowerCase()
+  const sortedAndFilteredRecords = recordsForSelectedTable
+    .filter((record) => {
+      if (!filter) {
+        return true
+      }
+
+      return fieldsForSelectedTable.some((field) => getFieldDisplayValue(base, record, field).toLowerCase().includes(filter))
+    })
+    .sort((firstRecord, secondRecord) => {
+      if (!sortFieldId) {
+        return 0
+      }
+
+      const field = fieldsForSelectedTable.find((fieldItem) => fieldItem.id === sortFieldId)
+
+      if (!field) {
+        return 0
+      }
+
+      return getFieldDisplayValue(base, firstRecord, field).localeCompare(getFieldDisplayValue(base, secondRecord, field), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    })
+  const groupField = fieldsForSelectedTable.find((field) => field.id === groupFieldId)
+  const groupedRecords = groupField
+    ? sortedAndFilteredRecords.reduce<BuildGridGroup[]>((groups, record) => {
+        const label = getFieldDisplayValue(base, record, groupField)
+        const existingGroup = groups.find((group) => group.label === label)
+
+        if (existingGroup) {
+          existingGroup.records.push(record)
+          return groups
+        }
+
+        return [...groups, { label, records: [record] }]
+      }, [])
+    : [{ label: '', records: sortedAndFilteredRecords }]
+
+  return {
+    fieldsForSelectedTable,
+    visibleFieldIds,
+    visibleFieldsForGrid,
+    recordsForSelectedTable,
+    sortedAndFilteredRecords,
+    groupField,
+    groupedRecords,
+  }
+}
+
+export function getDependencyPickerRecords(base: Workbase, currentRecordId: string, searchValue: string) {
+  const searchTerm = searchValue.trim().toLowerCase()
+
+  return base.records.filter((record) => {
+    if (record.id === currentRecordId) {
+      return false
+    }
+
+    if (!searchTerm) {
+      return true
+    }
+
+    return [
+      base.tables.find((table) => table.id === record.tableId)?.label || record.tableId,
+      getRecordTitle(base, record),
+      getRecordContext(record),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(searchTerm)
+  })
 }
 
 export function getWorkRecordGroups(base: Workbase) {

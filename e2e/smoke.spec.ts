@@ -9,7 +9,6 @@ test.beforeEach(async ({ page }) => {
     }
   })
 
-  await page.addInitScript(() => window.localStorage.clear())
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Today builds the day.' })).toBeVisible()
   expect(consoleErrors).toEqual([])
@@ -49,6 +48,117 @@ test('Build record modal supports linked-record picker editing', async ({ page }
   await expect(page.getByTestId('record-modal').getByPlaceholder('Search Communities')).toBeVisible()
   await expect(page.getByTestId('record-modal').getByRole('button', { name: 'Halifax Remove' })).toBeVisible()
   await expect(page.getByTestId('record-modal').getByText('Backlinks')).toBeVisible()
+})
+
+test('Build linked-record edits persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+
+  const drawer = page.getByTestId('record-drawer')
+
+  await drawer.getByRole('button', { name: 'Charlottetown Remove' }).click()
+  await drawer.getByRole('button', { name: /Halifax At risk/ }).click()
+  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
+
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
+})
+
+test('Build creates a local record from the grid', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await expect(modal.getByRole('heading', { name: 'New record.' })).toBeVisible()
+  await modal.getByLabel('Title').fill('Book generator')
+  await modal.getByLabel('Status').selectOption('In progress')
+  await modal.getByLabel('Due date').fill('2026-05-19')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+
+  await expect(modal.getByRole('heading', { name: 'Book generator' })).toBeVisible()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByTestId('build-screen').getByText('Book generator')).toBeVisible()
+})
+
+test('Build created records persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await modal.getByLabel('Title').fill('Confirm catering count')
+  await modal.getByLabel('Status').selectOption('Waiting')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByTestId('build-screen').getByText('Confirm catering count')).toBeVisible()
+
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByTestId('build-screen').getByText('Confirm catering count')).toBeVisible()
+})
+
+test('Build adds and removes a dependency link', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+
+  const editor = page.getByTestId('dependency-editor')
+
+  await editor.getByPlaceholder('Search records').fill('permit')
+  await editor.getByRole('button', { name: /Permit approval/ }).click()
+  await editor.getByPlaceholder('Why this link matters').fill('Permit needs agenda context.')
+  await editor.getByRole('button', { name: 'Add dependency' }).click()
+
+  const dependencyRow = page.locator('.editable-dependency-list li').filter({ hasText: 'Permit approval' })
+
+  await expect(dependencyRow.getByRole('button', { name: 'Depends on Permit approval.' })).toBeVisible()
+  await expect(dependencyRow.getByText('Permit needs agenda context.')).toBeVisible()
+  await dependencyRow.getByRole('button', { name: 'Remove', exact: true }).click()
+  await expect(dependencyRow).toBeHidden()
+})
+
+test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByLabel('Filter').fill('permit')
+  await page.getByRole('button', { name: 'Save view' }).click()
+
+  const savedView = page.getByLabel('View name').locator('xpath=ancestor::article[1]')
+
+  await expect(savedView).toBeVisible()
+  await expect(page.getByLabel('View name')).toHaveValue(/view 1/)
+  await page.getByLabel('Filter').fill('coi')
+  await savedView.getByRole('button', { name: 'Apply' }).click()
+  await expect(page.getByLabel('Filter')).toHaveValue('permit')
+
+  await savedView.getByRole('button', { name: 'Pin' }).click()
+  await expect(page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ })).toBeVisible()
+  await page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ }).click()
+  await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible()
+
+  await savedView.getByRole('button', { name: 'Delete' }).click()
+  await expect(page.getByLabel('View name')).toBeHidden()
+  await expect(page.getByLabel('Pinned Build views')).toBeHidden()
+})
+
+test('Build pinned views persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByLabel('Filter').fill('permit')
+  await page.getByRole('button', { name: 'Save view' }).click()
+
+  const savedView = page.getByLabel('View name').locator('xpath=ancestor::article[1]')
+
+  await savedView.getByRole('button', { name: 'Pin' }).click()
+  await page.reload()
+
+  await expect(page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ })).toBeVisible()
+  await expect(page.getByLabel('Filter')).toHaveValue('permit')
 })
 
 test('Timeline filters records and keeps rule receipts visible', async ({ page }) => {
