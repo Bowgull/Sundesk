@@ -1,15 +1,38 @@
 import './App.css'
+import { useEffect, useState } from 'react'
 import {
   automationRules,
   buildFieldTypes,
   communities,
   linkedRecords,
   priorityItems,
+  savedViews,
   selectedFields,
+  tables,
+  taskDependencies,
   type Priority,
 } from './data/demoData'
 
-const themes = ['Sunrise Soft', 'Sunset Bold', 'Cloud Light', 'Focus Dark', 'Light']
+const themes = [
+  { label: 'Sunrise Soft', value: 'sunrise-soft' },
+  { label: 'Sunset Bold', value: 'sunset-bold' },
+  { label: 'Cloud Light', value: 'cloud-light' },
+  { label: 'Focus Dark', value: 'focus-dark' },
+  { label: 'Light', value: 'light' },
+]
+
+const starterTaskFields = [
+  'Title',
+  'Table',
+  'Community',
+  'Status',
+  'Due date',
+  'Priority',
+  'Depends on',
+  'Linked records',
+]
+
+const selectOptions = ['Missing', 'Requested', 'Received', 'Not needed']
 
 function priorityLabel(priority: Priority) {
   const labels: Record<Priority, string> = {
@@ -24,8 +47,16 @@ function priorityLabel(priority: Priority) {
 }
 
 function App() {
+  const [selectedTheme, setSelectedTheme] = useState(
+    () => localStorage.getItem('sundesk-theme') || 'sunrise-soft',
+  )
+
+  useEffect(() => {
+    localStorage.setItem('sundesk-theme', selectedTheme)
+  }, [selectedTheme])
+
   return (
-    <main className="app">
+    <main className="app" data-theme={selectedTheme}>
       <aside className="rail" aria-label="Sundesk navigation">
         <div className="brand">
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
@@ -50,7 +81,7 @@ function App() {
         <section className="privacy-card">
           <span>Privacy boundary</span>
           <strong>Track status. Not files.</strong>
-          <p>No uploads. No pasted document contents. Sensitive contact data only when permitted.</p>
+          <p>Upload sensitive information at your own risk. Sundesk is built for metadata, not files.</p>
         </section>
       </aside>
 
@@ -58,10 +89,10 @@ function App() {
         <section className="onboarding-callout" aria-label="Onboarding status">
           <div>
             <span className="eyebrow">First run</span>
-            <strong>Onboarding is required before real data.</strong>
-            <p>Confirm privacy rules, choose a theme, set digest time, then add the first communities.</p>
+            <strong>Setup is required before real data.</strong>
+            <p>Review privacy, choose a theme, set digest time, check starter tables, then add the first communities.</p>
           </div>
-          <button>View onboarding</button>
+          <button>Run setup</button>
         </section>
 
         <header className="hero" id="today">
@@ -69,8 +100,7 @@ function App() {
             <span className="eyebrow">Today</span>
             <h1>4 items need attention. 1 is a fire.</h1>
             <p>
-              The queue is built from due dates, blockers, dependencies, follow-ups, event dates,
-              and saved rules.
+              The queue reads due dates, blockers, dependencies, follow-ups, event dates, and saved rules.
             </p>
           </div>
           <article className="digest-card">
@@ -147,6 +177,45 @@ function App() {
               <button>Generate prep</button>
             </article>
           </aside>
+        </section>
+
+        <section className="task-zone" id="tasks">
+          <article className="task-creator">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Tasks</span>
+                <h2>Create work. Link it to the base.</h2>
+              </div>
+              <button className="primary">New task</button>
+            </div>
+            <div className="task-form-preview" aria-label="Task creation fields">
+              {starterTaskFields.map((field) => (
+                <div key={field}>
+                  <span>{field}</span>
+                  <strong>{field === 'Depends on' ? 'Pick another record' : 'Ready'}</strong>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="dependency-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Dependencies</span>
+                <h2>What blocks what.</h2>
+              </div>
+              <button>Add dependency</button>
+            </div>
+            <div className="dependency-list">
+              {taskDependencies.map((dependency) => (
+                <article key={dependency.id}>
+                  <strong>{dependency.task}</strong>
+                  <span>Depends on {dependency.dependsOn}</span>
+                  <small>{dependency.linkedTable}. {dependency.reason}</small>
+                </article>
+              ))}
+            </div>
+          </article>
         </section>
 
         <section className="record-drawer" id="record">
@@ -242,17 +311,67 @@ function App() {
         </section>
 
         <section className="build-zone" id="build">
-          <article className="builder-panel">
+          <article className="builder-panel wide">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Build</span>
-                <h2>Shape the system.</h2>
+                <h2>Tables Lindsay can create and change.</h2>
               </div>
+              <button className="primary">New table</button>
             </div>
-            <p className="panel-copy">Add the details Lindsay needs to track. Keep the daily screen clean.</p>
-            <div className="build-grid">
+            <p className="panel-copy">Build is where the system changes. Today stays for the work.</p>
+            <div className="table-list">
+              {tables.map((table) => (
+                <article key={table.id}>
+                  <div>
+                    <strong>{table.name}</strong>
+                    <p>{table.purpose}</p>
+                  </div>
+                  <span>{table.records} records</span>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="builder-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Fields</span>
+                <h2>Airtable-like field types.</h2>
+              </div>
+              <button>New field</button>
+            </div>
+            <div className="build-grid field-grid">
               {buildFieldTypes.map((fieldType) => (
                 <button key={fieldType}>{fieldType}</button>
+              ))}
+            </div>
+            <div className="select-builder">
+              <span className="eyebrow">Dropdown example</span>
+              <strong>COI status</strong>
+              <div>
+                {selectOptions.map((option) => (
+                  <small key={option}>{option}</small>
+                ))}
+              </div>
+            </div>
+          </article>
+
+          <article className="builder-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Views</span>
+                <h2>Saved ways to work.</h2>
+              </div>
+              <button>New view</button>
+            </div>
+            <div className="view-list">
+              {savedViews.map((view) => (
+                <article key={view.id}>
+                  <span>{view.type}</span>
+                  <strong>{view.name}</strong>
+                  <p>{view.rule}</p>
+                </article>
               ))}
             </div>
           </article>
@@ -261,7 +380,7 @@ function App() {
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Automations</span>
-                <h2>Work rules she can edit.</h2>
+                <h2>Plain rules she can edit.</h2>
               </div>
               <button className="primary">New rule</button>
             </div>
@@ -288,6 +407,20 @@ function App() {
               <p><strong>Event readiness.</strong> Final status check before event week.</p>
             </div>
           </article>
+
+          <article className="onboarding-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Exports</span>
+                <h2>Take out the current view.</h2>
+              </div>
+            </div>
+            <div className="setup-steps">
+              <p><strong>Current view.</strong> Export the records on screen.</p>
+              <p><strong>Meeting prep.</strong> Export agenda text from linked work.</p>
+              <p><strong>Digest text.</strong> Export the daily summary before it sends.</p>
+            </div>
+          </article>
         </section>
 
         <section className="settings-zone" id="settings">
@@ -295,13 +428,17 @@ function App() {
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Settings</span>
-                <h2>Theme belongs here.</h2>
+                <h2>Appearance.</h2>
               </div>
             </div>
             <div className="theme-grid">
               {themes.map((theme) => (
-                <button key={theme} className={theme === 'Sunrise Soft' ? 'selected' : ''}>
-                  {theme}
+                <button
+                  key={theme.value}
+                  className={theme.value === selectedTheme ? 'selected' : ''}
+                  onClick={() => setSelectedTheme(theme.value)}
+                >
+                  {theme.label}
                 </button>
               ))}
             </div>
@@ -315,9 +452,42 @@ function App() {
               </div>
             </div>
             <div className="settings-list">
+              <p><strong>Status.</strong> On</p>
               <p><strong>Recipient.</strong> lindsaybelldesign@gmail.com</p>
               <p><strong>Time.</strong> 7:30 AM</p>
-              <p><strong>Source.</strong> Today queue and overdue follow-ups.</p>
+              <p><strong>Timezone.</strong> America/Toronto</p>
+              <p><strong>Includes.</strong> Today queue, overdue follow-ups, at-risk communities, meeting prep.</p>
+              <p><strong>Actions.</strong> Preview digest. Send test digest.</p>
+            </div>
+          </article>
+
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Privacy</span>
+                <h2>Upload at your own risk.</h2>
+              </div>
+            </div>
+            <div className="settings-list">
+              <p><strong>Boundary.</strong> Sundesk is for status, dates, owners, links, and short notes.</p>
+              <p><strong>Sensitive information.</strong> Files, document contents, private numbers, permits, COI files, and contract text are your responsibility if added.</p>
+              <p><strong>Bridge.</strong> Obsidian later is allowed only as an opt-in export of safe metadata.</p>
+            </div>
+          </article>
+
+          <article className="settings-panel">
+            <div className="panel-title">
+              <div>
+                <span className="eyebrow">Setup</span>
+                <h2>Run setup again.</h2>
+              </div>
+              <button>Run setup again</button>
+            </div>
+            <div className="settings-list">
+              <p><strong>Review privacy.</strong> Show the warning again.</p>
+              <p><strong>Choose theme.</strong> Keep or change the saved theme.</p>
+              <p><strong>Check digest.</strong> Recipient, time, timezone, and included items.</p>
+              <p><strong>Review starter tables.</strong> No data will be deleted.</p>
             </div>
           </article>
         </section>

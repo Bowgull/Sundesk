@@ -1,7 +1,95 @@
 .app {
+  --background: #f7fcff;
+  --paper: var(--surface);
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
   min-height: 100vh;
+  background: var(--background);
+}
+
+.app[data-theme="sunset-bold"] {
+  --background: #fff6ef;
+  --surface: rgba(255, 250, 245, 0.9);
+  --surface-raised: #fffefe;
+  --paper: var(--surface);
+  --ink: #1d2732;
+  --ink-2: #39485a;
+  --muted: #806f68;
+  --line: rgba(166, 94, 75, 0.22);
+  --line-strong: rgba(238, 116, 111, 0.38);
+  --accent: #b4554f;
+  --sky-1: #ffe9dc;
+  --sky-2: #ffd1b9;
+  --sky-3: #e99376;
+  --night: #263340;
+  --night-2: #1a242e;
+  --sun: #f7bf4f;
+  --sun-2: #fff0c5;
+  --coral: #d85f59;
+  --coral-2: #ffe0dc;
+  --sage-2: #e8f4df;
+  --lav-2: #f0e9ff;
+  --hero-gradient: linear-gradient(135deg, #fff7f1, #ffe5d7 50%, #fff1c6);
+  --aura: 0 24px 70px rgba(154, 76, 62, 0.16);
+}
+
+.app[data-theme="cloud-light"] {
+  --background: #f3f9fc;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-raised: #ffffff;
+  --paper: var(--surface);
+  --ink: #122636;
+  --ink-2: #2d4658;
+  --muted: #71828d;
+  --line: rgba(90, 129, 153, 0.22);
+  --line-strong: rgba(83, 143, 180, 0.34);
+  --accent: #3b7fa8;
+  --sky-1: #e7f4fa;
+  --sky-2: #c7e4f1;
+  --sky-3: #82bddb;
+  --hero-gradient: linear-gradient(135deg, #ffffff, #e9f6fb);
+}
+
+.app[data-theme="focus-dark"] {
+  --background: #0f1720;
+  --surface: rgba(25, 36, 48, 0.92);
+  --surface-raised: #223040;
+  --paper: var(--surface);
+  --ink: #f3f7fa;
+  --ink-2: #d7e1e8;
+  --muted: #a5b6c3;
+  --line: rgba(181, 204, 218, 0.18);
+  --line-strong: rgba(117, 188, 230, 0.34);
+  --accent: #8dc7ea;
+  --sky-1: #1c3548;
+  --sky-2: #254e68;
+  --sky-3: #75bce6;
+  --night: #eaf4fb;
+  --night-2: #c9dfea;
+  --sun: #f4ce5f;
+  --sun-2: #473d1a;
+  --coral: #f48680;
+  --coral-2: #4c2729;
+  --sage-2: #1f3d2b;
+  --lav-2: #302d50;
+  --hero-gradient: linear-gradient(135deg, #182533, #12202c 55%, #243044);
+  --aura: 0 24px 70px rgba(0, 0, 0, 0.32);
+}
+
+.app[data-theme="light"] {
+  --background: #f8fafc;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-raised: #ffffff;
+  --paper: var(--surface);
+  --ink: #17212b;
+  --ink-2: #354452;
+  --muted: #6c7a86;
+  --line: rgba(104, 119, 133, 0.2);
+  --line-strong: rgba(104, 119, 133, 0.34);
+  --accent: #366f9f;
+  --sky-1: #eef5fb;
+  --sky-2: #d8e8f5;
+  --hero-gradient: linear-gradient(135deg, #ffffff, #f0f5fa);
 }
 
 .rail {
@@ -14,8 +102,8 @@
   padding: 24px 20px;
   border-right: 1px solid var(--line);
   background:
-    linear-gradient(180deg, rgba(232, 244, 255, 0.93), rgba(239, 247, 252, 0.78)),
-    rgba(255, 255, 255, 0.65);
+    linear-gradient(180deg, color-mix(in srgb, var(--sky-1) 74%, transparent), color-mix(in srgb, var(--surface) 88%, transparent)),
+    var(--surface);
   backdrop-filter: blur(18px);
 }
 
@@ -153,22 +241,9 @@
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 14px;
   background:
-    radial-gradient(circle at 85% 15%, rgba(249, 217, 106, 0.58), transparent 24%),
-    radial-gradient(circle at 24% 22%, rgba(117, 188, 230, 0.42), transparent 35%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(228, 244, 255, 0.78));
+    linear-gradient(90deg, color-mix(in srgb, var(--sun) 22%, transparent), transparent 42%),
+    var(--hero-gradient);
   box-shadow: var(--aura);
-}
-
-.hero::after {
-  position: absolute;
-  right: -80px;
-  bottom: -130px;
-  width: 360px;
-  height: 240px;
-  content: "";
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.42);
-  filter: blur(2px);
 }
 
 h1,
@@ -234,6 +309,12 @@ h2 {
   gap: 18px;
 }
 
+.task-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 18px;
+}
+
 .queue-panel,
 .record-drawer,
 .mode-card,
@@ -242,7 +323,9 @@ h2 {
 .onboarding-panel,
 .community-signal,
 .next-meeting,
-.insight-card {
+.insight-card,
+.task-creator,
+.dependency-panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper);
@@ -256,7 +339,9 @@ h2 {
 .onboarding-panel,
 .community-signal,
 .next-meeting,
-.insight-card {
+.insight-card,
+.task-creator,
+.dependency-panel {
   padding: 18px;
 }
 
@@ -273,9 +358,64 @@ h2 {
 .focus-stack,
 .linked-list,
 .rules,
-.setup-steps {
+.setup-steps,
+.dependency-list {
   display: grid;
   gap: 12px;
+}
+
+.task-form-preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.task-form-preview div,
+.dependency-list article,
+.table-list article,
+.view-list article,
+.select-builder {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+}
+
+.task-form-preview div {
+  min-height: 76px;
+  padding: 12px;
+}
+
+.task-form-preview span,
+.dependency-list span,
+.dependency-list small,
+.table-list span,
+.view-list span,
+.view-list p,
+.select-builder small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.task-form-preview strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.dependency-list {
+  margin-top: 14px;
+}
+
+.dependency-list article {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.dependency-list small {
+  line-height: 1.45;
 }
 
 .priority-card {
@@ -661,8 +801,12 @@ h2 {
 
 .build-zone {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(320px, 0.95fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+.builder-panel.wide {
+  grid-column: 1 / -1;
 }
 
 .panel-copy {
@@ -678,6 +822,60 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 14px;
+}
+
+.field-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.table-list,
+.view-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.table-list article {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 13px;
+}
+
+.table-list p,
+.view-list p {
+  margin: 5px 0 0;
+  line-height: 1.45;
+}
+
+.table-list span {
+  white-space: nowrap;
+}
+
+.view-list article {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.select-builder {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.select-builder div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.select-builder small {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--sky-1);
 }
 
 .rules,
@@ -775,6 +973,7 @@ h2 {
   }
 
   .command-grid,
+  .task-zone,
   .linked-layout,
   .build-zone,
   .settings-zone {
@@ -809,6 +1008,7 @@ h2 {
   }
 
   .drawer-grid,
+  .task-form-preview,
   .kanban-preview,
   .calendar-preview,
   .build-grid,

@@ -7,6 +7,7 @@ The Google Sheet is only a digest bridge for Apps Script.
 ## Core Collections
 
 - `users`
+- `tables`
 - `communities`
 - `tasks`
 - `followUps`
@@ -41,6 +42,21 @@ Each operational record has fixed fields and custom fields.
     "coiStatus": "missing"
   },
   "linkedRecordIds": ["approval_001", "followup_001"],
+  "createdAt": "timestamp",
+  "updatedAt": "timestamp"
+}
+```
+
+## Table Definition Shape
+
+Custom tables are V1.
+
+```json
+{
+  "id": "tasks",
+  "label": "Tasks",
+  "description": "Work items Lindsay can create, link, block, and close.",
+  "primaryFieldId": "title",
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
 }
@@ -87,6 +103,7 @@ Each operational record has fixed fields and custom fields.
 
 - Today.
 - Communities.
+- Tasks.
 - Grid.
 - Kanban.
 - Calendar.
@@ -112,3 +129,20 @@ Sundesk surfaces work using explicit reasons:
 - Status changed since yesterday.
 
 The UI must show the reason trail.
+
+## Task Links And Dependencies
+
+Tasks can link to records in any V1 table.
+
+```json
+{
+  "id": "dependency_001",
+  "fromRecordId": "task_001",
+  "toRecordId": "approval_001",
+  "relationship": "dependsOn",
+  "reason": "COI must be received before venue readiness can be marked ready.",
+  "createdAt": "timestamp"
+}
+```
+
+Dependency links feed Today, Kanban, Gantt, meeting prep, and the daily digest.

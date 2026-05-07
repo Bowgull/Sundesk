@@ -36,7 +36,7 @@ It does not store documents, document contents, email threads, or imported compa
 
 The first-run onboarding must state:
 
-> Track status only. Do not upload files. Do not paste document contents. Enter phone numbers or sensitive contact details only if you are allowed to store them here.
+> Sundesk is built for operational status, not sensitive files or document contents. Upload sensitive information at your own risk. Do not add files, pasted document contents, permit files, COI files, contract text, private phone numbers, or sensitive contact details unless you are allowed to store them here.
 
 ## Digest Bridge
 
@@ -56,3 +56,19 @@ It only stores digest metadata:
 - Sent state.
 
 No official documents or document contents belong in the digest bridge.
+
+## Obsidian
+
+Obsidian export is not V1.
+
+It can be considered later as a manual export of safe metadata:
+
+- Table name.
+- Record title.
+- Status.
+- Due date.
+- Community.
+- Public-safe notes.
+- Links between records.
+
+It must not export files, pasted document contents, private contact data, permit contents, COI files, contract text, or imported company data.

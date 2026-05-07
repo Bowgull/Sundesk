@@ -38,6 +38,28 @@ export type AutomationRule = {
   then: string
 }
 
+export type TableDefinition = {
+  id: string
+  name: string
+  purpose: string
+  records: number
+}
+
+export type SavedView = {
+  id: string
+  name: string
+  type: 'Grid' | 'Kanban' | 'Calendar' | 'Gantt' | 'Today'
+  rule: string
+}
+
+export type TaskDependency = {
+  id: string
+  task: string
+  dependsOn: string
+  linkedTable: string
+  reason: string
+}
+
 export const priorityItems: PriorityItem[] = [
   {
     id: 'task-coi-halifax',
@@ -127,12 +149,126 @@ export const automationRules: AutomationRule[] = [
 ]
 
 export const buildFieldTypes = [
-  'Short note',
+  'Text',
+  'Long text',
   'Status',
+  'Single select',
+  'Multi select',
   'Date',
+  'Date + time',
+  'Checkbox',
+  'Number',
+  'Percent',
+  'Rating',
   'Phone',
-  'Connect to another item',
-  'Show linked details',
-  'Count linked items',
-  'Calculated rule',
+  'URL',
+  'Linked record',
+  'Lookup',
+  'Rollup',
+  'Count',
+  'System formula',
+  'Created time',
+  'Last updated time',
+]
+
+export const tables: TableDefinition[] = [
+  {
+    id: 'communities',
+    name: 'Communities',
+    purpose: 'One record per community. Owns readiness, event dates, and risk state.',
+    records: 6,
+  },
+  {
+    id: 'tasks',
+    name: 'Tasks',
+    purpose: 'Work items Lindsay can create, assign, link, block, and close.',
+    records: 14,
+  },
+  {
+    id: 'followups',
+    name: 'Follow-ups',
+    purpose: 'Waiting loops, nudges, owners, and due dates.',
+    records: 9,
+  },
+  {
+    id: 'approvals',
+    name: 'Approvals',
+    purpose: 'Permits, COI status, confirmations, and blockers.',
+    records: 5,
+  },
+  {
+    id: 'meetings',
+    name: 'Meetings',
+    purpose: 'Prep, agenda items, notes metadata, and next actions.',
+    records: 4,
+  },
+  {
+    id: 'risks',
+    name: 'Risks',
+    purpose: 'Things that may slip the plan and what they block.',
+    records: 3,
+  },
+  {
+    id: 'people',
+    name: 'People',
+    purpose: 'Allowed contacts, roles, and safe contact metadata.',
+    records: 11,
+  },
+]
+
+export const savedViews: SavedView[] = [
+  {
+    id: 'today',
+    name: 'Today',
+    type: 'Today',
+    rule: 'Open work due now, overdue, blocked, or needed for the next meeting.',
+  },
+  {
+    id: 'task-grid',
+    name: 'Task grid',
+    type: 'Grid',
+    rule: 'All open tasks. Sorted by due date and priority.',
+  },
+  {
+    id: 'status-board',
+    name: 'Status board',
+    type: 'Kanban',
+    rule: 'Tasks grouped by status. Uses the Status field.',
+  },
+  {
+    id: 'event-calendar',
+    name: 'Event calendar',
+    type: 'Calendar',
+    rule: 'Communities and meetings plotted by date.',
+  },
+  {
+    id: 'dependency-map',
+    name: 'Dependency map',
+    type: 'Gantt',
+    rule: 'Tasks with start dates, due dates, and dependency links.',
+  },
+]
+
+export const taskDependencies: TaskDependency[] = [
+  {
+    id: 'coi-venue',
+    task: 'Confirm COI status.',
+    dependsOn: 'Venue readiness.',
+    linkedTable: 'Approvals',
+    reason: 'COI must be received before the venue can be marked ready.',
+  },
+  {
+    id: 'permit-map',
+    task: 'Send permit follow-up.',
+    dependsOn: 'Site map review.',
+    linkedTable: 'Follow-ups',
+    reason: 'Site map review waits for the permit answer.',
+  },
+  {
+    id: 'prep-agenda',
+    task: 'Build meeting prep.',
+    dependsOn: 'Open tasks and risks.',
+    linkedTable: 'Meetings',
+    reason: 'Agenda is built from linked work, not memory.',
+  },
 ]

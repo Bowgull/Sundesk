@@ -39,4 +39,23 @@ The logo and palette references define the system:
 
 Themes are CSS variables.
 
-User preference is stored in Firestore and mirrored to local storage.
+V1 stores the selected theme in local storage. Firestore `userSettings` can mirror it later.
+
+Each theme defines:
+
+- Background.
+- Surface.
+- Raised surface.
+- Text.
+- Muted text.
+- Border.
+- Accent.
+- Fire.
+- Waiting.
+- Prep.
+- Success.
+- Focus.
+- Shadow.
+- Hero gradient.
+
+The app applies the selected theme at the root with `data-theme`.

@@ -17,6 +17,14 @@
   --sage-2: #e4f6e8;
   --lav-2: #f0edff;
   --accent: #3b8abd;
+  --fire: #ee746f;
+  --waiting: #f9d96a;
+  --prep: #8d83d8;
+  --success: #69aa78;
+  --focus: #183346;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-raised: rgba(255, 255, 255, 0.96);
+  --hero-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(228, 244, 255, 0.78));
   --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
   --radius: 8px;
   color: var(--ink);
@@ -36,10 +44,7 @@
 body {
   min-width: 320px;
   margin: 0;
-  background:
-    radial-gradient(circle at 82% 6%, rgba(249, 217, 106, 0.48), transparent 25%),
-    radial-gradient(circle at 15% 12%, rgba(203, 195, 255, 0.35), transparent 24%),
-    linear-gradient(135deg, #f8fdff 0%, #edf8ff 48%, #fff8dc 100%);
+  background: linear-gradient(135deg, #f8fdff 0%, #edf8ff 48%, #fff8dc 100%);
 }
 
 button {
