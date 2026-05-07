@@ -441,27 +441,33 @@ function App() {
 
     const uniqueId = getUniqueSlug(toSlug(label), base.tables.map((table) => table.id))
 
-    setBase((current) => ({
-      ...current,
-      tables: [
-        ...current.tables,
-        {
-          id: uniqueId,
-          label,
-          description: tableDraft.description.trim() || 'Custom table.',
-          primaryFieldId: 'name',
-        },
-      ],
-      fields: [
-        ...current.fields,
-        {
-          id: 'name',
-          tableId: uniqueId,
-          label: 'Name',
-          type: 'text',
-        },
-      ],
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        tables: [
+          ...current.tables,
+          {
+            id: uniqueId,
+            label,
+            description: tableDraft.description.trim() || 'Custom table.',
+            primaryFieldId: 'name',
+          },
+        ],
+        fields: [
+          ...current.fields,
+          {
+            id: 'name',
+            tableId: uniqueId,
+            label: 'Name',
+            type: 'text' as FieldType,
+          },
+        ],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     setSelectedBuildTableId(uniqueId)
     setSelectedBuildRecordId('')
     setVisibleFieldIdsByTable((current) => ({ ...current, [uniqueId]: ['name'] }))
@@ -471,6 +477,14 @@ function App() {
     setActiveGridViewId('')
     setRecordDraft({ name: '' })
     setTableDraft({ label: '', description: '' })
+    writeBuildViewState({
+      selectedBuildTableId: uniqueId,
+      visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [uniqueId]: ['name'] },
+      gridFilter: '',
+      gridSortFieldId: 'name',
+      gridGroupFieldId: '',
+      activeGridViewId: '',
+    })
     closeBuildModal()
   }
 
@@ -494,18 +508,24 @@ function App() {
       return
     }
 
-    setBase((current) => ({
-      ...current,
-      tables: current.tables.map((table) =>
-        table.id === tableId
-          ? {
-              ...table,
-              label,
-              description: tableSettingsDraft.description.trim() || table.description,
-            }
-          : table,
-      ),
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        tables: current.tables.map((table) =>
+          table.id === tableId
+            ? {
+                ...table,
+                label,
+                description: tableSettingsDraft.description.trim() || table.description,
+              }
+            : table,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     closeBuildModal()
   }
 
@@ -527,29 +547,49 @@ function App() {
       return
     }
 
-    setBase((current) => ({
-      ...current,
-      tables: current.tables.filter((table) => table.id !== tableId),
-      fields: current.fields
-        .filter((field) => field.tableId !== tableId)
-        .map((field) => (field.linkedTableId === tableId ? { ...field, linkedTableId: undefined } : field)),
-      records: current.records
-        .filter((record) => record.tableId !== tableId)
-        .map((record) => {
-          const values = Object.fromEntries(
-            Object.entries(record.values).map(([fieldId, value]) => [
-              fieldId,
-              Array.isArray(value) ? value.filter((recordId) => !recordsToDelete.includes(recordId)) : value,
-            ]),
-          )
+    const nextVisibleFields = { ...visibleFieldIdsByTable }
+    const nextWidths = { ...columnWidths }
+    const deletedViewIds = localGridViews.filter((view) => view.tableId === tableId).map((view) => view.id)
+    const nextGridViews = localGridViews.filter((view) => view.tableId !== tableId)
+    const nextDrafts = { ...viewRenameDrafts }
 
-          return { ...record, values }
-        }),
-      dependencies: current.dependencies.filter(
-        (dependency) =>
-          !recordsToDelete.includes(dependency.fromRecordId) && !recordsToDelete.includes(dependency.toRecordId),
-      ),
-    }))
+    delete nextVisibleFields[tableId]
+    fieldsToDelete.forEach((fieldId) => {
+      delete nextWidths[fieldId]
+    })
+    deletedViewIds.forEach((viewId) => {
+      delete nextDrafts[viewId]
+    })
+
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        tables: current.tables.filter((table) => table.id !== tableId),
+        fields: current.fields
+          .filter((field) => field.tableId !== tableId)
+          .map((field) => (field.linkedTableId === tableId ? { ...field, linkedTableId: undefined } : field)),
+        records: current.records
+          .filter((record) => record.tableId !== tableId)
+          .map((record) => {
+            const values = Object.fromEntries(
+              Object.entries(record.values).map(([fieldId, value]) => [
+                fieldId,
+                Array.isArray(value) ? value.filter((recordId) => !recordsToDelete.includes(recordId)) : value,
+              ]),
+            )
+
+            return { ...record, values }
+          }),
+        dependencies: current.dependencies.filter(
+          (dependency) =>
+            !recordsToDelete.includes(dependency.fromRecordId) && !recordsToDelete.includes(dependency.toRecordId),
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     setSelectedBuildTableId(nextBuildTable.id)
     setSelectedBuildRecordId(getRecordsForTable(base, nextBuildTable.id)[0]?.id || '')
     setGridFilter('')
@@ -557,31 +597,20 @@ function App() {
     setGridGroupFieldId(base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, nextBuildTable.id))
-    setVisibleFieldIdsByTable((current) => {
-      const nextVisibleFields = { ...current }
-      delete nextVisibleFields[tableId]
-
-      return nextVisibleFields
-    })
-    setColumnWidths((current) => {
-      const nextWidths = { ...current }
-
-      fieldsToDelete.forEach((fieldId) => {
-        delete nextWidths[fieldId]
-      })
-
-      return nextWidths
-    })
-    setLocalGridViews((current) => current.filter((view) => view.tableId !== tableId))
-    setViewRenameDrafts((current) => {
-      const deletedViewIds = localGridViews.filter((view) => view.tableId === tableId).map((view) => view.id)
-      const nextDrafts = { ...current }
-
-      deletedViewIds.forEach((viewId) => {
-        delete nextDrafts[viewId]
-      })
-
-      return nextDrafts
+    setVisibleFieldIdsByTable(nextVisibleFields)
+    setColumnWidths(nextWidths)
+    setLocalGridViews(nextGridViews)
+    setViewRenameDrafts(nextDrafts)
+    writeBuildViewState({
+      selectedBuildTableId: nextBuildTable.id,
+      visibleFieldIdsByTable: nextVisibleFields,
+      gridFilter: '',
+      gridSortFieldId: nextBuildTable.primaryFieldId,
+      gridGroupFieldId: base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '',
+      localGridViews: nextGridViews,
+      viewRenameDrafts: nextDrafts,
+      activeGridViewId: '',
+      columnWidths: nextWidths,
     })
     closeBuildModal()
   }
@@ -628,19 +657,30 @@ function App() {
       field.sourceLinkedFieldId = effectiveSourceLinkedFieldId
     }
 
-    setBase((current) => ({
-      ...current,
-      fields: [...current.fields, field],
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        fields: [...current.fields, field],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
     if (!computedFieldTypes.includes(field.type)) {
+      const nextVisibleFieldIds = [...(visibleFieldIdsByTable[tableId] || getDefaultVisibleFieldIds(fieldsForSelectedTable)), field.id]
+
       setRecordDraft((current) => ({
         ...current,
         [field.id]: getEmptyFieldValue(field.type),
       }))
       setVisibleFieldIdsByTable((current) => ({
         ...current,
-        [tableId]: [...(current[tableId] || getDefaultVisibleFieldIds(fieldsForSelectedTable)), field.id],
+        [tableId]: nextVisibleFieldIds,
       }))
+      writeBuildViewState({
+        visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
+      })
     }
     setFieldDraft((current) => ({ ...current, label: '' }))
     closeBuildModal()
@@ -653,12 +693,18 @@ function App() {
       return
     }
 
-    setBase((current) => ({
-      ...current,
-      fields: current.fields.map((field) =>
-        field.tableId === tableId && field.id === fieldId ? { ...field, ...updates } : field,
-      ),
-    }))
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        fields: current.fields.map((field) =>
+          field.tableId === tableId && field.id === fieldId ? { ...field, ...updates } : field,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
   }
 
   function openFieldSettings(field: FieldDefinition) {
@@ -684,20 +730,32 @@ function App() {
       return
     }
 
-    setBase((current) => ({
-      ...current,
-      fields: current.fields.filter((fieldItem) => !(fieldItem.tableId === field.tableId && fieldItem.id === field.id)),
-      records: current.records.map((record) => {
-        if (record.tableId !== tableId) {
-          return record
-        }
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        fields: current.fields.filter((fieldItem) => !(fieldItem.tableId === field.tableId && fieldItem.id === field.id)),
+        records: current.records.map((record) => {
+          if (record.tableId !== tableId) {
+            return record
+          }
 
-        const nextValues = { ...record.values }
-        delete nextValues[field.id]
+          const nextValues = { ...record.values }
+          delete nextValues[field.id]
 
-        return { ...record, values: nextValues }
-      }),
-    }))
+          return { ...record, values: nextValues }
+        }),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    const nextVisibleFieldIds = (visibleFieldIdsByTable[tableId] || []).filter((fieldId) => fieldId !== field.id)
+    const nextWidths = { ...columnWidths }
+    const nextSortFieldId = gridSortFieldId === field.id ? selectedBuildTable.primaryFieldId : gridSortFieldId
+    const nextGroupFieldId = gridGroupFieldId === field.id ? '' : gridGroupFieldId
+
+    delete nextWidths[field.id]
     setRecordDraft((current) => {
       const nextDraft = { ...current }
       delete nextDraft[field.id]
@@ -706,14 +764,9 @@ function App() {
     })
     setVisibleFieldIdsByTable((current) => ({
       ...current,
-      [tableId]: (current[tableId] || []).filter((fieldId) => fieldId !== field.id),
+      [tableId]: nextVisibleFieldIds,
     }))
-    setColumnWidths((current) => {
-      const nextWidths = { ...current }
-      delete nextWidths[field.id]
-
-      return nextWidths
-    })
+    setColumnWidths(nextWidths)
     if (gridSortFieldId === field.id) {
       setGridSortFieldId(selectedBuildTable.primaryFieldId)
     }
@@ -721,6 +774,12 @@ function App() {
       setGridGroupFieldId('')
     }
     setOpenFieldMenuId('')
+    writeBuildViewState({
+      visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
+      gridSortFieldId: nextSortFieldId,
+      gridGroupFieldId: nextGroupFieldId,
+      columnWidths: nextWidths,
+    })
     closeBuildModal()
   }
 

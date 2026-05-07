@@ -143,6 +143,47 @@ test('Build dependencies persist across reloads', async ({ page }) => {
   await expect(dependencyRow.getByText('Permit needs agenda context.')).toBeVisible()
 })
 
+test('Build table create and rename persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByRole('button', { name: 'Add table' }).click()
+
+  const addTableModal = page.getByRole('dialog', { name: 'Add table' })
+
+  await addTableModal.getByLabel('Table name').fill('Partners')
+  await addTableModal.getByLabel('Purpose').fill('Groups tied to local work.')
+  await addTableModal.getByRole('button', { name: 'Add table' }).click()
+  await expect(page.getByRole('heading', { name: 'Partners' })).toBeVisible()
+  await page.getByRole('button', { name: 'Rename table' }).click()
+
+  const settingsModal = page.getByRole('dialog', { name: 'Table settings' })
+
+  await settingsModal.getByLabel('Table name').fill('Vendors')
+  await settingsModal.getByRole('button', { name: 'Save table' }).click()
+  await expect(page.getByRole('heading', { name: 'Vendors' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Vendors' })).toBeVisible()
+  await expect(page.getByTestId('build-table-partners').getByText('Vendors')).toBeVisible()
+})
+
+test('Build table delete repairs linked fields and persists', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-people').click()
+  await page.getByRole('button', { name: 'Delete table' }).click()
+  await page.getByRole('dialog', { name: 'Delete table' }).getByRole('button', { name: 'Delete table' }).click()
+  await expect(page.getByTestId('build-table-people')).toBeHidden()
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Confirm COI status/ }).click()
+  await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByText('Empty').first()).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByTestId('build-table-people')).toBeHidden()
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('row', { name: /Confirm COI status/ }).click()
+  await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByText('Empty').first()).toBeVisible()
+})
+
 test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -206,6 +247,37 @@ test('Build pinned views persist across reloads', async ({ page }) => {
 
   await expect(page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ })).toBeVisible()
   await expect(page.getByLabel('Filter')).toHaveValue('permit')
+})
+
+test('Build field create, edit, and delete persist across reloads', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByRole('button', { name: 'Add field' }).click()
+
+  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+
+  await addFieldModal.getByLabel('Field name').fill('Notes')
+  await addFieldModal.getByLabel('Type').selectOption('longText')
+  await addFieldModal.getByRole('button', { name: 'Add field' }).click()
+  await expect(page.getByRole('columnheader', { name: /Notes/ }).first()).toBeVisible()
+  await page.getByRole('columnheader', { name: /Notes/ }).first().locator('.grid-field-menu-trigger').click()
+  await page.getByRole('button', { name: 'Field settings' }).click()
+
+  const settingsModal = page.getByRole('dialog', { name: 'Field settings' })
+
+  await settingsModal.getByLabel('Field name').fill('Internal notes')
+  await settingsModal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('columnheader', { name: /Internal notes/ }).first()).toBeVisible()
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('columnheader', { name: /Internal notes/ }).first()).toBeVisible()
+  await page.getByRole('columnheader', { name: /Internal notes/ }).first().locator('.grid-field-menu-trigger').click()
+  await page.getByRole('button', { name: 'Delete field' }).click()
+  await page.getByRole('dialog', { name: 'Delete field' }).getByRole('button', { name: 'Delete field' }).click()
+  await expect(page.getByRole('columnheader', { name: /Internal notes/ })).toBeHidden()
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('columnheader', { name: /Internal notes/ })).toBeHidden()
 })
 
 test('Build Rule edits persist as read-only previews', async ({ page }) => {

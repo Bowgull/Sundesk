@@ -114,6 +114,30 @@ describe('local storage helpers', () => {
     expect(storedMigrationReport.workbaseReset).toBe(false)
   })
 
+  it('repairs malformed field definitions and restores missing editable values', () => {
+    const storedBase = cloneWorkbase(workbase)
+    const task = storedBase.records.find((record) => record.id === 'task_coi_halifax')
+
+    storedBase.fields.push(
+      { id: 'orphan', tableId: 'missing_table', label: 'Orphan', type: 'text' },
+      { id: 'bad_type', tableId: 'tasks', label: 'Bad type', type: 'bad' as never },
+    )
+    if (task) {
+      delete task.values.status
+    }
+    stubLocalStorage({
+      [workbaseStorageKey]: JSON.stringify({ version: 1, base: storedBase }),
+    })
+
+    const repairedBase = readStoredWorkbase()
+    const repairedTask = repairedBase.records.find((record) => record.id === 'task_coi_halifax')
+
+    expect(repairedBase.fields.map((field) => field.id)).not.toContain('orphan')
+    expect(repairedBase.fields.map((field) => field.id)).not.toContain('bad_type')
+    expect(repairedTask?.values.status).toBe('')
+    expect(storedMigrationReport.workbaseReset).toBe(false)
+  })
+
   it('repairs malformed stored Rules while preserving starter defaults', () => {
     stubLocalStorage({
       [rulesStorageKey]: JSON.stringify([{ id: 'bad-rule' }]),
