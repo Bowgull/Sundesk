@@ -31,7 +31,7 @@
 - Kanban view.
 - Calendar view.
 - Gantt view.
-- Pinned views in navigation.
+- Pinned views in navigation for regular check-in and reference surfaces.
 - Field settings modal.
 - Editable checkbox icons and colours.
 - Editable select and tag options.

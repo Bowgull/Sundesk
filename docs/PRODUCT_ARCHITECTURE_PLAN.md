@@ -306,7 +306,11 @@ Best model:
 - Views live under each table.
 - A user can pin important views to the left nav.
 - Default pinned views can include Today, Communities, Build, and Settings.
-- Later, the user can pin a Kanban, Calendar, Gantt, or saved grid view.
+- The user can pin a Kanban, Calendar, Gantt, or saved grid view when it becomes part of regular work.
+- Pinned views are for views she needs to check, update, or reference often.
+- Examples: `Community Calendar`, `Approvals Kanban`, `Event Timeline`, `Waiting Follow-ups`, `Meeting Prep`.
+- Pinned views keep their table context. Opening one should still show which table and view it belongs to.
+- Users can unpin views when they stop being active.
 
 This keeps power available without making the daily app feel crowded.
 

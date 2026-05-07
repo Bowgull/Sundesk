@@ -114,7 +114,7 @@ Build opens to Communities.
 
 The main Build surface is the grid. Table creation, field creation, field settings, and record creation should live in menus or modals, not always-visible panels.
 
-Views such as Kanban, calendar, and Gantt belong to the View Engine. They can be pinned to the left nav when useful. They should not become permanent nav clutter by default.
+Views such as Kanban, calendar, and Gantt belong to the View Engine. They can be pinned to the left nav when they become regular check-in or update surfaces. A pinned view should keep its table context, such as `Community Calendar`, `Approvals Kanban`, `Event Timeline`, `Waiting Follow-ups`, or `Meeting Prep`. Views should not become permanent nav clutter by default.
 
 ## Airtable Logic Baseline
 
