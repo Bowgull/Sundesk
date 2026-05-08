@@ -12,8 +12,11 @@ import {
   hasDuplicateDependency,
 } from './data/dependencies'
 import {
+  createFirestoreReadShadowReader,
   getFirestoreReadShadowState,
   getFirestoreWriteGateState,
+  loadFirestoreReadShadow,
+  type FirestoreReadShadowState,
 } from './data/firestoreReadShadow'
 import {
   type LocalGridView,
@@ -34,6 +37,7 @@ import {
   storedMigrationReport,
   workbaseStorageKey,
 } from './data/localStorage'
+import { getFirebaseServices } from './lib/firebase'
 import {
   type LocalRule,
   getFieldDisplayValue as getRecordFieldDisplayValue,
@@ -377,6 +381,7 @@ function App() {
   })
   const [dependencySearch, setDependencySearch] = useState('')
   const [activeDigestPreviewMeetingId, setActiveDigestPreviewMeetingId] = useState('')
+  const [firestoreReadShadowState, setFirestoreReadShadowState] = useState<FirestoreReadShadowState>(() => getFirestoreReadShadowState())
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -473,7 +478,6 @@ function App() {
     initialMigrationReport.rulesReset ? 'Rules state was repaired.' : '',
     initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
   ].filter(Boolean)
-  const firestoreReadShadowState = getFirestoreReadShadowState()
   const firestoreWriteGateState = getFirestoreWriteGateState()
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
@@ -2517,6 +2521,46 @@ function App() {
   }, [localRules])
 
   useEffect(() => {
+    const currentState = getFirestoreReadShadowState()
+
+    if (currentState.state !== 'ready') {
+      return
+    }
+
+    let cancelled = false
+
+    void (async () => {
+      const services = await getFirebaseServices()
+
+      if (!services) {
+        return {
+          state: 'missing-config',
+          label: 'Missing config',
+          detail: 'Firebase services are not available.',
+        } satisfies FirestoreReadShadowState
+      }
+
+      if (!cancelled) {
+        setFirestoreReadShadowState({
+          state: 'loading',
+          label: 'Loading',
+          detail: 'Reading remote counts. Local storage is still active.',
+        })
+      }
+
+      return loadFirestoreReadShadow(createFirestoreReadShadowReader(services.db))
+    })().then((state) => {
+      if (!cancelled) {
+        setFirestoreReadShadowState(state)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (!toastMessage) {
       return
     }
@@ -4259,6 +4303,9 @@ function App() {
               <p><strong>Storage.</strong> Tables, fields, records, dependencies, Rules, and Build views are saved in this browser.</p>
               <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
               <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
+              {firestoreReadShadowState.collections && (
+                <p><strong>Remote counts.</strong> {firestoreReadShadowState.collections.map((item) => `${item.name}: ${item.count}`).join('. ')}.</p>
+              )}
               <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
             </div>
           </article>

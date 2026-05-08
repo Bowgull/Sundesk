@@ -4,7 +4,7 @@ Status: plan plus local read-shadow gate.
 
 No Firestore writes are implemented here. The local browser build remains the working product until write approval is explicit.
 
-The current app has a read-shadow status layer only. It reports whether read shadow is off, missing config, or ready. It does not fetch data yet.
+The current app has a read-shadow loader for remote collection counts. It reports whether read shadow is off, missing config, loading, loaded, or failed. It does not replace local state.
 
 ## Goal
 
@@ -197,7 +197,7 @@ Phase 1. Local only.
 Phase 2. Read shadow.
 
 - Show Firestore read-shadow status in Settings.
-- Read Firestore into memory behind a feature flag later.
+- Read Firestore collection counts into memory behind a feature flag.
 - Compare Firestore payload with local state.
 - Do not write.
 
