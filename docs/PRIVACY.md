@@ -57,18 +57,32 @@ It only stores digest metadata:
 
 No official documents or document contents belong in the digest bridge.
 
-## Obsidian
+## Obsidian Build Notes
 
-Obsidian export is not V1.
+Obsidian is not a Sundesk data destination.
 
-It can be considered later as a manual export of safe metadata:
+Use it only for per-session build memory while the product is being built.
 
-- Table name.
-- Record title.
-- Status.
-- Due date.
-- Community.
-- Public-safe notes.
-- Links between records.
+Allowed:
 
-It must not export files, pasted document contents, private contact data, permit contents, COI files, contract text, or imported company data.
+- Session summary.
+- Changed files.
+- Tests run.
+- Decisions made.
+- Open questions.
+- Next session scope.
+
+Not allowed:
+
+- Lindsay data.
+- SALTXC private data.
+- Real records.
+- Files.
+- Document contents.
+- Private contact data.
+- Permit contents.
+- COI files.
+- Contract text.
+- Imported company data.
+
+Stop writing Obsidian build notes when the build is complete.

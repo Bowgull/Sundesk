@@ -24,6 +24,9 @@
   --focus: #183346;
   --surface: rgba(255, 255, 255, 0.88);
   --surface-raised: rgba(255, 255, 255, 0.96);
+  --chrome: rgba(255, 255, 255, 0.72);
+  --chrome-hover: rgba(228, 244, 255, 0.84);
+  --primary-fg: #ffffff;
   --hero-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(228, 244, 255, 0.78));
   --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
   --radius: 8px;
@@ -51,27 +54,86 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  min-height: 36px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--chrome);
   color: var(--ink);
   font: inherit;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+button:hover {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--surface-raised) 90%, var(--sky-1));
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring, var(--accent)) 18%, transparent);
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+}
+
+button[aria-pressed="true"],
+button.selected {
+  border-color: var(--accent);
+  background: var(--sky-1);
+  color: var(--ink);
 }
 
 button.primary {
   border-color: transparent;
   background: var(--night);
-  color: #fff;
+  color: var(--primary-fg);
+}
+
+button.primary:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--night) 88%, var(--accent));
 }
 
 button.ghost {
   background: rgba(228, 244, 255, 0.68);
   color: var(--night);
+}
+
+button.ghost:hover {
+  background: var(--sky-1);
+}
+
+button.danger {
+  border-color: color-mix(in srgb, var(--coral) 42%, var(--line));
+  background: var(--coral-2);
+  color: color-mix(in srgb, var(--coral) 72%, var(--ink));
+}
+
+button.danger:hover {
+  border-color: color-mix(in srgb, var(--coral) 72%, var(--line));
+  background: color-mix(in srgb, var(--coral-2) 76%, white);
 }
 
 a {

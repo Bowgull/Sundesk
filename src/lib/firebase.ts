@@ -1,6 +1,4 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import type { FirebaseApp } from 'firebase/app'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,24 +11,31 @@ const firebaseConfig = {
 
 let app: FirebaseApp | null = null
 
-export function getFirebaseApp() {
+export async function getFirebaseApp() {
   if (!firebaseConfig.projectId) {
     return null
   }
 
   if (!app) {
+    const { initializeApp } = await import('firebase/app')
+
     app = initializeApp(firebaseConfig)
   }
 
   return app
 }
 
-export function getFirebaseServices() {
-  const firebaseApp = getFirebaseApp()
+export async function getFirebaseServices() {
+  const firebaseApp = await getFirebaseApp()
 
   if (!firebaseApp) {
     return null
   }
+
+  const [{ getAuth }, { getFirestore }] = await Promise.all([
+    import('firebase/auth'),
+    import('firebase/firestore'),
+  ])
 
   return {
     app: firebaseApp,
