@@ -12,6 +12,7 @@ import {
   hasDuplicateDependency,
 } from './data/dependencies'
 import {
+  compareFirestoreReadShadowCounts,
   createFirestoreReadShadowReader,
   getFirestoreReadShadowState,
   getFirestoreWriteGateState,
@@ -480,6 +481,7 @@ function App() {
   ].filter(Boolean)
   const firestoreWriteGateState = getFirestoreWriteGateState()
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
+  const firestoreReadShadowComparison = compareFirestoreReadShadowCounts(localEngineStats, firestoreReadShadowState.collections)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
 
   function writeWorkbaseState(nextBase: StoredWorkbaseState['base']) {
@@ -4308,6 +4310,17 @@ function App() {
               )}
               <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
             </div>
+            {firestoreReadShadowState.collections && (
+              <div className="read-shadow-compare" aria-label="Read shadow comparison">
+                {firestoreReadShadowComparison.map((item) => (
+                  <div className={item.status} key={item.name}>
+                    <span>{item.name}</span>
+                    <strong>{item.local} local / {item.remote} remote</strong>
+                    <small>{item.delta === 0 ? 'Matched' : `${item.delta > 0 ? '+' : ''}${item.delta} remote delta`}</small>
+                  </div>
+                ))}
+              </div>
+            )}
           </article>
 
           <article className="settings-panel">

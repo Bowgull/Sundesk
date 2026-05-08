@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  compareFirestoreReadShadowCounts,
   firestoreReadShadowCollections,
   getFirestoreReadShadowState,
   getFirestoreWriteGateState,
@@ -102,5 +103,33 @@ describe('Firestore read shadow gates', () => {
       label: 'Read failed',
       detail: 'Permission denied. Local storage is still active.',
     })
+  })
+
+  it('compares remote counts against local engine counts', () => {
+    expect(compareFirestoreReadShadowCounts(
+      [
+        { name: 'Tables', count: 6 },
+        { name: 'Fields', count: 22 },
+        { name: 'Records', count: 14 },
+        { name: 'Dependencies', count: 2 },
+        { name: 'Rules', count: 5 },
+        { name: 'Saved views', count: 1 },
+      ],
+      [
+        { name: 'tables', count: 6 },
+        { name: 'fields', count: 20 },
+        { name: 'records', count: 14 },
+        { name: 'dependencies', count: 0 },
+        { name: 'rules', count: 5 },
+        { name: 'views', count: 1 },
+      ],
+    )).toEqual([
+      { name: 'tables', local: 6, remote: 6, delta: 0, status: 'matched' },
+      { name: 'fields', local: 22, remote: 20, delta: -2, status: 'different' },
+      { name: 'records', local: 14, remote: 14, delta: 0, status: 'matched' },
+      { name: 'dependencies', local: 2, remote: 0, delta: -2, status: 'different' },
+      { name: 'rules', local: 5, remote: 5, delta: 0, status: 'matched' },
+      { name: 'views', local: 1, remote: 1, delta: 0, status: 'matched' },
+    ])
   })
 })

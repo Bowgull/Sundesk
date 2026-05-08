@@ -19,6 +19,21 @@ export type FirestoreReadShadowCollection = {
   count: number
 }
 
+export type FirestoreLocalCount = {
+  name?: string
+  label?: string
+  count?: number
+  value?: number
+}
+
+export type FirestoreReadShadowComparison = {
+  name: string
+  local: number
+  remote: number
+  delta: number
+  status: 'matched' | 'different'
+}
+
 export type FirestoreWriteGateState = {
   enabled: boolean
   label: string
@@ -55,6 +70,46 @@ export const firestoreReadShadowCollections = [
   'settings',
   'activityLog',
 ]
+
+export function getFirestoreReadShadowLocalCounts(localCounts: FirestoreLocalCount[]) {
+  const localCountMap = new Map(
+    localCounts.flatMap((item) => {
+      const name = item.name || item.label
+      const count = item.count ?? item.value
+
+      return name && typeof count === 'number' ? [[name.toLowerCase(), count] as const] : []
+    }),
+  )
+
+  return [
+    { name: 'tables', count: localCountMap.get('tables') || 0 },
+    { name: 'fields', count: localCountMap.get('fields') || 0 },
+    { name: 'records', count: localCountMap.get('records') || 0 },
+    { name: 'dependencies', count: localCountMap.get('dependencies') || 0 },
+    { name: 'rules', count: localCountMap.get('rules') || 0 },
+    { name: 'views', count: localCountMap.get('saved views') || 0 },
+  ]
+}
+
+export function compareFirestoreReadShadowCounts(
+  localCounts: FirestoreLocalCount[],
+  remoteCounts: FirestoreReadShadowCollection[] = [],
+): FirestoreReadShadowComparison[] {
+  const remoteCountMap = new Map(remoteCounts.map((item) => [item.name, item.count]))
+
+  return getFirestoreReadShadowLocalCounts(localCounts).map((item) => {
+    const remote = remoteCountMap.get(item.name) || 0
+    const delta = remote - item.count
+
+    return {
+      name: item.name,
+      local: item.count,
+      remote,
+      delta,
+      status: delta === 0 ? 'matched' : 'different',
+    }
+  })
+}
 
 export function getFirestoreReadShadowState(env: FirestoreEnv = getDefaultFirestoreEnv()): FirestoreReadShadowState {
   if (env.VITE_SUNDESK_FIRESTORE_READ_SHADOW !== 'enabled') {

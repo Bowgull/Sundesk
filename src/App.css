@@ -3380,6 +3380,46 @@ h2 {
   margin-right: 6px;
 }
 
+.read-shadow-compare {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.read-shadow-compare div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-glass);
+}
+
+.read-shadow-compare div.different {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+.read-shadow-compare span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.read-shadow-compare strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.read-shadow-compare small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .engine-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3674,6 +3714,7 @@ h2 {
   .build-grid,
   .signal-grid,
   .engine-stat-grid,
+  .read-shadow-compare,
   .rule-destination-grid,
   .theme-grid {
     grid-template-columns: 1fr;
