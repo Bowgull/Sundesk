@@ -12,6 +12,10 @@ import {
   hasDuplicateDependency,
 } from './data/dependencies'
 import {
+  getFirestoreReadShadowState,
+  getFirestoreWriteGateState,
+} from './data/firestoreReadShadow'
+import {
   type LocalGridView,
   type StoredBuildViewState,
   type StoredMigrationReport,
@@ -469,6 +473,8 @@ function App() {
     initialMigrationReport.rulesReset ? 'Rules state was repaired.' : '',
     initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
   ].filter(Boolean)
+  const firestoreReadShadowState = getFirestoreReadShadowState()
+  const firestoreWriteGateState = getFirestoreWriteGateState()
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
 
@@ -4252,7 +4258,8 @@ function App() {
             <div className="settings-list">
               <p><strong>Storage.</strong> Tables, fields, records, dependencies, Rules, and Build views are saved in this browser.</p>
               <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
-              <p><strong>Network.</strong> No Firebase writes in this local build.</p>
+              <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
+              <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
             </div>
           </article>
 

@@ -1,8 +1,10 @@
 # Firestore Persistence Plan
 
-Status: plan only.
+Status: plan plus local read-shadow gate.
 
 No Firestore writes are implemented here. The local browser build remains the working product until write approval is explicit.
+
+The current app has a read-shadow status layer only. It reports whether read shadow is off, missing config, or ready. It does not fetch data yet.
 
 ## Goal
 
@@ -194,9 +196,9 @@ Phase 1. Local only.
 
 Phase 2. Read shadow.
 
-- Read Firestore into memory behind a feature flag.
+- Show Firestore read-shadow status in Settings.
+- Read Firestore into memory behind a feature flag later.
 - Compare Firestore payload with local state.
-- Show read health in Settings.
 - Do not write.
 
 Phase 3. Manual export.

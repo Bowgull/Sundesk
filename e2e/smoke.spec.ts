@@ -518,7 +518,7 @@ test('Settings exposes local engine and Rule destination health', async ({ page 
   await page.getByRole('button', { name: 'Paper Light' }).click()
   await expect(page.locator('.app')).toHaveAttribute('data-theme', 'paper-light')
   await expect(page.getByRole('button', { name: 'Paper Light' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByText('No Firebase writes in this local build.')).toBeVisible()
+  await expect(page.getByText('Write gate. Disabled. No Firestore writes can run in this build.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Read targets.' })).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Timeline')).toBeVisible()
