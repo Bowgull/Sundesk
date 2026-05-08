@@ -17,7 +17,10 @@ test.beforeEach(async ({ page }) => {
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Today builds the day.' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Preview unavailable' })).toBeDisabled()
-  await expect(page.getByTestId('today-lane-rules').getByText('Records matched by local Rules.')).toBeVisible()
+  await expect(page.getByTestId('today-lane-now')).toBeVisible()
+  await expect(page.getByTestId('today-lane-waiting')).toBeVisible()
+  await expect(page.getByTestId('today-lane-next')).toBeVisible()
+  await expect(page.getByTestId('today-lane-rules')).toHaveCount(0)
   await expect(page.getByTestId('today-rule-receipts').getByText('Rule matched').first()).toBeVisible()
   await expect(page.getByTestId('today-rule-receipts').getByText('No automation ran').first()).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText('Blocked by: Venue readiness may slip.')).toBeVisible()
@@ -44,15 +47,15 @@ test('Build renders table workshop, record drawer, dependency editor, and Rules 
   await expect(page.getByTestId('rules-panel').getByText('matching records').first()).toBeVisible()
 })
 
-test('Build record modal supports linked-record picker editing', async ({ page }) => {
+test('Build record drawer supports linked-record picker editing', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await page.getByTestId('edit-record-task_coi_halifax').click()
 
-  await expect(page.getByRole('dialog', { name: 'Record editor' })).toBeVisible()
-  await expect(page.getByTestId('record-modal').getByPlaceholder('Search Communities')).toBeVisible()
-  await expect(page.getByTestId('record-modal').getByRole('button', { name: 'Halifax Remove' })).toBeVisible()
-  await expect(page.getByTestId('record-modal').getByText('Backlinks')).toBeVisible()
+  await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByPlaceholder('Search Communities')).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByRole('button', { name: /Halifax.*Remove/ })).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByText('Backlinks', { exact: true })).toBeVisible()
 })
 
 test('Build linked-record edits persist across reloads', async ({ page }) => {
@@ -62,7 +65,7 @@ test('Build linked-record edits persist across reloads', async ({ page }) => {
 
   const drawer = page.getByTestId('record-drawer')
 
-  await drawer.getByRole('button', { name: 'Charlottetown Remove' }).click()
+  await drawer.getByRole('button', { name: /Charlottetown.*Remove/ }).click()
   await drawer.getByRole('button', { name: /Halifax · At risk/ }).click()
   await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
 
@@ -483,16 +486,27 @@ test('Timeline filters records and keeps rule receipts visible', async ({ page }
 test('Daily support actions open real local surfaces', async ({ page }) => {
   await page.goto('/#tasks')
   await page.getByRole('button', { name: 'Open dependency editor' }).click()
-  await expect(page.getByRole('dialog', { name: 'Record editor' })).toBeVisible()
-  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await page.getByTestId('record-drawer').getByRole('button', { name: 'Close' }).click()
 
   await page.goto('/#followups')
   await page.getByRole('button', { name: 'Adjust rule' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
 
   await page.goto('/#meetings')
+  await expect(page.getByTestId('meeting-prep').getByText('Computed prep').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-prep').getByText('Source records').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-agenda').getByText('Generated agenda').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-agenda').getByText('Assign next steps.').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toBeVisible()
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export .md' }).first()).toBeVisible()
+  await page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview digest' }).first().click()
+  await expect(page.getByTestId('agenda-digest-preview').getByText('Daily digest preview.').first()).toBeVisible()
+  await expect(page.getByTestId('agenda-digest-preview').getByText('Agenda items: 5. Source records: 2.').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-prep').getByText('Next steps').first()).toBeVisible()
   await page.getByRole('button', { name: 'Open next meeting' }).click()
-  await expect(page.getByRole('dialog', { name: 'Record editor' })).toBeVisible()
+  await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByTestId('meeting-prep')).toBeVisible()
 })
 
 test('Settings exposes local engine and Rule destination health', async ({ page }) => {
@@ -502,7 +516,7 @@ test('Settings exposes local engine and Rule destination health', async ({ page 
   await expect(page.getByRole('button', { name: 'Paper Light' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Sunrise Soft' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Paper Light' }).click()
-  await expect(page.locator('.app')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('.app')).toHaveAttribute('data-theme', 'paper-light')
   await expect(page.getByRole('button', { name: 'Paper Light' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No Firebase writes in this local build.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Read targets.' })).toBeVisible()

@@ -4,6 +4,9 @@ import {
   getBuildTableRows,
   getDependencyPickerRecords,
   getLocalEngineStats,
+  getMeetingAgendaText,
+  getMeetingDigestPreview,
+  getMeetingPrep,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
   getScreenStats,
@@ -95,14 +98,48 @@ describe('view read models', () => {
     ])
   })
 
+  it('builds deterministic meeting prep from linked records and community work', () => {
+    const prep = getMeetingPrep(workbase, 'meeting_charlottetown', todayDate)
+
+    expect(prep?.communities.map((record) => record.id)).toEqual(['community_charlottetown'])
+    expect(prep?.linkedTasks.map((record) => record.id)).toEqual(['task_meeting_charlottetown'])
+    expect(prep?.nextSteps.map((record) => record.id)).toEqual(['task_meeting_charlottetown'])
+    expect(prep?.sections.map((section) => section.id)).toEqual(['blocked', 'followups', 'approvals', 'risks', 'next'])
+    expect(prep?.agenda.map((item) => item.id)).toEqual([
+      'community-read',
+      'clear-blockers',
+      'settle-approvals',
+      'name-risk',
+      'assign-next',
+    ])
+    expect(prep?.agenda.find((item) => item.id === 'assign-next')?.recordIds).toEqual(['task_meeting_charlottetown'])
+  })
+
+  it('formats computed agenda text and digest preview without saving records', () => {
+    const prep = getMeetingPrep(workbase, 'meeting_charlottetown', todayDate)
+
+    expect(prep).not.toBeNull()
+
+    const agendaText = getMeetingAgendaText(workbase, prep!)
+    const digestPreview = getMeetingDigestPreview(workbase, prep!)
+
+    expect(agendaText).toContain('Computed agenda. Not saved.')
+    expect(agendaText).toContain('1. Read the community state.')
+    expect(agendaText).toContain('Source records: Charlottetown.')
+    expect(digestPreview).toContain('Daily digest preview.')
+    expect(digestPreview).toContain('Agenda items: 5. Source records: 2.')
+  })
+
   it('derives Rule matches and Today lanes from read-only Rules', () => {
     const rules = getDefaultLocalRules()
     const todayMatches = getRuleMatchesForDestination(workbase, rules, 'today', todayDate)
     const todayLanes = getTodayLanes(workbase, todayMatches)
+    const laneRecordIds = todayLanes.flatMap((lane) => lane.records.map((record) => record.id))
 
     expect(todayMatches.map((match) => match.record.id)).toContain('task_coi_halifax')
-    expect(todayLanes.map((lane) => lane.id)).toEqual(['now', 'waiting', 'next', 'rules'])
-    expect(todayLanes.find((lane) => lane.id === 'rules')?.records.length).toBeGreaterThan(0)
+    expect(todayLanes.map((lane) => lane.id)).toEqual(['now', 'waiting', 'next'])
+    expect(laneRecordIds).toContain('task_coi_halifax')
+    expect(new Set(laneRecordIds).size).toBe(laneRecordIds.length)
   })
 
   it('builds Settings stats from validation, not zero-match counts', () => {

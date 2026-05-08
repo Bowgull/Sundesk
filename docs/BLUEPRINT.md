@@ -329,13 +329,13 @@ Never export Lindsay data, SALTXC data, private records, files, document content
 
 Bridgefour visibility is out of scope for this build plan.
 
-## Final Polish
+## UI/UX Acceptance
 
-The final build session is UI and UX polish.
+UI and UX polish is part of the build path.
 
-It should implement [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md) as the acceptance target.
+Each build stage should use [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md) as its acceptance target. The final build session should still review the whole app as one product Lindsay can use.
 
-It should review the whole app as a product Lindsay can use:
+The build should review:
 
 - First screen clarity.
 - Today action flow.

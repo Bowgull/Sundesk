@@ -1,100 +1,265 @@
 .app {
-  --background: #f7fcff;
+  --background:
+    radial-gradient(circle at 8% -8%, rgba(249, 217, 106, 0.42), transparent 28%),
+    radial-gradient(circle at 92% 10%, rgba(238, 116, 111, 0.24), transparent 31%),
+    linear-gradient(135deg, #f2fbff 0%, #fff8e5 56%, #ffe9e4 100%);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-raised: rgba(255, 255, 255, 0.96);
   --paper: var(--surface);
+  --surface-glass: rgba(255, 255, 255, 0.64);
+  --surface-soft: rgba(255, 249, 231, 0.66);
+  --surface-wash: rgba(228, 244, 255, 0.52);
+  --chrome: rgba(255, 255, 255, 0.72);
+  --chrome-hover: rgba(228, 244, 255, 0.84);
+  --hero-border: rgba(255, 255, 255, 0.62);
+  --primary-fg: #ffffff;
+  --fire-text: #8d302c;
+  --waiting-text: #70560d;
+  --prep-text: #4f4799;
+  --grid-line: rgba(21, 40, 56, 0.09);
+  --brand-shadow: 0 16px 36px rgba(24, 51, 70, 0.15);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: Newsreader, Georgia, serif;
+  --label-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --focus-ring: #183346;
+  --hero-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(228, 244, 255, 0.8) 44%, rgba(255, 224, 223, 0.7));
+  --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
   min-height: 100vh;
   background: var(--background);
+  color: var(--ink);
+  font-family: var(--ui-font);
+}
+
+.app[data-theme="sunrise-soft"] {
+  --background:
+    radial-gradient(circle at 8% -8%, rgba(249, 217, 106, 0.42), transparent 28%),
+    radial-gradient(circle at 92% 10%, rgba(238, 116, 111, 0.24), transparent 31%),
+    linear-gradient(135deg, #f2fbff 0%, #fff8e5 56%, #ffe9e4 100%);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-raised: rgba(255, 255, 255, 0.96);
+  --paper: var(--surface);
+  --surface-glass: rgba(255, 255, 255, 0.64);
+  --surface-soft: rgba(255, 249, 231, 0.66);
+  --surface-wash: rgba(228, 244, 255, 0.52);
+  --chrome: rgba(255, 255, 255, 0.72);
+  --chrome-hover: rgba(228, 244, 255, 0.84);
+  --ink: #152838;
+  --ink-2: #254052;
+  --muted: #6f8290;
+  --line: rgba(111, 143, 164, 0.24);
+  --line-strong: rgba(73, 137, 177, 0.38);
+  --accent: #2f83bd;
+  --focus-ring: #183346;
+  --sky-1: #e4f4ff;
+  --sky-2: #bfe3f8;
+  --sky-3: #6eb9e5;
+  --night: #183346;
+  --night-2: #0f2433;
+  --sun: #f5c84f;
+  --sun-2: #fff0a8;
+  --coral: #e45f59;
+  --coral-2: #ffe0df;
+  --sage-2: #e4f6e8;
+  --lav-2: #f0edff;
+  --hero-border: rgba(255, 255, 255, 0.62);
+  --primary-fg: #ffffff;
+  --fire-text: #8d302c;
+  --waiting-text: #70560d;
+  --prep-text: #4f4799;
+  --grid-line: rgba(21, 40, 56, 0.09);
+  --brand-shadow: 0 16px 36px rgba(24, 51, 70, 0.15);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: Newsreader, Georgia, serif;
+  --label-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hero-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(228, 244, 255, 0.8) 44%, rgba(255, 224, 223, 0.7));
+  --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
 }
 
 .app[data-theme="sunset-bold"] {
-  --background: #fff6ef;
-  --surface: rgba(255, 250, 245, 0.9);
-  --surface-raised: #fffefe;
+  --background:
+    radial-gradient(circle at 18% -10%, rgba(255, 190, 82, 0.72), transparent 28%),
+    radial-gradient(circle at 96% 6%, rgba(216, 74, 84, 0.34), transparent 32%),
+    linear-gradient(142deg, #311d2c 0%, #7d3441 36%, #f39b65 100%);
+  --surface: rgba(255, 244, 229, 0.88);
+  --surface-raised: #fff9f1;
   --paper: var(--surface);
-  --ink: #1d2732;
-  --ink-2: #39485a;
-  --muted: #806f68;
-  --line: rgba(166, 94, 75, 0.22);
-  --line-strong: rgba(238, 116, 111, 0.38);
-  --accent: #b4554f;
-  --focus-ring: #263340;
-  --sky-1: #ffe9dc;
-  --sky-2: #ffd1b9;
-  --sky-3: #e99376;
-  --night: #263340;
-  --night-2: #1a242e;
-  --sun: #f7bf4f;
-  --sun-2: #fff0c5;
-  --coral: #d85f59;
-  --coral-2: #ffe0dc;
-  --sage-2: #e8f4df;
-  --lav-2: #f0e9ff;
-  --hero-gradient: linear-gradient(135deg, #fff7f1, #ffe5d7 50%, #fff1c6);
-  --aura: 0 24px 70px rgba(154, 76, 62, 0.16);
+  --surface-glass: rgba(255, 238, 217, 0.72);
+  --surface-soft: rgba(255, 219, 182, 0.58);
+  --surface-wash: rgba(255, 226, 210, 0.66);
+  --chrome: rgba(255, 244, 229, 0.82);
+  --chrome-hover: rgba(255, 218, 190, 0.88);
+  --ink: #211a22;
+  --ink-2: #4e3033;
+  --muted: #846158;
+  --line: rgba(105, 48, 54, 0.22);
+  --line-strong: rgba(190, 71, 82, 0.42);
+  --accent: #b42f4a;
+  --focus-ring: #321f30;
+  --sky-1: #ffe0c8;
+  --sky-2: #ffba88;
+  --sky-3: #d85f59;
+  --night: #311d2c;
+  --night-2: #1f1625;
+  --sun: #ffbd52;
+  --sun-2: #ffe5a6;
+  --coral: #d84a54;
+  --coral-2: #ffd4d1;
+  --sage-2: #dceccf;
+  --lav-2: #eee1ff;
+  --hero-border: rgba(255, 218, 190, 0.64);
+  --primary-fg: #fff8ef;
+  --fire-text: #86212b;
+  --waiting-text: #6d4600;
+  --prep-text: #533b98;
+  --grid-line: rgba(105, 48, 54, 0.11);
+  --brand-shadow: 0 20px 42px rgba(49, 29, 44, 0.28);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: Georgia, Newsreader, serif;
+  --label-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hero-gradient: linear-gradient(135deg, #331f31 0%, #a2364b 46%, #ffb15c 100%);
+  --aura: 0 30px 90px rgba(60, 30, 34, 0.28);
 }
 
 .app[data-theme="cloud-light"] {
-  --background: #f3f9fc;
-  --surface: rgba(255, 255, 255, 0.9);
+  --background:
+    linear-gradient(180deg, rgba(219, 235, 244, 0.96), rgba(247, 252, 255, 0.98)),
+    #f6fbfe;
+  --surface: rgba(255, 255, 255, 0.92);
   --surface-raised: #ffffff;
   --paper: var(--surface);
-  --ink: #122636;
-  --ink-2: #2d4658;
-  --muted: #71828d;
-  --line: rgba(90, 129, 153, 0.22);
-  --line-strong: rgba(83, 143, 180, 0.34);
-  --accent: #3b7fa8;
-  --focus-ring: #122636;
-  --sky-1: #e7f4fa;
-  --sky-2: #c7e4f1;
-  --sky-3: #82bddb;
-  --hero-gradient: linear-gradient(135deg, #ffffff, #e9f6fb);
+  --surface-glass: rgba(255, 255, 255, 0.76);
+  --surface-soft: rgba(237, 247, 252, 0.88);
+  --surface-wash: rgba(222, 239, 248, 0.72);
+  --chrome: rgba(255, 255, 255, 0.84);
+  --chrome-hover: rgba(229, 243, 250, 0.96);
+  --ink: #102434;
+  --ink-2: #2a4558;
+  --muted: #607888;
+  --line: rgba(64, 103, 128, 0.22);
+  --line-strong: rgba(45, 116, 160, 0.36);
+  --accent: #1f78b4;
+  --focus-ring: #102434;
+  --sky-1: #e5f3fa;
+  --sky-2: #bfddec;
+  --sky-3: #5fa9d0;
+  --night: #102434;
+  --night-2: #0b1a26;
+  --sun: #e9b949;
+  --sun-2: #fff0b8;
+  --coral: #d95f59;
+  --coral-2: #ffe0dc;
+  --sage-2: #e2f3e4;
+  --lav-2: #ecebff;
+  --hero-border: rgba(255, 255, 255, 0.74);
+  --primary-fg: #ffffff;
+  --fire-text: #8f312e;
+  --waiting-text: #72570c;
+  --prep-text: #514b9c;
+  --grid-line: rgba(16, 36, 52, 0.08);
+  --brand-shadow: 0 16px 34px rgba(16, 36, 52, 0.12);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --label-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hero-gradient: linear-gradient(135deg, #ffffff 0%, #e7f4fa 48%, #d6ecf6 100%);
+  --aura: 0 22px 64px rgba(39, 96, 132, 0.14);
 }
 
 .app[data-theme="focus-dark"] {
-  --background: #0f1720;
-  --surface: rgba(25, 36, 48, 0.92);
-  --surface-raised: #223040;
+  --background:
+    radial-gradient(circle at 14% -8%, rgba(117, 188, 230, 0.2), transparent 30%),
+    radial-gradient(circle at 90% 8%, rgba(244, 206, 95, 0.13), transparent 28%),
+    linear-gradient(135deg, #07111c 0%, #101d2a 55%, #182331 100%);
+  --surface: rgba(19, 31, 43, 0.94);
+  --surface-raised: #1e3143;
   --paper: var(--surface);
-  --ink: #f3f7fa;
-  --ink-2: #d7e1e8;
-  --muted: #a5b6c3;
-  --line: rgba(181, 204, 218, 0.18);
-  --line-strong: rgba(117, 188, 230, 0.34);
-  --accent: #8dc7ea;
+  --surface-glass: rgba(24, 44, 62, 0.78);
+  --surface-soft: rgba(25, 53, 75, 0.7);
+  --surface-wash: rgba(28, 58, 80, 0.74);
+  --chrome: rgba(24, 44, 62, 0.82);
+  --chrome-hover: rgba(32, 72, 99, 0.9);
+  --ink: #edf7fb;
+  --ink-2: #cfe0ea;
+  --muted: #93aabd;
+  --line: rgba(166, 202, 222, 0.18);
+  --line-strong: rgba(117, 188, 230, 0.42);
+  --accent: #75bce6;
   --focus-ring: #f4ce5f;
-  --sky-1: #1c3548;
-  --sky-2: #254e68;
+  --sky-1: #1c3a50;
+  --sky-2: #285a78;
   --sky-3: #75bce6;
   --night: #eaf4fb;
   --night-2: #c9dfea;
   --sun: #f4ce5f;
-  --sun-2: #473d1a;
+  --sun-2: #4d3d14;
   --coral: #f48680;
-  --coral-2: #4c2729;
-  --sage-2: #1f3d2b;
-  --lav-2: #302d50;
-  --hero-gradient: linear-gradient(135deg, #182533, #12202c 55%, #243044);
-  --aura: 0 24px 70px rgba(0, 0, 0, 0.32);
+  --coral-2: #512629;
+  --sage-2: #1f442f;
+  --lav-2: #342f5d;
+  --hero-border: rgba(117, 188, 230, 0.22);
+  --primary-fg: #07111c;
+  --fire-text: #ffd2cf;
+  --waiting-text: #ffe89d;
+  --prep-text: #ddd8ff;
+  --grid-line: rgba(166, 202, 222, 0.09);
+  --brand-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: ui-serif, Georgia, "Times New Roman", serif;
+  --label-font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hero-gradient: linear-gradient(135deg, #111f2d 0%, #183c54 52%, #2a344a 100%);
+  --aura: 0 28px 84px rgba(0, 0, 0, 0.34);
 }
 
+.app[data-theme="paper-light"],
 .app[data-theme="light"] {
-  --background: #f8fafc;
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-raised: #ffffff;
+  --background:
+    radial-gradient(circle at 4% 0%, rgba(179, 141, 76, 0.14), transparent 24%),
+    linear-gradient(135deg, #fbf7ed 0%, #f3ecdf 52%, #e9f0ec 100%);
+  --surface: rgba(255, 252, 245, 0.9);
+  --surface-raised: #fffdf8;
   --paper: var(--surface);
-  --ink: #17212b;
-  --ink-2: #354452;
-  --muted: #6c7a86;
-  --line: rgba(104, 119, 133, 0.2);
-  --line-strong: rgba(104, 119, 133, 0.34);
-  --accent: #366f9f;
-  --focus-ring: #17212b;
-  --sky-1: #eef5fb;
-  --sky-2: #d8e8f5;
-  --hero-gradient: linear-gradient(135deg, #ffffff, #f0f5fa);
+  --surface-glass: rgba(255, 252, 245, 0.72);
+  --surface-soft: rgba(243, 236, 223, 0.72);
+  --surface-wash: rgba(236, 241, 236, 0.7);
+  --chrome: rgba(255, 252, 245, 0.8);
+  --chrome-hover: rgba(235, 241, 235, 0.86);
+  --ink: #201f1b;
+  --ink-2: #474139;
+  --muted: #7a7164;
+  --line: rgba(110, 96, 76, 0.22);
+  --line-strong: rgba(93, 113, 103, 0.36);
+  --accent: #557266;
+  --focus-ring: #201f1b;
+  --sky-1: #e7efe9;
+  --sky-2: #cfdcd3;
+  --sky-3: #8aa79a;
+  --night: #201f1b;
+  --night-2: #11100e;
+  --sun: #c89a3d;
+  --sun-2: #f6e5b6;
+  --coral: #b9574f;
+  --coral-2: #f4d8d1;
+  --sage-2: #dce9d8;
+  --lav-2: #e7e1ef;
+  --hero-border: rgba(110, 96, 76, 0.18);
+  --primary-fg: #fffdf8;
+  --fire-text: #81332e;
+  --waiting-text: #684a0b;
+  --prep-text: #52467d;
+  --grid-line: rgba(110, 96, 76, 0.1);
+  --brand-shadow: 0 15px 34px rgba(73, 61, 46, 0.13);
+  --ui-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: Georgia, Newsreader, serif;
+  --label-font: ui-serif, Georgia, serif;
+  --data-font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hero-gradient: linear-gradient(135deg, #fffdf8 0%, #f4ead8 54%, #dce9d8 100%);
+  --aura: 0 22px 60px rgba(84, 69, 48, 0.14);
 }
 
 .toast-region {
@@ -139,7 +304,7 @@
   height: 46px;
   object-fit: cover;
   border-radius: 12px;
-  box-shadow: 0 16px 36px rgba(24, 51, 70, 0.15);
+  box-shadow: var(--brand-shadow);
 }
 
 .brand strong,
@@ -166,6 +331,7 @@
 .main-nav span {
   margin: 13px 12px 2px;
   color: var(--accent);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -183,7 +349,7 @@
 
 .main-nav a.active,
 .main-nav a:hover {
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--chrome-hover);
   color: var(--ink);
 }
 
@@ -195,6 +361,7 @@
 .pinned-view-nav > span {
   margin: 0 12px 2px;
   color: var(--accent);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -228,12 +395,13 @@
   padding: 16px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-glass);
 }
 
 .privacy-card span,
 .eyebrow {
   color: var(--accent);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -306,7 +474,7 @@
   padding: 16px 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
-  background: rgba(255, 242, 184, 0.46);
+  background: var(--surface-soft);
   box-shadow: var(--aura);
 }
 
@@ -331,7 +499,7 @@
   padding: 28px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--hero-border);
   border-radius: 14px;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--sun) 22%, transparent), transparent 42%),
@@ -348,7 +516,7 @@ h2 {
 h1 {
   max-width: 760px;
   margin-top: 10px;
-  font-family: Newsreader, Georgia, serif;
+  font-family: var(--display-font);
   font-size: 56px;
   line-height: 0.96;
 }
@@ -370,14 +538,15 @@ h2 {
   position: relative;
   z-index: 1;
   padding: 16px;
-  border: 1px solid rgba(21, 40, 56, 0.09);
+  border: 1px solid var(--grid-line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--surface-glass);
 }
 
 .digest-card span,
 .mode-head span {
   color: var(--muted);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -422,7 +591,7 @@ h2 {
 
 .today-lane-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -447,10 +616,6 @@ h2 {
   border-color: color-mix(in srgb, var(--sky-3) 34%, var(--line));
 }
 
-.today-lane.rules {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
-}
-
 .lane-head {
   display: flex;
   justify-content: space-between;
@@ -460,6 +625,7 @@ h2 {
 
 .lane-head span {
   color: var(--accent);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -552,6 +718,17 @@ h2 {
   background: color-mix(in srgb, var(--surface-raised) 70%, var(--sky-1));
 }
 
+.lane-rule-list details {
+  width: 100%;
+}
+
+.lane-rule-list summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .data-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -578,6 +755,7 @@ h2 {
 .data-summary-grid strong {
   display: block;
   margin: 7px 0 4px;
+  font-family: var(--data-font);
   font-size: 26px;
 }
 
@@ -815,13 +993,13 @@ h2 {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-glass);
 }
 
 .priority-card.fire {
-  border-color: rgba(238, 116, 111, 0.48);
+  border-color: color-mix(in srgb, var(--coral) 54%, var(--line));
   background:
-    linear-gradient(90deg, rgba(255, 224, 223, 0.75), rgba(255, 255, 255, 0.7));
+    linear-gradient(90deg, color-mix(in srgb, var(--coral-2) 80%, transparent), var(--surface-glass));
 }
 
 .priority-rank {
@@ -868,17 +1046,17 @@ h2 {
 
 .pill.fire {
   background: var(--coral-2);
-  color: #9c3632;
+  color: var(--fire-text);
 }
 
 .pill.waiting {
   background: var(--sun-2);
-  color: #7d620f;
+  color: var(--waiting-text);
 }
 
 .pill.prep {
   background: var(--lav-2);
-  color: #5c52a3;
+  color: var(--prep-text);
 }
 
 .reason-chain {
@@ -893,7 +1071,7 @@ h2 {
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--surface-glass);
   color: var(--ink-2);
   font-size: 11px;
   font-weight: 850;
@@ -908,11 +1086,12 @@ h2 {
   background:
     radial-gradient(circle at 100% 0%, rgba(249, 217, 106, 0.24), transparent 34%),
     linear-gradient(145deg, var(--night), var(--night-2));
-  color: #fff;
+  color: var(--primary-fg);
 }
 
 .insight-card span {
   color: var(--sky-2);
+  font-family: var(--label-font);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -921,22 +1100,21 @@ h2 {
 .insight-card strong {
   display: block;
   margin-top: 8px;
-  font-family: Newsreader, Georgia, serif;
+  font-family: var(--display-font);
   font-size: 28px;
   line-height: 1;
 }
 
-.insight-card p,
-.next-meeting p {
+.insight-card p {
   margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.76);
+  color: color-mix(in srgb, var(--primary-fg) 76%, transparent);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .community-signal,
 .next-meeting {
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--surface-glass);
 }
 
 .panel-title.compact {
@@ -968,17 +1146,17 @@ h2 {
 }
 
 .signal-grid .hot {
-  border-color: rgba(238, 116, 111, 0.5);
+  border-color: color-mix(in srgb, var(--coral) 58%, var(--line));
   background: var(--coral-2);
 }
 
 .signal-grid .warm {
-  border-color: rgba(249, 217, 106, 0.65);
+  border-color: color-mix(in srgb, var(--sun) 64%, var(--line));
   background: var(--sun-2);
 }
 
 .signal-grid .cool {
-  border-color: rgba(152, 207, 164, 0.6);
+  border-color: color-mix(in srgb, var(--success, #69aa78) 58%, var(--line));
   background: var(--sage-2);
 }
 
@@ -989,7 +1167,10 @@ h2 {
 }
 
 .next-meeting p {
+  margin: 10px 0 0;
   color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .drawer-grid {
@@ -1001,11 +1182,11 @@ h2 {
 
 .drawer-status-strip {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 6px 12px;
   align-items: center;
   margin-top: 14px;
-  padding: 11px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--sky-1) 70%, var(--surface-raised));
@@ -1027,7 +1208,7 @@ h2 {
 
 .drawer-status-strip strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .drawer-status-strip small {
@@ -1038,10 +1219,11 @@ h2 {
 }
 
 .field-strip {
-  padding: 13px;
+  min-width: 0;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--surface-glass);
 }
 
 .field-strip span,
@@ -1069,7 +1251,9 @@ h2 {
 .field-strip strong {
   display: block;
   margin: 8px 0 6px;
-  font-size: 20px;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  line-height: 1.15;
 }
 
 .linked-layout {
@@ -1079,11 +1263,249 @@ h2 {
   margin-top: 16px;
 }
 
+.meeting-prep {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 78%, var(--sky-1));
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--night) 9%, transparent);
+}
+
+.meeting-prep-head,
+.meeting-prep-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meeting-prep-head strong {
+  display: block;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.meeting-prep-head > span,
+.meeting-prep-stats span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.meeting-prep-stats span {
+  min-height: 26px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+}
+
+.meeting-prep-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.74fr) minmax(0, 1.26fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.meeting-source-receipts {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper) 76%, transparent);
+}
+
+.meeting-source-receipts > strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.meeting-source-receipts > div {
+  display: grid;
+  gap: 7px;
+}
+
+.meeting-source-receipts button {
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  text-align: left;
+}
+
+.meeting-source-receipts small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.meeting-agenda {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+}
+
+.meeting-agenda-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.agenda-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.agenda-actions button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.agenda-actions button:hover {
+  border-color: var(--accent);
+  background: var(--sky-1);
+}
+
+.agenda-digest-preview {
+  display: grid;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-wash);
+}
+
+.agenda-digest-preview strong {
+  font-size: 12px;
+}
+
+.agenda-digest-preview pre {
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--ink-2);
+  font-family: var(--data-font);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.meeting-agenda ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.meeting-agenda li {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+}
+
+.meeting-agenda li > strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.meeting-agenda p {
+  margin: 5px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.meeting-agenda-records {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.meeting-agenda-records button {
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  background: var(--sky-1);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.meeting-prep-sections {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.meeting-prep-sections section {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--paper) 76%, transparent);
+}
+
+.meeting-prep-list {
+  display: grid;
+  gap: 7px;
+}
+
+.meeting-prep-list button {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-height: 46px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  text-align: left;
+}
+
+.meeting-prep-list small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .record-edit-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
   gap: 16px;
   margin-top: 16px;
+}
+
+.record-section-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.record-section-grid > section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
 }
 
 .linked-list article,
@@ -1094,7 +1516,7 @@ h2 {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--surface-glass);
   color: inherit;
   text-align: left;
 }
@@ -1114,7 +1536,7 @@ h2 {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--surface-glass);
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
@@ -1131,7 +1553,7 @@ h2 {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(228, 244, 255, 0.52);
+  background: var(--surface-wash);
 }
 
 .why-card ol {
@@ -1157,6 +1579,16 @@ h2 {
 
 .record-drawer.active-record-drawer {
   display: block;
+}
+
+.record-drawer.floating-record-drawer {
+  position: fixed;
+  z-index: 20;
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  width: min(520px, calc(100vw - 36px));
+  overflow: auto;
 }
 
 .mode-card {
@@ -1191,7 +1623,7 @@ h2 {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--surface-glass);
 }
 
 .kanban-preview b {
@@ -1256,7 +1688,7 @@ h2 {
   overflow: hidden;
   border-radius: 999px;
   background:
-    repeating-linear-gradient(90deg, transparent, transparent 24%, rgba(21, 40, 56, 0.09) 24%, rgba(21, 40, 56, 0.09) 25%),
+    repeating-linear-gradient(90deg, transparent, transparent 24%, var(--grid-line) 24%, var(--grid-line) 25%),
     var(--sky-1);
 }
 
@@ -2315,56 +2747,56 @@ h2 {
 
 .tag-green {
   border-color: color-mix(in srgb, #26815b 30%, var(--line));
-  background: color-mix(in srgb, #26815b 16%, white);
+  background: color-mix(in srgb, #26815b 16%, var(--surface-raised));
 }
 
 .tag-yellow {
   border-color: color-mix(in srgb, #b87503 34%, var(--line));
-  background: color-mix(in srgb, #f3b33d 22%, white);
+  background: color-mix(in srgb, #f3b33d 22%, var(--surface-raised));
 }
 
 .tag-red {
   border-color: color-mix(in srgb, #b44739 30%, var(--line));
-  background: color-mix(in srgb, #d9534f 16%, white);
+  background: color-mix(in srgb, #d9534f 16%, var(--surface-raised));
 }
 
 .tag-purple {
   border-color: color-mix(in srgb, #7256c8 30%, var(--line));
-  background: color-mix(in srgb, #7256c8 16%, white);
+  background: color-mix(in srgb, #7256c8 16%, var(--surface-raised));
 }
 
 .tag-gray {
   border-color: color-mix(in srgb, var(--muted) 26%, var(--line));
-  background: color-mix(in srgb, var(--muted) 12%, white);
+  background: color-mix(in srgb, var(--muted) 12%, var(--surface-raised));
 }
 
 .chip-coral {
   border-color: color-mix(in srgb, var(--coral) 45%, var(--line));
-  background: color-mix(in srgb, var(--coral-2) 78%, white);
+  background: color-mix(in srgb, var(--coral-2) 78%, var(--surface-raised));
   color: color-mix(in srgb, var(--coral) 72%, var(--ink));
 }
 
 .chip-gold {
   border-color: color-mix(in srgb, var(--sun) 60%, var(--line));
-  background: color-mix(in srgb, var(--sun-2) 78%, white);
-  color: color-mix(in srgb, #7d620f 70%, var(--ink));
+  background: color-mix(in srgb, var(--sun-2) 78%, var(--surface-raised));
+  color: var(--waiting-text);
 }
 
 .chip-green {
   border-color: color-mix(in srgb, var(--success) 44%, var(--line));
-  background: color-mix(in srgb, var(--sage-2) 76%, white);
+  background: color-mix(in srgb, var(--sage-2) 76%, var(--surface-raised));
   color: color-mix(in srgb, #26815b 76%, var(--ink));
 }
 
 .chip-lavender {
   border-color: color-mix(in srgb, var(--prep) 38%, var(--line));
-  background: color-mix(in srgb, var(--lav-2) 80%, white);
+  background: color-mix(in srgb, var(--lav-2) 80%, var(--surface-raised));
   color: color-mix(in srgb, var(--prep) 72%, var(--ink));
 }
 
 .chip-gray {
   border-color: color-mix(in srgb, var(--muted) 30%, var(--line));
-  background: color-mix(in srgb, var(--muted) 10%, white);
+  background: color-mix(in srgb, var(--muted) 10%, var(--surface-raised));
   color: var(--muted);
 }
 
@@ -2516,7 +2948,12 @@ h2 {
   align-items: center;
 }
 
+.linked-picker-head div {
+  min-width: 0;
+}
+
 .linked-picker-head strong {
+  display: block;
   color: var(--ink);
   font-size: 13px;
   font-weight: 900;
@@ -2537,9 +2974,9 @@ h2 {
 }
 
 .linked-selected-list button {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
   min-height: 32px;
   padding: 6px 9px;
   border: 1px solid var(--accent);
@@ -2579,6 +3016,11 @@ h2 {
   color: var(--muted);
   font-size: 12px;
   font-weight: 850;
+}
+
+.linked-choice-grid button > span,
+.grid-linked-pills button > span {
+  font-weight: 900;
 }
 
 .option-choice-grid button {
@@ -2683,7 +3125,7 @@ h2 {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--surface-glass);
   color: var(--ink-2);
   font-size: 13px;
   font-weight: 760;
@@ -2705,7 +3147,7 @@ h2 {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--surface-glass);
 }
 
 .editable-rules label {
@@ -2907,7 +3349,7 @@ h2 {
   place-items: center;
   border-radius: 999px;
   background: var(--night);
-  color: #fff;
+  color: var(--primary-fg);
   font-size: 13px;
   font-weight: 900;
 }
@@ -2928,7 +3370,7 @@ h2 {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--surface-glass);
   color: var(--ink-2);
   font-size: 13px;
 }
@@ -3096,8 +3538,11 @@ h2 {
   .connection-zone,
   .grid-toolbar,
   .record-edit-layout,
+  .record-section-grid,
   .record-builder-grid,
   .linked-layout,
+  .meeting-prep-workspace,
+  .meeting-prep-sections,
   .build-zone,
   .settings-zone {
     grid-template-columns: 1fr;
@@ -3162,6 +3607,14 @@ h2 {
     max-width: none;
   }
 
+  .record-drawer.floating-record-drawer {
+    top: 12px;
+    right: 12px;
+    bottom: 96px;
+    left: 12px;
+    width: auto;
+  }
+
   .desk {
     padding: 18px 14px 110px;
   }
@@ -3202,6 +3655,7 @@ h2 {
   }
 
   .drawer-grid,
+  .drawer-status-strip,
   .data-summary-grid,
   .task-form-preview,
   .connection-grid,
@@ -3209,8 +3663,11 @@ h2 {
   .today-lane-grid,
   .linked-choice-grid,
   .record-form,
+  .record-section-grid,
   .record-card-grid,
   .record-card-grid.three,
+  .meeting-prep-workspace,
+  .meeting-prep-sections,
   .kanban-preview,
   .calendar-preview,
   .build-grid,
@@ -3219,6 +3676,10 @@ h2 {
   .rule-destination-grid,
   .theme-grid {
     grid-template-columns: 1fr;
+  }
+
+  .drawer-status-strip small {
+    grid-column: auto;
   }
 
   .record-modal-links {

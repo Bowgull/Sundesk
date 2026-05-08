@@ -422,6 +422,10 @@ Meeting prep should be generated from structured records first.
 
 No LLM is required for the core.
 
+For this build, meeting prep is computed-only.
+
+It is rebuilt from source records each time. It is not saved as a separate agenda record yet.
+
 Inputs:
 
 - Open tasks.
@@ -464,11 +468,15 @@ Starter rule types:
 
 Rules are editable.
 
-## UI/UX Polish
+## UI/UX Acceptance
 
-The final polish target lives in [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md).
+The UI/UX target lives in [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md).
 
-This spec is mandatory for final polish. It covers:
+This spec is not a late styling pass.
+
+It is the acceptance layer for every build stage. Each engine should land with the interaction model it needs, then the final pass should review the whole product as one usable system.
+
+The spec covers:
 
 - Product feel.
 - Today as a morning brief with 3 lanes underneath.
@@ -488,6 +496,15 @@ This spec is mandatory for final polish. It covers:
 - Toasts.
 - Mobile.
 - Accessibility.
+
+Every build stage should answer:
+
+1. Does the feature belong in Daily mode, Build mode, or Record mode?
+2. Does the interaction match the final model?
+3. Does it make Today simpler or Build more editable?
+4. Does it avoid creating work that must be undone during polish?
+
+Final polish is still required. It is the whole-product review after the engines are in place.
 
 Final polish is done when Lindsay can open Today, understand the day, and open the right record without learning the database.
 
@@ -526,16 +543,71 @@ Done locally:
 9. Set Build to open on Risks.
 10. Remove Communities from the Build tabs.
 
-Next:
+The current code is ahead of the old written sequence in several places. Table actions, view state, pinned views, grid editing, linked record picker work, record drawer work, theme swatches, and editable Rules have local implementations or partial implementations.
 
-1. Add table actions: rename table, delete table, duplicate table later.
-2. Replace linked-record editing inside the record modal with a stronger picker.
-3. Add real view persistence: visible fields, widths, filter, sort, group.
-4. Add pinned views.
-5. Add deterministic meeting prep.
-6. Add Rules.
-7. Add Firestore persistence.
-8. Add activity history later.
+The remaining path should be checked against the UI/UX spec as it is built:
+
+1. Build grid foundation.
+   - Inline editing is the primary path.
+   - Single click selects a cell.
+   - Enter edits.
+   - Escape cancels.
+   - Tab and Shift Tab move across cells.
+   - Arrow keys move focus.
+   - Add row sits at the bottom.
+   - Add field sits at the far right.
+   - Density follows the spec.
+
+2. Field and table control.
+   - Field header menus own field actions.
+   - Table actions own rename, delete, and duplicate later.
+   - Delete protections and confirmations stay explicit.
+   - Primary fields cannot be deleted.
+   - Field settings use bounded modals.
+
+3. Record and relationship model.
+   - Normal record work uses the side drawer.
+   - Creation and settings can use modals.
+   - Linked record editing uses a picker with search, selected records, suggestions, table labels, status/date context, and create-new later.
+   - Linked records, backlinks, and dependencies read clearly inside the drawer.
+
+4. View engine.
+   - Build toolbar order is View, Fields, Filter, Sort, Group, Colour, Density, Export later.
+   - Visible fields, widths, filter, sort, group, colour, density, and saved views persist.
+   - Changed saved views show a subtle marker.
+   - Pinned views keep table and view context.
+
+5. Today and Rules logic.
+   - Today remains Now, Waiting, Next.
+   - Rules explain why records surfaced.
+   - Rules are not a fourth lane.
+   - Today deduplicates records before polish ships.
+   - Cards show one primary reason with more detail behind `Why this is here`.
+
+6. Deterministic meeting prep.
+   - Meeting prep comes from structured records first.
+   - Inputs are open tasks, blocked items, overdue follow-ups, unresolved approvals, risks, community status, and next steps.
+   - LLM support can come later.
+
+7. Firestore persistence.
+   - Add Firestore after the local data shape and interaction model are stable.
+   - Persist tables, fields, records, dependencies, Rules, and Build views.
+   - No Firebase writes during local-only build work unless explicitly approved.
+
+8. Final whole-product polish.
+   - Theme system is built before the final pass, not saved for the final pass.
+   - Each theme owns colour, app shell, panel surfaces, chips, focus rings, shadow, display typography, and selected states.
+   - Build grid keeps stable readable typography across themes.
+   - Today and Settings can carry stronger theme mood.
+   - Button system.
+   - Dropdown and menu system.
+   - Chip system.
+   - Theme picker.
+   - Empty and toast states.
+   - Mobile pass.
+   - Accessibility pass.
+
+9. Activity history later.
 
 ## Stance
 

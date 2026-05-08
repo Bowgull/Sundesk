@@ -3,6 +3,7 @@ import {
   type FieldDefinition,
   type Workbase,
   getMaterializedLinks,
+  getRecord,
   getRecordContext,
   getRecordTitle,
   getRecordsForTable,
@@ -44,6 +45,82 @@ export type BuildGridDerivation = {
   sortedAndFilteredRecords: BaseRecord[]
   groupField?: FieldDefinition
   groupedRecords: BuildGridGroup[]
+}
+
+export type MeetingPrepItem = {
+  id: string
+  label: string
+  records: BaseRecord[]
+}
+
+export type MeetingAgendaItem = {
+  id: string
+  title: string
+  detail: string
+  recordIds: string[]
+}
+
+export type MeetingPrep = {
+  meeting: BaseRecord
+  communities: BaseRecord[]
+  linkedTasks: BaseRecord[]
+  blockedItems: BaseRecord[]
+  overdueFollowups: BaseRecord[]
+  unresolvedApprovals: BaseRecord[]
+  risks: BaseRecord[]
+  nextSteps: BaseRecord[]
+  sections: MeetingPrepItem[]
+  agenda: MeetingAgendaItem[]
+}
+
+function getUniqueAgendaSourceRecords(base: Workbase, prep: MeetingPrep) {
+  const sourceRecordIds = new Set(prep.agenda.flatMap((item) => item.recordIds))
+
+  return Array.from(sourceRecordIds).flatMap((recordId) => {
+    const record = getRecord(base, recordId)
+
+    return record ? [record] : []
+  })
+}
+
+function asSentence(value: string) {
+  return /[.!?]$/.test(value) ? value : `${value}.`
+}
+
+export function getMeetingAgendaText(base: Workbase, prep: MeetingPrep) {
+  const lines = [
+    getRecordTitle(base, prep.meeting),
+    'Computed agenda. Not saved.',
+    '',
+    ...prep.agenda.flatMap((item, index) => {
+      const sourceRecords = item.recordIds.flatMap((recordId) => {
+        const record = getRecord(base, recordId)
+
+        return record ? [getRecordTitle(base, record)] : []
+      })
+
+      return [
+        `${index + 1}. ${item.title}`,
+        item.detail,
+        sourceRecords.length > 0 ? `Source records: ${sourceRecords.join(', ')}.` : 'Source records: none.',
+        '',
+      ]
+    }),
+  ]
+
+  return lines.join('\n').trim()
+}
+
+export function getMeetingDigestPreview(base: Workbase, prep: MeetingPrep) {
+  const sourceRecords = getUniqueAgendaSourceRecords(base, prep)
+
+  return [
+    'Daily digest preview.',
+    `Meeting: ${asSentence(getRecordTitle(base, prep.meeting))}`,
+    `Agenda items: ${prep.agenda.length}. Source records: ${sourceRecords.length}.`,
+    '',
+    ...prep.agenda.map((item, index) => `${index + 1}. ${asSentence(item.title)} ${asSentence(item.detail)}`),
+  ].join('\n')
 }
 
 export function getLocalTableRows(base: Workbase) {
@@ -152,6 +229,115 @@ export function getDependencyPickerRecords(base: Workbase, currentRecordId: stri
       .toLowerCase()
       .includes(searchTerm)
   })
+}
+
+function getLinkedRecordIds(record: BaseRecord, fieldId: string) {
+  const value = record.values[fieldId]
+
+  return Array.isArray(value) ? value : []
+}
+
+function recordLinksToAny(record: BaseRecord, fieldId: string, targetIds: Set<string>) {
+  return getLinkedRecordIds(record, fieldId).some((recordId) => targetIds.has(recordId))
+}
+
+export function getMeetingPrep(base: Workbase, meetingId: string, todayDate: string): MeetingPrep | null {
+  const meeting = getRecord(base, meetingId)
+
+  if (!meeting || meeting.tableId !== 'meetings') {
+    return null
+  }
+
+  const communityIds = new Set(getLinkedRecordIds(meeting, 'community'))
+  const explicitTaskIds = new Set(getLinkedRecordIds(meeting, 'tasks'))
+  const communities = Array.from(communityIds).flatMap((recordId) => {
+    const record = getRecord(base, recordId)
+
+    return record ? [record] : []
+  })
+  const groups = getWorkRecordGroups(base)
+  const linkedTasks = sortRecordsByDate(
+    groups.taskRecords.filter((record) => explicitTaskIds.has(record.id) || recordLinksToAny(record, 'community', communityIds)),
+  )
+  const blockedItems = linkedTasks.filter((record) => getStringValue(record, 'status') === 'Blocked')
+  const overdueFollowups = sortRecordsByDate(
+    groups.followupRecords.filter(
+      (record) =>
+        recordLinksToAny(record, 'community', communityIds) &&
+        getStringValue(record, 'status') === 'Waiting' &&
+        Boolean(getFirstDateValue(record)) &&
+        getFirstDateValue(record) < todayDate,
+    ),
+  )
+  const unresolvedApprovals = groups.approvalRecords.filter(
+    (record) =>
+      recordLinksToAny(record, 'community', communityIds) &&
+      !['Received', 'Not needed'].includes(getStringValue(record, 'status')),
+  )
+  const risks = groups.riskRecords.filter((record) => recordLinksToAny(record, 'community', communityIds))
+  const nextSteps = linkedTasks.filter((record) => getStringValue(record, 'status') !== 'Done')
+  const sections = [
+    { id: 'blocked', label: 'Blocked items', records: blockedItems },
+    { id: 'followups', label: 'Overdue follow-ups', records: overdueFollowups },
+    { id: 'approvals', label: 'Unresolved approvals', records: unresolvedApprovals },
+    { id: 'risks', label: 'Risks', records: risks },
+    { id: 'next', label: 'Next steps', records: nextSteps },
+  ]
+  const agenda: MeetingAgendaItem[] = [
+    {
+      id: 'community-read',
+      title: 'Read the community state.',
+      detail: communities.length > 0
+        ? communities.map((record) => `${getRecordTitle(base, record)}: ${getRecordContext(record)}.`).join(' ')
+        : 'No community linked.',
+      recordIds: communities.map((record) => record.id),
+    },
+    {
+      id: 'clear-blockers',
+      title: 'Clear blockers first.',
+      detail: blockedItems.length > 0
+        ? blockedItems.map((record) => getRecordTitle(base, record)).join(', ')
+        : 'No blocked linked tasks.',
+      recordIds: blockedItems.map((record) => record.id),
+    },
+    {
+      id: 'settle-approvals',
+      title: 'Settle approvals and waiting loops.',
+      detail: [...unresolvedApprovals, ...overdueFollowups].length > 0
+        ? [...unresolvedApprovals, ...overdueFollowups].map((record) => `${getRecordTitle(base, record)}: ${getRecordContext(record)}.`).join(' ')
+        : 'No open approvals or overdue follow-ups surfaced.',
+      recordIds: [...unresolvedApprovals, ...overdueFollowups].map((record) => record.id),
+    },
+    {
+      id: 'name-risk',
+      title: 'Name the risk.',
+      detail: risks.length > 0
+        ? risks.map((record) => `${getRecordTitle(base, record)}: ${getRecordContext(record)}.`).join(' ')
+        : 'No risks linked to the meeting communities.',
+      recordIds: risks.map((record) => record.id),
+    },
+    {
+      id: 'assign-next',
+      title: 'Assign next steps.',
+      detail: nextSteps.length > 0
+        ? nextSteps.map((record) => `${getRecordTitle(base, record)}: ${getRecordContext(record)}.`).join(' ')
+        : 'No open next steps surfaced.',
+      recordIds: nextSteps.map((record) => record.id),
+    },
+  ]
+
+  return {
+    meeting,
+    communities,
+    linkedTasks,
+    blockedItems,
+    overdueFollowups,
+    unresolvedApprovals,
+    risks,
+    nextSteps,
+    sections,
+    agenda,
+  }
 }
 
 export function getWorkRecordGroups(base: Workbase) {
@@ -283,31 +469,44 @@ export function getTodayLanes(base: Workbase, todayRuleMatches: RuleMatch[]) {
     openTaskRecords,
   } = getWorkRecordGroups(base)
   const todayRuleRecords = Array.from(new Map(todayRuleMatches.map((match) => [match.record.id, match.record])).values())
+  const usedRecordIds = new Set<string>()
+  const takeUniqueRecords = (records: BaseRecord[], limit: number) => {
+    const uniqueRecords: BaseRecord[] = []
+
+    for (const record of records) {
+      if (usedRecordIds.has(record.id)) {
+        continue
+      }
+
+      usedRecordIds.add(record.id)
+      uniqueRecords.push(record)
+
+      if (uniqueRecords.length === limit) {
+        break
+      }
+    }
+
+    return uniqueRecords
+  }
 
   return [
     {
       id: 'now',
       label: 'Now',
       title: 'Move the work that can burn the day.',
-      records: [...blockedTaskRecords, ...highRiskRecords].slice(0, 4),
+      records: takeUniqueRecords([...blockedTaskRecords, ...highRiskRecords, ...todayRuleRecords], 4),
     },
     {
       id: 'waiting',
       label: 'Waiting',
       title: 'Hold every open loop that depends on someone else.',
-      records: [...waitingFollowupRecords, ...waitingTaskRecords, ...openApprovalRecords].slice(0, 4),
+      records: takeUniqueRecords([...waitingFollowupRecords, ...waitingTaskRecords, ...openApprovalRecords, ...todayRuleRecords], 4),
     },
     {
       id: 'next',
       label: 'Next',
       title: 'Pull work forward before it becomes urgent.',
-      records: sortRecordsByDate([...meetingRecords, ...openTaskRecords]).slice(0, 4),
-    },
-    {
-      id: 'rules',
-      label: 'Rules',
-      title: 'Records matched by local Rules.',
-      records: todayRuleRecords.slice(0, 4),
+      records: takeUniqueRecords(sortRecordsByDate([...meetingRecords, ...openTaskRecords, ...todayRuleRecords]), 4),
     },
   ]
 }

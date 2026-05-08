@@ -1,8 +1,10 @@
 # Sundesk UI/UX Polish Spec
 
-This is the final polish target.
+This is the UI/UX acceptance target.
 
 Nothing here is optional styling. These are product decisions.
+
+Use this spec while building each system, not only at the end. Final polish is the last whole-product pass after the engines are in place.
 
 ## Product Feel
 
@@ -599,11 +601,13 @@ Drawer structure:
 1. Header.
 2. Key status strip.
 3. Primary fields.
-4. Linked records.
-5. Backlinks.
-6. Dependencies.
-7. Notes later.
-8. Activity later.
+4. Computed meeting prep when the record is a meeting.
+5. Editable fields.
+6. Linked records.
+7. Backlinks.
+8. Dependencies.
+9. Notes later.
+10. Activity later.
 
 Empty sections collapse by default.
 
@@ -713,7 +717,7 @@ Required before polish is done:
 
 ## Component Priority
 
-Polish order:
+Build these into the product path in this order, then do one final whole-product pass:
 
 1. Build grid inline editing.
 2. Field header menus.
@@ -723,10 +727,11 @@ Polish order:
 6. Button system.
 7. Dropdown and menu system.
 8. Chip system.
-9. Theme picker.
-10. Empty and toast states.
-11. Mobile pass.
-12. Accessibility pass.
+9. Theme system: colour, surface, type, focus, and state tokens.
+10. Theme picker.
+11. Empty and toast states.
+12. Mobile pass.
+13. Accessibility pass.
 
 ## Competitive Decisions
 

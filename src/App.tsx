@@ -73,6 +73,9 @@ import {
   getDailyTimelineRecords,
   getDependencyPickerRecords,
   getLocalEngineStats,
+  getMeetingAgendaText,
+  getMeetingDigestPreview,
+  getMeetingPrep,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
   getScreenStats,
@@ -87,27 +90,27 @@ const themes = [
   {
     label: 'Sunrise Soft',
     value: 'sunrise-soft',
-    swatch: { background: '#f7fcff', panel: '#ffffff', text: '#152838', accent: '#3b8abd', status: '#ffe0df', primary: '#183346' },
+    swatch: { background: 'linear-gradient(135deg, #f2fbff, #fff8e5 56%, #ffe9e4)', panel: '#ffffff', text: '#152838', accent: '#2f83bd', status: '#ffe0df', primary: '#183346' },
   },
   {
     label: 'Sunset Bold',
     value: 'sunset-bold',
-    swatch: { background: '#fff6ef', panel: '#fffefe', text: '#1d2732', accent: '#b4554f', status: '#ffe0dc', primary: '#263340' },
+    swatch: { background: 'linear-gradient(135deg, #311d2c, #7d3441 42%, #f39b65)', panel: '#fff9f1', text: '#211a22', accent: '#b42f4a', status: '#ffd4d1', primary: '#311d2c' },
   },
   {
     label: 'Cloud Light',
     value: 'cloud-light',
-    swatch: { background: '#f3f9fc', panel: '#ffffff', text: '#122636', accent: '#3b7fa8', status: '#e7f4fa', primary: '#122636' },
+    swatch: { background: 'linear-gradient(180deg, #dbebf4, #f7fcff)', panel: '#ffffff', text: '#102434', accent: '#1f78b4', status: '#e5f3fa', primary: '#102434' },
   },
   {
     label: 'Focus Dark',
     value: 'focus-dark',
-    swatch: { background: '#0f1720', panel: '#223040', text: '#f3f7fa', accent: '#8dc7ea', status: '#4c2729', primary: '#eaf4fb' },
+    swatch: { background: 'linear-gradient(135deg, #07111c, #101d2a 55%, #182331)', panel: '#1e3143', text: '#edf7fb', accent: '#75bce6', status: '#512629', primary: '#eaf4fb' },
   },
   {
     label: 'Paper Light',
-    value: 'light',
-    swatch: { background: '#f8fafc', panel: '#ffffff', text: '#17212b', accent: '#366f9f', status: '#eef5fb', primary: '#17212b' },
+    value: 'paper-light',
+    swatch: { background: 'linear-gradient(135deg, #fbf7ed, #f3ecdf 52%, #e9f0ec)', panel: '#fffdf8', text: '#201f1b', accent: '#557266', status: '#f4d8d1', primary: '#201f1b' },
   },
 ]
 
@@ -297,7 +300,10 @@ function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
 function App() {
   const [initialBuildViewState] = useState(() => readStoredBuildViewState())
   const [selectedTheme, setSelectedTheme] = useState(
-    () => localStorage.getItem('sundesk-theme') || 'sunrise-soft',
+    () => {
+      const storedTheme = localStorage.getItem('sundesk-theme')
+      return storedTheme === 'light' ? 'paper-light' : storedTheme || 'sunrise-soft'
+    },
   )
   const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
   const [base, setBase] = useState(() => readStoredWorkbase())
@@ -358,6 +364,7 @@ function App() {
   const [selectedFieldSettingsId, setSelectedFieldSettingsId] = useState('')
   const [pendingDeleteFieldId, setPendingDeleteFieldId] = useState('')
   const [isCreatingRecord, setIsCreatingRecord] = useState(false)
+  const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false)
   const [linkedRecordFilters, setLinkedRecordFilters] = useState<Record<string, string>>({})
   const [dependencyDraft, setDependencyDraft] = useState({
     toRecordId: '',
@@ -365,6 +372,7 @@ function App() {
     reason: '',
   })
   const [dependencySearch, setDependencySearch] = useState('')
+  const [activeDigestPreviewMeetingId, setActiveDigestPreviewMeetingId] = useState('')
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -389,6 +397,7 @@ function App() {
   } = getWorkRecordGroups(base)
   const nextMeetingRecord = sortRecordsByDate(meetingRecords)[0]
   const nextMeetingLinkedTasks = nextMeetingRecord ? getLinkedRecordsForRecord(base, nextMeetingRecord.id).filter((link) => link.record.tableId === 'tasks') : []
+  const nextMeetingPrep = nextMeetingRecord ? getMeetingPrep(base, nextMeetingRecord.id, todayDate) : null
   const dailyTimelineRecords = getDailyTimelineRecords(base)
   const timelineSourceRecords = getTimelineSourceRecords(base)
   const timelineStatusOptions = getTimelineStatusOptions(timelineSourceRecords)
@@ -427,6 +436,7 @@ function App() {
     ? getStringValue(selectedBuildRecord, 'status') || getStringValue(selectedBuildRecord, 'level') || getStringValue(selectedBuildRecord, 'priority') || 'No status'
     : 'No status'
   const drawerDateText = selectedBuildRecord ? getFirstDateValue(selectedBuildRecord) || 'No date' : 'No date'
+  const drawerMeetingPrep = selectedBuildRecord?.tableId === 'meetings' ? getMeetingPrep(base, selectedBuildRecord.id, todayDate) : null
   const selectedDependencyTargetRecord = dependencyDraft.toRecordId ? getRecord(base, dependencyDraft.toRecordId) : null
   const dependencyPickerRecords = getDependencyPickerRecords(base, selectedBuildRecord?.id || '', dependencySearch)
   const linkedFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => field.type === 'linkedRecord' && field.linkedTableId)
@@ -498,6 +508,47 @@ function App() {
 
   function showToast(message: string) {
     setToastMessage(message)
+  }
+
+  async function copyTextToClipboard(text: string) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return
+    }
+
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.setAttribute('readonly', '')
+    textArea.style.position = 'fixed'
+    textArea.style.opacity = '0'
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+  }
+
+  async function copyMeetingAgenda(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    try {
+      await copyTextToClipboard(getMeetingAgendaText(base, prep))
+      showToast('Agenda copied.')
+    } catch {
+      showToast('Copy failed. Use export.')
+    }
+  }
+
+  function exportMeetingAgenda(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    const fileName = `${toSlug(getRecordTitle(base, prep.meeting))}-computed-agenda.md`
+    const blob = new Blob([getMeetingAgendaText(base, prep)], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast('Agenda exported.')
   }
 
   function closeBuildModal() {
@@ -922,7 +973,11 @@ function App() {
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(false)
-    setBuildModal('record')
+    setBuildModal('')
+    setIsRecordDrawerOpen(true)
+    window.setTimeout(() => {
+      document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }, 0)
   }
 
   function openDailyRecord(record: BaseRecord) {
@@ -1453,7 +1508,11 @@ function App() {
   function openEditRecordModal(recordId: string) {
     setSelectedBuildRecordId(recordId)
     setIsCreatingRecord(false)
-    setBuildModal('record')
+    setBuildModal('')
+    setIsRecordDrawerOpen(true)
+    window.setTimeout(() => {
+      document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }, 0)
   }
 
   function updateSelectedRecord(fieldId: string, value: RecordValue) {
@@ -1580,6 +1639,7 @@ function App() {
     if (event.key === ' ') {
       event.preventDefault()
       setSelectedBuildRecordId(record.id)
+      setIsRecordDrawerOpen(true)
       return
     }
 
@@ -1783,6 +1843,14 @@ function App() {
     return [getRecordTitle(base, record), status, date].filter(Boolean).join(' · ')
   }
 
+  function getPickerRecordMeta(record: BaseRecord) {
+    const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+    const status = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
+    const date = getFirstDateValue(record) || 'No date'
+
+    return `${table?.label || record.tableId} · ${status} · ${date}`
+  }
+
   function getGridRowColorClass(record: BaseRecord) {
     const field = fieldsForSelectedTable.find((fieldItem) => fieldItem.id === gridColorFieldId)
 
@@ -1845,8 +1913,11 @@ function App() {
           <span>{field.label}</span>
           <div className="linked-record-picker">
             <div className="linked-picker-head">
-              <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
-              <small>{field.allowMultiple ? `${selectedLinkedIds.length} selected` : selectedLinkedIds.length > 0 ? '1 selected' : 'None selected'}</small>
+              <div>
+                <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
+                <small>{field.allowMultiple ? `${selectedLinkedIds.length} selected` : selectedLinkedIds.length > 0 ? '1 selected' : 'None selected'}</small>
+              </div>
+              {linkedTable && <small>{linkedRecords.length} records</small>}
             </div>
             {field.linkedTableId ? (
               <>
@@ -1874,6 +1945,7 @@ function App() {
                           onClick={() => onChange(field.id, selectedLinkedIds.filter((selectedId) => selectedId !== recordId))}
                         >
                           <strong>{record ? getRecordTitle(base, record) : recordId}</strong>
+                          {record && <small>{getPickerRecordMeta(record)}</small>}
                           <small>Remove</small>
                         </button>
                       )
@@ -1894,7 +1966,7 @@ function App() {
                         onClick={() => onChange(field.id, toggleListValue(selectedLinkedIds, record.id, field.allowMultiple))}
                       >
                         <strong>{getPickerRecordLabel(record)}</strong>
-                        <small>{getRecordContext(record)}</small>
+                        <small>{getPickerRecordMeta(record)}</small>
                       </button>
                     )
                   })}
@@ -1990,6 +2062,112 @@ function App() {
           onChange={(event) => onChange(field.id, inputType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
         />
       </label>
+    )
+  }
+
+  function renderMeetingPrep(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    return (
+      <div className="meeting-prep" data-testid="meeting-prep">
+        <div className="meeting-prep-head">
+          <div>
+            <span className="eyebrow">Computed prep</span>
+            <strong>{getRecordTitle(base, prep.meeting)}</strong>
+          </div>
+          <span>Not saved. Rebuilt from source records.</span>
+        </div>
+        <div className="meeting-prep-stats">
+          <span>{prep.communities.length} communities</span>
+          <span>{prep.linkedTasks.length} tasks</span>
+          <span>{prep.overdueFollowups.length} overdue follow-ups</span>
+          <span>{prep.unresolvedApprovals.length} open approvals</span>
+          <span>{prep.risks.length} risks</span>
+        </div>
+        <div className="meeting-prep-workspace">
+          <div className="meeting-source-receipts" aria-label="Meeting prep source records">
+            <strong>Source records</strong>
+            {[...prep.communities, ...prep.linkedTasks].length === 0 ? (
+              <p className="empty-line">Link a community or task to compute prep.</p>
+            ) : (
+              <div>
+                {[...prep.communities, ...prep.linkedTasks].map((record) => (
+                  <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                    {getRecordTitle(base, record)}
+                    <small>{getPickerRecordMeta(record)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="meeting-agenda" data-testid="meeting-agenda">
+            <div className="meeting-agenda-head">
+              <div className="mini-title">
+                <strong>Generated agenda</strong>
+                <span className="metric-pill">{prep.agenda.length}</span>
+              </div>
+              <div className="agenda-actions" aria-label="Computed agenda actions">
+                <button type="button" onClick={() => void copyMeetingAgenda(prep)}>Copy agenda</button>
+                <button type="button" onClick={() => exportMeetingAgenda(prep)}>Export .md</button>
+                <button
+                  aria-expanded={activeDigestPreviewMeetingId === prep.meeting.id}
+                  type="button"
+                  onClick={() => setActiveDigestPreviewMeetingId((current) => current === prep.meeting.id ? '' : prep.meeting.id)}
+                >
+                  Preview digest
+                </button>
+              </div>
+            </div>
+            {activeDigestPreviewMeetingId === prep.meeting.id && (
+              <div className="agenda-digest-preview" data-testid="agenda-digest-preview">
+                <strong>Digest preview</strong>
+                <pre>{getMeetingDigestPreview(base, prep)}</pre>
+              </div>
+            )}
+            <ol>
+              {prep.agenda.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                  {item.recordIds.length > 0 && (
+                    <div className="meeting-agenda-records">
+                      {item.recordIds.map((recordId) => {
+                        const record = getRecord(base, recordId)
+
+                        return record ? (
+                          <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                            {getRecordTitle(base, record)}
+                          </button>
+                        ) : null
+                      })}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+        <div className="meeting-prep-sections">
+          {prep.sections.map((section) => (
+            <section key={section.id}>
+              <div className="mini-title">
+                <strong>{section.label}</strong>
+                <span className="metric-pill">{section.records.length}</span>
+              </div>
+              {section.records.length === 0 ? (
+                <p className="empty-line">No records surfaced.</p>
+              ) : (
+                <div className="meeting-prep-list">
+                  {section.records.slice(0, 4).map((record) => (
+                    <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                      <strong>{getRecordTitle(base, record)}</strong>
+                      <small>{getPickerRecordMeta(record)}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      </div>
     )
   }
 
@@ -2159,7 +2337,8 @@ function App() {
                   type="button"
                   onClick={() => setGridEditDraft(toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple))}
                 >
-                  {getPickerRecordLabel(linkedRecord)}
+                  <span>{getPickerRecordLabel(linkedRecord)}</span>
+                  <small>{getPickerRecordMeta(linkedRecord)}</small>
                 </button>
               )
             })}
@@ -2534,11 +2713,17 @@ function App() {
                       <strong>{getRecordTitle(base, record)}</strong>
                     </button>
                     <span>{getRecordContext(record)}</span>
-                    {getTodayRuleMatchesForRecord(record.id).length > 0 && (
+                    {getTodayRuleMatchesForRecord(record.id)[0] && (
                       <div className="lane-rule-list">
-                        {getTodayRuleMatchesForRecord(record.id).slice(0, 2).map((match) => (
-                          <small key={match.rule.id}>Rule: {getRulePreview(match.rule)}</small>
-                        ))}
+                        <small>{getRulePreview(getTodayRuleMatchesForRecord(record.id)[0].rule)}</small>
+                        {getTodayRuleMatchesForRecord(record.id).length > 1 && (
+                          <details>
+                            <summary>Why this is here</summary>
+                            {getTodayRuleMatchesForRecord(record.id).slice(1).map((match) => (
+                              <small key={match.rule.id}>{getRulePreview(match.rule)}</small>
+                            ))}
+                          </details>
+                        )}
                       </div>
                     )}
                     {getDependencySummary(record.id).length > 0 && (
@@ -2751,7 +2936,7 @@ function App() {
             <article className="screen-panel">
               <span className="eyebrow">Meetings</span>
               <strong>Prep comes from records.</strong>
-              <p>Meetings read linked communities, tasks, risks, and follow-ups. The agenda should be deterministic before it is written.</p>
+              <p>Meetings read linked communities, tasks, risks, and follow-ups. The agenda is computed before prose is written.</p>
               <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
                 Open next meeting
               </button>
@@ -2783,11 +2968,12 @@ function App() {
                   <strong>{getRecordTitle(base, nextMeetingRecord)} reads {nextMeetingLinkedTasks.length} linked tasks.</strong>
                 </div>
               )}
+              {nextMeetingPrep && renderMeetingPrep(nextMeetingPrep)}
             </article>
           </section>
         )}
 
-        <section className={`record-drawer ${activeScreen === 'build' ? 'active-record-drawer' : ''}`} data-testid="record-drawer" id="record">
+        <section className={`record-drawer ${activeScreen === 'build' || isRecordDrawerOpen ? 'active-record-drawer' : ''} ${activeScreen !== 'build' && isRecordDrawerOpen ? 'floating-record-drawer' : ''}`} data-testid="record-drawer" id="record">
           <div className="drawer-header">
             <div>
               <span className="eyebrow">{selectedBuildTable?.label || 'Record'}</span>
@@ -2796,6 +2982,9 @@ function App() {
             <div className="drawer-actions">
               <span className="metric-pill">{drawerBacklinks.length} backlinks</span>
               <span className="metric-pill">{drawerLinkedRecords.length} links out</span>
+              {activeScreen !== 'build' && (
+                <button className="ghost" type="button" onClick={() => setIsRecordDrawerOpen(false)}>Close</button>
+              )}
             </div>
           </div>
 
@@ -2817,10 +3006,12 @@ function App() {
                 ))}
               </div>
 
-              <div className="record-edit-layout">
+              {drawerMeetingPrep && renderMeetingPrep(drawerMeetingPrep)}
+
+              <div className="record-section-grid">
                 <section>
                   <div className="mini-title">
-                    <strong>Edit record</strong>
+                    <strong>Fields</strong>
                   </div>
                   <div className="record-form">
                     {editableFieldsForSelectedTable.map((field) =>
@@ -2829,6 +3020,29 @@ function App() {
                   </div>
                 </section>
 
+                <section>
+                  <div className="mini-title">
+                    <strong>Linked records</strong>
+                  </div>
+                  <div className="linked-list">
+                    {drawerLinkedRecords.length === 0 && <p className="empty-line">No linked records selected.</p>}
+                    {drawerLinkedRecords.map((link) => (
+                      <button
+                        className="linked-record-card"
+                        key={`${link.fieldId}-${link.record.id}`}
+                        type="button"
+                        onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
+                      >
+                        <span className="pill waiting">{link.record.tableLabel}</span>
+                        <strong>{link.record.title}</strong>
+                        <small>{link.fieldLabel}. {link.record.context}</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <div className="record-section-grid">
                 <section>
                   <div className="mini-title">
                     <strong>Backlinks</strong>
@@ -2845,29 +3059,6 @@ function App() {
                         <span className="pill prep">{backlink.fromRecord.tableLabel}</span>
                         <strong>{backlink.fromRecord.title}</strong>
                         <small>{backlink.fieldLabel}. {backlink.fromRecord.context}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              <div className="linked-layout">
-                <section id="followups">
-                  <div className="mini-title">
-                    <strong>Linked records</strong>
-                  </div>
-                  <div className="linked-list">
-                    {drawerLinkedRecords.length === 0 && <p className="empty-line">No linked records selected.</p>}
-                    {drawerLinkedRecords.map((link) => (
-                      <button
-                        className="linked-record-card"
-                        key={`${link.fieldId}-${link.record.id}`}
-                        type="button"
-                        onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
-                      >
-                        <span className="pill waiting">{link.record.tableLabel}</span>
-                        <strong>{link.record.title}</strong>
-                        <small>{link.fieldLabel}. {link.record.context}</small>
                       </button>
                     ))}
                   </div>

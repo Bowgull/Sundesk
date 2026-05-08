@@ -24,6 +24,9 @@
   --focus: #183346;
   --surface: rgba(255, 255, 255, 0.88);
   --surface-raised: rgba(255, 255, 255, 0.96);
+  --chrome: rgba(255, 255, 255, 0.72);
+  --chrome-hover: rgba(228, 244, 255, 0.84);
+  --primary-fg: #ffffff;
   --hero-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(228, 244, 255, 0.78));
   --aura: 0 24px 70px rgba(34, 92, 128, 0.16);
   --radius: 8px;
@@ -55,7 +58,7 @@ button {
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--chrome);
   color: var(--ink);
   font: inherit;
   font-size: 13px;
@@ -105,7 +108,7 @@ button.selected {
 button.primary {
   border-color: transparent;
   background: var(--night);
-  color: #fff;
+  color: var(--primary-fg);
 }
 
 button.primary:hover {
