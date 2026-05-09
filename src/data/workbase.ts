@@ -102,7 +102,7 @@ export const workbase: Workbase = {
     },
     {
       id: 'tasks',
-      label: 'Tasks',
+      label: 'Work',
       description: 'Work Lindsay can create, link, block, and close.',
       primaryFieldId: 'title',
     },
@@ -114,8 +114,8 @@ export const workbase: Workbase = {
     },
     {
       id: 'followups',
-      label: 'Follow-ups',
-      description: 'Waiting loops, nudges, owners, and due dates.',
+      label: 'Waiting On',
+      description: 'People, approvals, and updates that owe the next move.',
       primaryFieldId: 'title',
     },
     {
@@ -142,7 +142,7 @@ export const workbase: Workbase = {
     { id: 'status', tableId: 'communities', label: 'Status', type: 'singleSelect', options: ['On track', 'At risk', 'Blocked'] },
     { id: 'eventDate', tableId: 'communities', label: 'Event date', type: 'date' },
     { id: 'readiness', tableId: 'communities', label: 'Readiness', type: 'percent' },
-    { id: 'openTaskCount', tableId: 'communities', label: 'Open tasks', type: 'count', sourceLinkedFieldId: 'community' },
+    { id: 'openTaskCount', tableId: 'communities', label: 'Open work', type: 'count', sourceLinkedFieldId: 'community' },
     { id: 'approvalStatusRollup', tableId: 'communities', label: 'Approval status', type: 'rollup', sourceLinkedFieldId: 'community', sourceFieldId: 'status', operation: 'countWhere' },
 
     { id: 'title', tableId: 'tasks', label: 'Title', type: 'text' },
@@ -168,7 +168,7 @@ export const workbase: Workbase = {
     { id: 'title', tableId: 'meetings', label: 'Title', type: 'text' },
     { id: 'date', tableId: 'meetings', label: 'Date', type: 'dateTime' },
     { id: 'community', tableId: 'meetings', label: 'Community', type: 'linkedRecord', linkedTableId: 'communities', allowMultiple: true },
-    { id: 'tasks', tableId: 'meetings', label: 'Tasks', type: 'linkedRecord', linkedTableId: 'tasks', allowMultiple: true },
+    { id: 'tasks', tableId: 'meetings', label: 'Work', type: 'linkedRecord', linkedTableId: 'tasks', allowMultiple: true },
 
     { id: 'name', tableId: 'people', label: 'Name', type: 'text' },
     { id: 'role', tableId: 'people', label: 'Role', type: 'text' },
@@ -242,7 +242,7 @@ export const workbase: Workbase = {
       id: 'task_permit_moncton',
       tableId: 'tasks',
       values: {
-        title: 'Send permit follow-up.',
+        title: 'Send permit nudge.',
         status: 'Waiting',
         dueDate: '2026-05-13',
         priority: 'Waiting',

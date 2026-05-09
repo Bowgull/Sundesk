@@ -126,7 +126,7 @@ describe('view read models', () => {
     expect(agendaText).toContain('Computed agenda. Not saved.')
     expect(agendaText).toContain('1. Read the community state.')
     expect(agendaText).toContain('Source records: Charlottetown.')
-    expect(digestPreview).toContain('Daily digest preview.')
+    expect(digestPreview).toContain('Command send preview.')
     expect(digestPreview).toContain('Agenda items: 5. Source records: 2.')
   })
 
@@ -162,8 +162,8 @@ describe('view read models', () => {
   it('derives screen stats for the home summary', () => {
     expect(getScreenStats(workbase)).toEqual([
       { label: 'Communities', value: 3, detail: '1 need attention' },
-      { label: 'Open tasks', value: 3, detail: '1 blocked' },
-      { label: 'Waiting loops', value: 1, detail: '2 open approvals' },
+      { label: 'Open work', value: 3, detail: '1 blocked' },
+      { label: 'Waiting On', value: 1, detail: '2 approvals open' },
       { label: 'Risks', value: 1, detail: '1 high' },
     ])
   })

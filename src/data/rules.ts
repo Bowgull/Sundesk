@@ -34,8 +34,8 @@ export const ruleDestinationOptions = [
   { label: 'Today', value: 'today' },
   { label: 'Timeline', value: 'timeline' },
   { label: 'Communities', value: 'communities' },
-  { label: 'Tasks', value: 'tasks' },
-  { label: 'Follow-ups', value: 'followups' },
+  { label: 'Work', value: 'tasks' },
+  { label: 'Waiting On', value: 'followups' },
   { label: 'Meetings', value: 'meetings' },
 ] as const
 

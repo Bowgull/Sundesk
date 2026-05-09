@@ -1,7 +1,6 @@
 import './App.css'
-import { useEffect, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import {
-  buildFieldTypes,
   savedViews,
 } from './data/demoData'
 import {
@@ -53,6 +52,7 @@ import {
   isDateField,
   ruleActionOptions,
   ruleDestinationOptions,
+  ruleOperatorOptions,
   ruleOperatorNeedsValue,
   sortRecordsByDate,
 } from './data/rules'
@@ -97,44 +97,50 @@ import {
 
 const themes = [
   {
-    label: 'Sunrise Soft',
-    value: 'sunrise-soft',
-    swatch: { background: 'linear-gradient(135deg, #f2fbff, #fff8e5 56%, #ffe9e4)', panel: '#ffffff', text: '#152838', accent: '#2f83bd', status: '#ffe0df', primary: '#183346' },
+    label: 'Command Center',
+    value: 'command-center',
+    swatch: { background: 'linear-gradient(135deg, #eef7fb, #fff8e8)', panel: '#ffffff', text: '#142838', accent: '#2d83bc', status: '#f8dbd8', primary: '#183346' },
   },
   {
-    label: 'Sunset Bold',
-    value: 'sunset-bold',
-    swatch: { background: 'linear-gradient(135deg, #311d2c, #7d3441 42%, #f39b65)', panel: '#fff9f1', text: '#211a22', accent: '#b42f4a', status: '#ffd4d1', primary: '#311d2c' },
+    label: 'Sunset',
+    value: 'sunset',
+    swatch: { background: 'linear-gradient(135deg, #ffe19a, #ff8f6f 46%, #593e68)', panel: '#fff8ec', text: '#2b2330', accent: '#f55a01', status: '#f4a83f', primary: '#593e68' },
   },
   {
-    label: 'Cloud Light',
-    value: 'cloud-light',
-    swatch: { background: 'linear-gradient(180deg, #dbebf4, #f7fcff)', panel: '#ffffff', text: '#102434', accent: '#1f78b4', status: '#e5f3fa', primary: '#102434' },
+    label: 'Coast',
+    value: 'coast',
+    swatch: { background: 'linear-gradient(135deg, #cdeafb, #f6b8c7 52%, #ffe5ad)', panel: '#ffffff', text: '#173247', accent: '#4ba7d0', status: '#f19aa2', primary: '#53639a' },
   },
   {
-    label: 'Focus Dark',
-    value: 'focus-dark',
-    swatch: { background: 'linear-gradient(135deg, #07111c, #101d2a 55%, #182331)', panel: '#1e3143', text: '#edf7fb', accent: '#75bce6', status: '#512629', primary: '#eaf4fb' },
+    label: 'Dusk',
+    value: 'dusk',
+    swatch: { background: 'linear-gradient(135deg, #f1d7e8, #b9c3df 52%, #765d85)', panel: '#fffafd', text: '#26213a', accent: '#84485f', status: '#f05a4e', primary: '#593e68' },
   },
   {
-    label: 'Paper Light',
-    value: 'paper-light',
-    swatch: { background: 'linear-gradient(135deg, #fbf7ed, #f3ecdf 52%, #e9f0ec)', panel: '#fffdf8', text: '#201f1b', accent: '#557266', status: '#f4d8d1', primary: '#201f1b' },
+    label: 'Graphite',
+    value: 'graphite',
+    swatch: { background: 'linear-gradient(135deg, #f5f6f7, #dde3e8)', panel: '#ffffff', text: '#1f2933', accent: '#53639a', status: '#df741b', primary: '#263340' },
+  },
+  {
+    label: 'Night Shift',
+    value: 'night-shift',
+    swatch: { background: 'linear-gradient(135deg, #0d1420, #1c2840 58%, #593e68)', panel: '#1f2b3a', text: '#edf4f8', accent: '#fda839', status: '#eb3a3b', primary: '#f3d08d' },
   },
 ]
 
 const mainScreens = [
-  { id: 'today', label: 'Today', group: 'Work' },
-  { id: 'communities', label: 'Communities', group: 'Work' },
-  { id: 'tasks', label: 'Tasks', group: 'Work' },
-  { id: 'followups', label: 'Follow-ups', group: 'Work' },
-  { id: 'meetings', label: 'Meetings', group: 'Work' },
-  { id: 'timeline', label: 'Timeline', group: 'Work' },
-  { id: 'build', label: 'Build', group: 'System' },
-  { id: 'settings', label: 'Settings', group: 'System' },
+  { id: 'today', label: 'Today', shortLabel: 'Today', group: 'Work' },
+  { id: 'communities', label: 'Communities', shortLabel: 'Places', group: 'Work' },
+  { id: 'followups', label: 'Waiting On', shortLabel: 'Waiting', group: 'Work' },
+  { id: 'meetings', label: 'Meetings', shortLabel: 'Meet', group: 'Work' },
+  { id: 'timeline', label: 'Timeline', shortLabel: 'Time', group: 'Work' },
+  { id: 'build', label: 'Build', shortLabel: 'Build', group: 'System' },
+  { id: 'settings', label: 'Settings', shortLabel: 'Set', group: 'System' },
+  { id: 'tasks', label: 'Work', shortLabel: 'Work', group: 'Hidden' },
 ] as const
 
 type AppScreen = (typeof mainScreens)[number]['id']
+type TimelineView = 'grid' | 'kanban' | 'calendar' | 'timeline' | 'graph'
 
 const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'Text', value: 'text' },
@@ -158,6 +164,15 @@ const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'System formula', value: 'systemFormula' },
   { label: 'Created time', value: 'createdTime' },
   { label: 'Last updated time', value: 'lastUpdatedTime' },
+]
+
+const fieldBehaviorOptions: { label: string; value: FieldType; description: string }[] = [
+  { label: 'Write notes', value: 'longText', description: 'Open text for context, decisions, and internal notes.' },
+  { label: 'Track status', value: 'status', description: 'A short workflow state that can surface work in Today.' },
+  { label: 'Add tags', value: 'multiSelect', description: 'Reusable marks for grouping, routing, and filtering.' },
+  { label: 'Set a date', value: 'date', description: 'A deadline or event date the command center can watch.' },
+  { label: 'Link rows', value: 'linkedRecord', description: 'Connect this row to a community, person, meeting, or other table.' },
+  { label: 'Read from links', value: 'lookup', description: 'Show a value from a linked record without retyping it.' },
 ]
 
 const optionFieldTypes: FieldType[] = ['status', 'singleSelect', 'multiSelect']
@@ -188,6 +203,14 @@ type GridCell = {
   recordId: string
   fieldId: string
 }
+
+const timelineViewOptions: { label: string; value: TimelineView }[] = [
+  { label: 'Grid', value: 'grid' },
+  { label: 'Kanban', value: 'kanban' },
+  { label: 'Calendar', value: 'calendar' },
+  { label: 'Timeline', value: 'timeline' },
+  { label: 'Graph', value: 'graph' },
+]
 
 function getScreenFromHash(): AppScreen {
   if (typeof window === 'undefined') {
@@ -311,7 +334,17 @@ function App() {
   const [selectedTheme, setSelectedTheme] = useState(
     () => {
       const storedTheme = localStorage.getItem('sundesk-theme')
-      return storedTheme === 'light' ? 'paper-light' : storedTheme || 'sunrise-soft'
+      const legacyThemeMap: Record<string, string> = {
+        light: 'command-center',
+        'paper-light': 'graphite',
+        'sunrise-soft': 'command-center',
+        'sunset-bold': 'sunset',
+        'cloud-light': 'coast',
+        'focus-dark': 'night-shift',
+      }
+      const themeValue = storedTheme ? legacyThemeMap[storedTheme] || storedTheme : 'command-center'
+
+      return themes.some((theme) => theme.value === themeValue) ? themeValue : 'command-center'
     },
   )
   const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
@@ -320,7 +353,9 @@ function App() {
   const [timelineFilter, setTimelineFilter] = useState('')
   const [timelineTableId, setTimelineTableId] = useState('all')
   const [timelineStatus, setTimelineStatus] = useState('all')
+  const [timelineView, setTimelineView] = useState<TimelineView>('grid')
   const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
+  const [expandedRuleId, setExpandedRuleId] = useState('')
   const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
   const [todayDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [selectedBuildTableId, setSelectedBuildTableId] = useState(
@@ -365,6 +400,8 @@ function App() {
   const [selectedGridCell, setSelectedGridCell] = useState<GridCell | null>(null)
   const [editingGridCell, setEditingGridCell] = useState<GridCell | null>(null)
   const [gridEditDraft, setGridEditDraft] = useState<RecordValue>('')
+  const [buildPasteReceipt, setBuildPasteReceipt] = useState('')
+  const [buildPasteCellCount, setBuildPasteCellCount] = useState(0)
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
     () => initialBuildViewState.columnWidths || {},
   )
@@ -401,9 +438,6 @@ function App() {
     followupRecords,
     meetingRecords,
     openTaskRecords,
-    blockedTaskRecords,
-    waitingTaskRecords,
-    waitingFollowupRecords,
   } = getWorkRecordGroups(base)
   const nextMeetingRecord = sortRecordsByDate(meetingRecords)[0]
   const nextMeetingLinkedTasks = nextMeetingRecord ? getLinkedRecordsForRecord(base, nextMeetingRecord.id).filter((link) => link.record.tableId === 'tasks') : []
@@ -987,6 +1021,7 @@ function App() {
     setIsCreatingRecord(false)
     setBuildModal('')
     setIsRecordDrawerOpen(true)
+    openScreen('build')
     window.setTimeout(() => {
       document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
     }, 0)
@@ -1100,6 +1135,9 @@ function App() {
 
   function openScreen(screen: AppScreen) {
     setActiveScreen(screen)
+    if (screen !== 'build') {
+      setIsRecordDrawerOpen(false)
+    }
 
     if (window.location.hash !== `#${screen}`) {
       window.history.pushState(null, '', `#${screen}`)
@@ -1244,6 +1282,7 @@ function App() {
       const nextRules = [rule, ...current]
 
       writeRulesState(nextRules)
+      setExpandedRuleId(rule.id)
 
       return nextRules
     })
@@ -1293,6 +1332,7 @@ function App() {
       const nextRules = current.filter((rule) => rule.id !== ruleId)
 
       writeRulesState(nextRules)
+      setExpandedRuleId((currentRuleId) => currentRuleId === ruleId ? '' : currentRuleId)
 
       return nextRules
     })
@@ -1410,6 +1450,54 @@ function App() {
     return getRulePreviewForBase(base, rule)
   }
 
+  function getCommandReason(rule: LocalRule) {
+    const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
+    const operator = ruleOperatorOptions.find((option) => option.value === rule.operator)?.label.toLowerCase() || rule.operator
+    const linkedRecord = getRecord(base, rule.value)
+    const value = linkedRecord ? getRecordTitle(base, linkedRecord) : rule.value
+    const fieldLabel = field?.label || rule.fieldId
+
+    if (rule.operator === 'hasAnyLink') {
+      return `${fieldLabel} is linked.`
+    }
+
+    if (rule.operator === 'hasNoLink') {
+      return `${fieldLabel} has no link.`
+    }
+
+    if (rule.operator === 'isToday') {
+      return `${fieldLabel} is today.`
+    }
+
+    if (rule.operator === 'isWithin7Days') {
+      return `${fieldLabel} is within 7 days.`
+    }
+
+    if (rule.operator === 'isBeforeToday') {
+      return `${fieldLabel} is before today.`
+    }
+
+    if (rule.operator === 'isOnOrBeforeToday') {
+      return `${fieldLabel} is due.`
+    }
+
+    if (rule.operator === 'isEmpty') {
+      return `${fieldLabel} is empty.`
+    }
+
+    return ruleOperatorNeedsValue(rule.operator)
+      ? `${fieldLabel} ${operator} ${value || 'value'}.`
+      : `${fieldLabel} ${operator}.`
+  }
+
+  function getCommandTableLabel(tableId: string) {
+    if (tableId === 'followups') {
+      return 'Waiting On'
+    }
+
+    return base.tables.find((table) => table.id === tableId)?.label || tableId
+  }
+
   function getRuleValidationMessages(rule: LocalRule) {
     return getRuleValidationMessagesForBase(base, rule)
   }
@@ -1444,6 +1532,127 @@ function App() {
     setGridGroupFieldId('level')
     setActiveGridViewId('')
     setBuildModal('')
+  }
+
+  function coercePastedCellValue(field: FieldDefinition, value: string): RecordValue {
+    const trimmedValue = value.trim()
+
+    if (field.type === 'checkbox') {
+      return ['true', 'yes', 'y', '1', 'done', 'received'].includes(trimmedValue.toLowerCase())
+    }
+
+    if (field.type === 'multiSelect') {
+      return trimmedValue
+        .split(/[,;]/)
+        .map((option) => option.trim())
+        .filter(Boolean)
+    }
+
+    if (field.type === 'linkedRecord') {
+      const linkedRecords = field.linkedTableId ? getRecordsForTable(base, field.linkedTableId) : []
+      const matchedRecord = linkedRecords.find((record) => getRecordTitle(base, record).toLowerCase() === trimmedValue.toLowerCase())
+
+      return matchedRecord ? [matchedRecord.id] : []
+    }
+
+    if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
+      const numericValue = Number(trimmedValue.replace(/[$,%]/g, ''))
+
+      return Number.isFinite(numericValue) ? numericValue : 0
+    }
+
+    return trimmedValue
+  }
+
+  function handleBuildGridPaste(event: ClipboardEvent<HTMLDivElement>) {
+    if (!selectedBuildTable || visibleFieldsForGrid.length === 0) {
+      return
+    }
+
+    const pastedText = event.clipboardData.getData('text/plain')
+    const rows = pastedText
+      .split(/\r?\n/)
+      .map((row) => row.split('\t'))
+      .filter((row) => row.some((cell) => cell.trim()))
+
+    if (rows.length === 0) {
+      return
+    }
+
+    event.preventDefault()
+
+    const flattenedRecords = groupedRecords.flatMap((group) => group.records)
+    const startRecordIndex = selectedGridCell
+      ? Math.max(0, flattenedRecords.findIndex((record) => record.id === selectedGridCell.recordId))
+      : 0
+    const startFieldIndex = selectedGridCell
+      ? Math.max(0, visibleFieldsForGrid.findIndex((field) => field.id === selectedGridCell.fieldId))
+      : 0
+    const newRecords: BaseRecord[] = []
+
+    setBase((current) => {
+      const nextRecords = [...current.records]
+      const existingTableRecords = flattenedRecords
+
+      rows.forEach((row, rowIndex) => {
+        const existingRecord = existingTableRecords[startRecordIndex + rowIndex]
+        const baseValues = existingRecord
+          ? { ...existingRecord.values }
+          : getEmptyRecordValues(current, selectedBuildTable.id)
+        const primaryField = current.fields.find((field) => field.tableId === selectedBuildTable.id && field.id === selectedBuildTable.primaryFieldId)
+
+        row.forEach((cell, cellIndex) => {
+          const field = visibleFieldsForGrid[startFieldIndex + cellIndex]
+
+          if (!field || computedFieldTypes.includes(field.type)) {
+            return
+          }
+
+          baseValues[field.id] = coercePastedCellValue(field, cell)
+        })
+
+        if (!existingRecord && primaryField && !baseValues[primaryField.id]) {
+          baseValues[primaryField.id] = row[0]?.trim() || `Pasted row ${newRecords.length + 1}`
+        }
+
+        if (existingRecord) {
+          const recordIndex = nextRecords.findIndex((record) => record.id === existingRecord.id)
+
+          if (recordIndex >= 0) {
+            nextRecords[recordIndex] = {
+              ...nextRecords[recordIndex],
+              values: baseValues,
+            }
+          }
+          return
+        }
+
+        const primaryValue = String(baseValues[selectedBuildTable.primaryFieldId] || `Pasted row ${newRecords.length + 1}`)
+        const record: BaseRecord = {
+          id: getUniqueSlug(`${selectedBuildTable.id}_${toSlug(primaryValue)}`, [...current.records, ...newRecords].map((baseRecord) => baseRecord.id)),
+          tableId: selectedBuildTable.id,
+          values: baseValues,
+        }
+
+        newRecords.push(record)
+        nextRecords.push(record)
+      })
+
+      const nextBase = {
+        ...current,
+        records: nextRecords,
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+
+    const pastedCellCount = rows.reduce((count, row) => count + row.length, 0)
+
+    setBuildPasteCellCount(pastedCellCount)
+    setBuildPasteReceipt(`${rows.length} rows pasted. ${pastedCellCount} cells changed.`)
+    showToast(`${rows.length} rows pasted.`)
   }
 
   function updateRecordDraft(fieldId: string, value: RecordValue) {
@@ -2089,27 +2298,25 @@ function App() {
         </div>
         <div className="meeting-prep-stats">
           <span>{prep.communities.length} communities</span>
-          <span>{prep.linkedTasks.length} tasks</span>
-          <span>{prep.overdueFollowups.length} overdue follow-ups</span>
+          <span>{prep.linkedTasks.length} work items</span>
+          <span>{prep.overdueFollowups.length} waiting items</span>
           <span>{prep.unresolvedApprovals.length} open approvals</span>
           <span>{prep.risks.length} risks</span>
         </div>
-        <div className="meeting-prep-workspace">
-          <div className="meeting-source-receipts" aria-label="Meeting prep source records">
-            <strong>Source records</strong>
-            {[...prep.communities, ...prep.linkedTasks].length === 0 ? (
-              <p className="empty-line">Link a community or task to compute prep.</p>
-            ) : (
-              <div>
-                {[...prep.communities, ...prep.linkedTasks].map((record) => (
-                  <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                    {getRecordTitle(base, record)}
-                    <small>{getPickerRecordMeta(record)}</small>
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="meeting-note-shell" data-testid="meeting-weekly-note">
+          <div className="meeting-note-paper">
+            <div className="meeting-note-title">
+              <span>Generated weekly note</span>
+              <strong>{getRecordTitle(base, prep.meeting)}</strong>
+              <small>Ready to copy, export, or edit from the meeting record.</small>
+            </div>
+            <div className="meeting-note-summary">
+              <p><strong>Focus.</strong> {prep.agenda[0]?.detail || 'No agenda items surfaced yet.'}</p>
+              <p><strong>Next steps.</strong> {prep.nextSteps.length} records need a next move.</p>
+            </div>
           </div>
+        </div>
+        <div className="meeting-prep-workspace">
           <div className="meeting-agenda" data-testid="meeting-agenda">
             <div className="meeting-agenda-head">
               <div className="mini-title">
@@ -2124,13 +2331,13 @@ function App() {
                   type="button"
                   onClick={() => setActiveDigestPreviewMeetingId((current) => current === prep.meeting.id ? '' : prep.meeting.id)}
                 >
-                  Preview digest
+                  Preview summary
                 </button>
               </div>
             </div>
             {activeDigestPreviewMeetingId === prep.meeting.id && (
               <div className="agenda-digest-preview" data-testid="agenda-digest-preview">
-                <strong>Digest preview</strong>
+                <strong>Command send preview</strong>
                 <pre>{getMeetingDigestPreview(base, prep)}</pre>
               </div>
             )}
@@ -2155,6 +2362,21 @@ function App() {
                 </li>
               ))}
             </ol>
+          </div>
+          <div className="meeting-source-receipts" aria-label="Meeting prep source records">
+            <strong>Source records</strong>
+            {[...prep.communities, ...prep.linkedTasks].length === 0 ? (
+              <p className="empty-line">Link a community or work item to compute prep.</p>
+            ) : (
+              <div>
+                {[...prep.communities, ...prep.linkedTasks].map((record) => (
+                  <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                    {getRecordTitle(base, record)}
+                    <small>{getPickerRecordMeta(record)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="meeting-prep-sections">
@@ -2428,6 +2650,165 @@ function App() {
     )
   }
 
+  function renderTimelineView() {
+    if (timelineView === 'kanban') {
+      const groups = ['Blocked', 'Waiting', 'In progress', 'Done']
+
+      return (
+        <div className="timeline-kanban" data-testid="timeline-kanban">
+          {groups.map((status) => {
+            const records = timelineRecords.filter((record) => {
+              const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority')
+
+              return status === 'Done' ? recordStatus === 'Done' || recordStatus === 'Received' : recordStatus === status
+            })
+
+            return (
+              <section className="kanban-column" key={status}>
+                <div>
+                  <strong>{status}</strong>
+                  <span>{records.length}</span>
+                </div>
+                {records.map((record) => (
+                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{getRecordContext(record)}</small>
+                    <span>{getFirstDateValue(record) || 'No date'}</span>
+                  </button>
+                ))}
+              </section>
+            )
+          })}
+        </div>
+      )
+    }
+
+    if (timelineView === 'calendar') {
+      const datedRecords = timelineRecords.filter((record) => getFirstDateValue(record))
+
+      return (
+        <div className="calendar-board" data-testid="timeline-calendar">
+          {datedRecords.slice(0, 14).map((record) => (
+            <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+              <span>{getFirstDateValue(record)}</span>
+              <strong>{getRecordTitle(base, record)}</strong>
+              <small>{getRecordContext(record)}</small>
+            </button>
+          ))}
+          {datedRecords.length === 0 && <p className="empty-note">No dated records match. Clear the filters.</p>}
+        </div>
+      )
+    }
+
+    if (timelineView === 'timeline') {
+      return (
+        <div className="readiness-timeline" data-testid="timeline-readiness">
+          {communityRecords.map((community) => {
+            const communityTitle = getRecordTitle(base, community)
+            const linkedRecords = timelineRecords.filter((record) =>
+              base.fields.some((field) => {
+                const value = record.values[field.id]
+
+                return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(community.id)
+              }),
+            )
+
+            return (
+              <section key={community.id}>
+                <div>
+                  <strong>{communityTitle}</strong>
+                  <span>{getNumberValue(community, 'readiness')}% ready</span>
+                </div>
+                <div className="readiness-track">
+                  {linkedRecords.slice(0, 5).map((record) => (
+                    <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                      <span>{getRecordTitle(base, record)}</span>
+                    </button>
+                  ))}
+                  <i>Event</i>
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      )
+    }
+
+    if (timelineView === 'graph') {
+      const selectedCommunity = communityRecords[0]
+      const relatedRecords = selectedCommunity
+        ? timelineRecords.filter((record) =>
+            base.fields.some((field) => {
+              const value = record.values[field.id]
+
+              return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(selectedCommunity.id)
+            }),
+          )
+        : []
+
+      return (
+        <div className="risk-graph" data-testid="timeline-graph">
+          {selectedCommunity ? (
+            <>
+              <button className="graph-node center" type="button" onClick={() => openDailyRecord(selectedCommunity)}>
+                <strong>{getRecordTitle(base, selectedCommunity)}</strong>
+                <span>{getNumberValue(selectedCommunity, 'readiness')}% ready</span>
+              </button>
+              <div className="graph-spokes">
+                {relatedRecords.slice(0, 5).map((record) => (
+                  <button className={`graph-node ${getSemanticChipClass(getRecordContext(record))}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <span>{getRecordContext(record)}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="empty-note">No community records are available.</p>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="timeline-list" data-testid="timeline-list">
+        {timelineRecords.map((record) => {
+          const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+          const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
+          const recordDate = getFirstDateValue(record)
+          const dependencySummary = getDependencySummary(record.id)
+          const ruleSummary = getTimelineRuleMatchesForRecord(record.id)
+
+          return (
+            <button className="timeline-record-row" data-testid={`timeline-row-${record.id}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+              <span>{recordDate || 'No date'}</span>
+              <strong>{getRecordTitle(base, record)}</strong>
+              <small>{table?.label || record.tableId}. {recordStatus}. {getRecordContext(record)}</small>
+              <span className="timeline-dependency-summary">
+                {dependencySummary.length === 0 ? (
+                  <small>No dependencies</small>
+                ) : (
+                  dependencySummary.slice(0, 2).map((dependency) => (
+                    <i key={dependency.id}>{dependency.label}: {dependency.title}</i>
+                  ))
+                )}
+                {dependencySummary.length > 2 && <small>+{dependencySummary.length - 2} more</small>}
+              </span>
+              {ruleSummary.length > 0 && (
+                <span className="timeline-rule-summary">
+                  {ruleSummary.slice(0, 2).map((match) => (
+                    <i key={match.rule.id}>Rule: {getRulePreview(match.rule)}</i>
+                  ))}
+                </span>
+              )}
+            </button>
+          )
+        })}
+        {timelineRecords.length === 0 && <p className="empty-note">No records match. Clear the timeline filters.</p>}
+      </div>
+    )
+  }
+
   function renderRecordModal() {
     if (buildModal !== 'record') {
       return null
@@ -2628,12 +3009,17 @@ function App() {
 
   useEffect(() => {
     function syncScreenFromHash() {
-      setActiveScreen(getScreenFromHash())
+      const nextScreen = getScreenFromHash()
+
+      setActiveScreen(nextScreen)
       setBuildModal('')
       setPendingDeleteTableId('')
       setSelectedFieldSettingsId('')
       setPendingDeleteFieldId('')
       setIsCreatingRecord(false)
+      if (nextScreen !== 'build') {
+        setIsRecordDrawerOpen(false)
+      }
     }
 
     window.addEventListener('hashchange', syncScreenFromHash)
@@ -2654,7 +3040,7 @@ function App() {
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
           <div>
             <strong>Sundesk</strong>
-            <span>private workbase</span>
+            <span>command center</span>
           </div>
         </div>
 
@@ -2666,6 +3052,7 @@ function App() {
               <a
                 aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
+                data-short={screen.shortLabel}
                 href={`#${screen.id}`}
                 key={screen.id}
               >
@@ -2679,6 +3066,7 @@ function App() {
               <a
                 aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
+                data-short={screen.shortLabel}
                 href={`#${screen.id}`}
                 key={screen.id}
               >
@@ -2699,22 +3087,22 @@ function App() {
           </section>
         )}
 
-        <section className="privacy-card">
-          <span>Privacy boundary</span>
-          <strong>Track status. Not files.</strong>
-          <p>Upload sensitive information at your own risk. Sundesk is built for metadata, not files.</p>
+        <section className="privacy-card workspace-card">
+          <span>Fyre Festival GTA</span>
+          <strong>Fake Ontario event data.</strong>
+          <p>GTA community shape.</p>
         </section>
 
         <section className="privacy-card rule-card">
-          <span>Rule read</span>
-          <strong>{activeScreenRuleMatches.length} records match here.</strong>
-          <p>Rules are structured locally. They do not run automations yet.</p>
+          <span>System read</span>
+          <strong>{activeScreenRuleMatches.length} records surface here.</strong>
+          <p>The system shows its work when a record needs attention.</p>
           {activeScreenRuleMatches.length > 0 && (
             <div className="rule-card-list">
               {activeScreenRuleMatches.slice(0, 3).map((match) => (
                 <button key={`${match.rule.id}-${match.record.id}`} type="button" onClick={() => openDailyRecord(match.record)}>
                   <strong>{getRecordTitle(base, match.record)}</strong>
-                  <small>{getRulePreview(match.rule)}</small>
+                  <small>{getCommandReason(match.rule)}</small>
                 </button>
               ))}
             </div>
@@ -2727,28 +3115,46 @@ function App() {
           <>
         <section className="onboarding-callout" aria-label="Onboarding status">
           <div>
-            <span className="eyebrow">First run</span>
-            <strong>Setup is required before real data.</strong>
-            <p>Review privacy, choose a theme, set digest time, check starter tables, then add the first communities.</p>
+            <span className="eyebrow">Command path</span>
+            <strong>Paste rows. Run the work.</strong>
+            <p>Build holds the source tables. Today shows what needs a decision.</p>
           </div>
-          <button type="button" onClick={() => openScreen('settings')}>Open setup</button>
+          <button type="button" onClick={() => openScreen('build')}>Open Build</button>
         </section>
 
         <header className="hero" id="today">
           <div>
             <span className="eyebrow">Today</span>
-            <h1>Today builds the day.</h1>
+            <h1>Start with what can slip.</h1>
             <p>
-              First the fire. Then the waiting loops. Then the work that should not become urgent.
+              Dates, blockers, waiting items, and meeting prep collapse into one working view.
             </p>
           </div>
           <article className="digest-card">
-            <span>Daily digest</span>
+            <span>Command send</span>
             <strong>7:30 AM</strong>
-            <p>Next send goes to lindsaybelldesign@gmail.com.</p>
-            <button disabled title="Daily digest bridge is not connected yet." type="button">Preview unavailable</button>
+            <p>Recipient and timezone stay visible before anything leaves the browser.</p>
+            <button disabled title="Command send bridge is not connected yet." type="button">Preview summary</button>
           </article>
         </header>
+
+        <section className="today-command-strip" aria-label="Command summary">
+          <article>
+            <span>Slipping</span>
+            <strong>{todayLanes.find((lane) => lane.id === 'risk')?.records.length || 0}</strong>
+            <small>Blocked or at-risk rows.</small>
+          </article>
+          <article>
+            <span>Waiting</span>
+            <strong>{followupRecords.length}</strong>
+            <small>People who owe the next move.</small>
+          </article>
+          <article>
+            <span>Meeting</span>
+            <strong>{nextMeetingLinkedTasks.length}</strong>
+            <small>Linked rows for the next agenda.</small>
+          </article>
+        </section>
 
         <section className="today-lane-grid" aria-label="Today lanes" data-testid="today-lanes">
           {todayLanes.map((lane) => (
@@ -2767,12 +3173,12 @@ function App() {
                     <span>{getRecordContext(record)}</span>
                     {getTodayRuleMatchesForRecord(record.id)[0] && (
                       <div className="lane-rule-list">
-                        <small>{getRulePreview(getTodayRuleMatchesForRecord(record.id)[0].rule)}</small>
+                        <small>{getCommandReason(getTodayRuleMatchesForRecord(record.id)[0].rule)}</small>
                         {getTodayRuleMatchesForRecord(record.id).length > 1 && (
                           <details>
                             <summary>Why this is here</summary>
                             {getTodayRuleMatchesForRecord(record.id).slice(1).map((match) => (
-                              <small key={match.rule.id}>{getRulePreview(match.rule)}</small>
+                              <small key={match.rule.id}>{getCommandReason(match.rule)}</small>
                             ))}
                           </details>
                         )}
@@ -2796,46 +3202,51 @@ function App() {
           <article className="queue-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Why it surfaced</span>
-                <h2>The system shows its work.</h2>
+                <span className="eyebrow">What changed</span>
+                <h2>System read.</h2>
               </div>
-              <button className="ghost" type="button" onClick={openBuildScreen}>Adjust rules</button>
+              <span className="metric-pill">{todayRuleMatches.length} reads</span>
             </div>
+            <p className="panel-lede">The first read stays plain. Open the receipts only when you need to see why a row landed here.</p>
 
-            <div className="priority-list" data-testid="today-rule-receipts">
-              {todayRuleMatches.slice(0, 4).map((match, index) => (
-                <article className="priority-card prep" key={`${match.rule.id}-${match.record.id}`}>
-                  <div className="priority-rank">{index + 1}</div>
-                  <div className="priority-main">
-                    <div className="priority-top">
-                      <strong>{getRecordTitle(base, match.record)}</strong>
-                      <span className="pill prep">{base.tables.find((table) => table.id === match.record.tableId)?.label || match.record.tableId}</span>
+            <details className="command-details">
+              <summary>Show why items surfaced</summary>
+              <div className="priority-list" data-testid="today-rule-receipts">
+                {todayRuleMatches.slice(0, 4).map((match, index) => (
+                  <article className="priority-card prep" key={`${match.rule.id}-${match.record.id}`}>
+                    <div className="priority-rank">{index + 1}</div>
+                    <div className="priority-main">
+                      <div className="priority-top">
+                        <strong>{getRecordTitle(base, match.record)}</strong>
+                        <span className="pill prep">{getCommandTableLabel(match.record.tableId)}</span>
+                      </div>
+                      <p>{getCommandReason(match.rule)}</p>
+                      <div className="reason-chain">
+                        <span>Rule matched</span>
+                        <span><i aria-hidden="true" />Destination: Today</span>
+                        <span><i aria-hidden="true" />No send happened</span>
+                      </div>
                     </div>
-                    <p>{getRulePreview(match.rule)}</p>
-                    <div className="reason-chain">
-                      <span>Rule matched</span>
-                      <span><i aria-hidden="true" />Destination: Today</span>
-                      <span><i aria-hidden="true" />No automation ran</span>
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => openDailyRecord(match.record)}>Open</button>
-                </article>
-              ))}
-              {todayRuleMatches.length === 0 && <p className="empty-note">No Today Rules match. Open Build to adjust rules.</p>}
-            </div>
+                    <button type="button" onClick={() => openDailyRecord(match.record)}>Open</button>
+                  </article>
+                ))}
+                {todayRuleMatches.length === 0 && <p className="empty-note">No Today rules match. Open Build to adjust rules.</p>}
+              </div>
+              <button className="ghost" type="button" onClick={openBuildScreen}>Open Build</button>
+            </details>
           </article>
 
           <aside className="focus-stack">
             <article className="insight-card">
               <span>System read</span>
-              <strong>Halifax is the only fire.</strong>
-              <p>Everything else can move after the COI status is handled.</p>
+              <strong>Toronto moved to blocked.</strong>
+              <p>Fire marshal permit still missing. Event is 7 days out.</p>
             </article>
 
             <article className="next-meeting" id="meetings">
               <span className="eyebrow">Next meeting</span>
               <strong>Charlottetown. Tomorrow.</strong>
-              <p>Agenda can be generated from 2 tasks, 1 risk, and 1 follow-up.</p>
+              <p>Agenda can be generated from 2 work items, 1 risk, and 1 waiting item.</p>
               <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
                 Open next meeting
               </button>
@@ -2861,20 +3272,45 @@ function App() {
             <div className="panel-title compact">
               <div>
                 <span className="eyebrow">Communities</span>
-                <h2>Daily map.</h2>
+                <h2>Communities are the command center.</h2>
               </div>
               <span className="metric-pill">{communityRecords.length} records</span>
             </div>
-            <div className="record-card-grid three">
+            <p className="panel-lede">Each place gathers pasted rows, readiness fields, missing info, waiting items, meeting prep, and date pressure.</p>
+            <div className="community-command-grid">
                 {communityRecords.map((record) => {
                 const readiness = getNumberValue(record, 'readiness')
                 const status = getStringValue(record, 'status')
+                const linkedRecords = timelineSourceRecords.filter((sourceRecord) =>
+                  sourceRecord.id !== record.id && base.fields.some((field) => {
+                    const value = sourceRecord.values[field.id]
+
+                    return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(record.id)
+                  }),
+                )
+                const blockerCount = linkedRecords.filter((linkedRecord) =>
+                  ['Blocked', 'High'].includes(getStringValue(linkedRecord, 'status') || getStringValue(linkedRecord, 'level')),
+                ).length
+                const waitingCount = linkedRecords.filter((linkedRecord) =>
+                  getStringValue(linkedRecord, 'status') === 'Waiting' || linkedRecord.tableId === 'followups',
+                ).length
+                const meetingCount = linkedRecords.filter((linkedRecord) => linkedRecord.tableId === 'meetings').length
+                const nextAction = linkedRecords.find((linkedRecord) =>
+                  getStringValue(linkedRecord, 'status') === 'Blocked' || getStringValue(linkedRecord, 'level') === 'High',
+                ) || linkedRecords[0]
 
                 return (
-                <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                  <span>{status || 'No status'}</span>
+                <button className="work-record-card community-command-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                  <span>{status || 'No status'} · {getStringValue(record, 'eventDate') || 'No date set'}</span>
                   <strong>{getRecordTitle(base, record)}</strong>
-                  <small>{readiness}% ready. {getStringValue(record, 'eventDate') || 'No date set'}.</small>
+                  <i aria-hidden="true"><b style={{ width: `${Math.max(8, readiness)}%` }} /></i>
+                  <div className="community-command-card-metrics">
+                    <small><b>{readiness}%</b> ready</small>
+                    <small><b>{blockerCount}</b> blockers</small>
+                    <small><b>{waitingCount}</b> waiting</small>
+                    <small><b>{meetingCount}</b> meetings</small>
+                  </div>
+                  <em>{nextAction ? `Next action. ${getRecordTitle(base, nextAction)}.` : 'Next action. Add the first linked row.'}</em>
                 </button>
                 )
               })}
@@ -2907,10 +3343,10 @@ function App() {
           <article className="screen-panel wide">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Tasks</span>
+                <span className="eyebrow">Work</span>
                 <h2>Open work.</h2>
               </div>
-              <button className="primary" type="button" onClick={() => openCreateRecordForTable('tasks')}>New task</button>
+              <button className="primary" type="button" onClick={() => openCreateRecordForTable('tasks')}>New work item</button>
             </div>
             <div className="record-card-grid">
               {openTaskRecords.map((record) => (
@@ -2951,17 +3387,27 @@ function App() {
             <article className="screen-panel wide">
               <div className="panel-title">
                 <div>
-                  <span className="eyebrow">Follow-ups</span>
-                  <h2>Waiting loops.</h2>
+                  <span className="eyebrow">Waiting On</span>
+                  <h2>Waiting On is the chase list.</h2>
                 </div>
-                <button className="primary" type="button" onClick={() => openCreateRecordForTable('followups')}>New follow-up</button>
+                <button className="primary" type="button" onClick={() => openCreateRecordForTable('followups')}>Log next touch</button>
               </div>
-              <div className="record-card-grid">
+              <p className="panel-lede">One list. One question: who owes the next move.</p>
+              <div className="waiting-table">
+                <div className="waiting-row waiting-head">
+                  <span>Community</span>
+                  <span>Waiting on</span>
+                  <span>Item</span>
+                  <span>Age</span>
+                  <span>Why it matters</span>
+                </div>
                 {followupRecords.map((record) => (
-                  <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <span>{getRecordContext(record)}</span>
+                  <button className="waiting-row" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <span>{followupCommunityField ? getFieldDisplayValue(record, followupCommunityField) : 'No community'}</span>
+                    <span>{getStringValue(record, 'owner') || getStringValue(record, 'source') || 'Owner missing'}</span>
                     <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{followupCommunityField ? getFieldDisplayValue(record, followupCommunityField) : 'No community set'}</small>
+                    <span>{getStringValue(record, 'dueDate') || getFirstDateValue(record) || 'Today'}</span>
+                    <small>{getRecordContext(record)}</small>
                   </button>
                 ))}
               </div>
@@ -2970,25 +3416,25 @@ function App() {
             <article className="screen-panel">
               <div className="panel-title">
                 <div>
-                  <span className="eyebrow">Daily rule</span>
-                  <h2>Waiting needs an owner.</h2>
+                  <span className="eyebrow">Tiny helper</span>
+                  <h2>One chase list.</h2>
                 </div>
                 <button type="button" onClick={openBuildScreen}>Adjust rule</button>
               </div>
               <div className="rules">
-                <p><span>When</span> a follow-up is waiting and due today. <span>Do</span> show it in Today.</p>
-                <p><span>When</span> a follow-up points to a community at risk. <span>Do</span> raise its priority.</p>
+                <p><span>When</span> a row is waiting. <span>Do</span> show who owes the next move.</p>
+                <p><span>When</span> waiting blocks readiness. <span>Do</span> surface it in Today.</p>
               </div>
             </article>
           </section>
         )}
 
         {activeScreen === 'meetings' && (
-          <section className="screen-grid" id="meetings">
-            <article className="screen-panel">
+          <section className="screen-grid meetings-screen" id="meetings">
+            <article className="screen-panel meeting-brief">
               <span className="eyebrow">Meetings</span>
-              <strong>Prep comes from records.</strong>
-              <p>Meetings read linked communities, tasks, risks, and follow-ups. The agenda is computed before prose is written.</p>
+              <strong>Meetings generate the weekly notes.</strong>
+              <p>Sundesk fills the operational fields from linked rows so the user edits the notes, not the memory.</p>
               <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
                 Open next meeting
               </button>
@@ -2998,7 +3444,7 @@ function App() {
               <div className="panel-title">
                 <div>
                   <span className="eyebrow">Meeting records</span>
-                  <h2>Scheduled work.</h2>
+                  <h2>Weekly prep.</h2>
                 </div>
                 <div className="drawer-actions">
                   <span className="metric-pill">{meetingRecords.length} records</span>
@@ -3010,14 +3456,14 @@ function App() {
                   <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
                     <span>{getRecordContext(record)}</span>
                     <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{meetingTasksField ? getFieldDisplayValue(record, meetingTasksField) : 'No tasks linked'}</small>
+                    <small>{meetingTasksField ? getFieldDisplayValue(record, meetingTasksField) : 'No work linked'}</small>
                   </button>
                 ))}
               </div>
               {nextMeetingRecord && (
                 <div className="local-state-strip">
                   <span>Next prep</span>
-                  <strong>{getRecordTitle(base, nextMeetingRecord)} reads {nextMeetingLinkedTasks.length} linked tasks.</strong>
+                  <strong>{getRecordTitle(base, nextMeetingRecord)} reads {nextMeetingLinkedTasks.length} linked work items.</strong>
                 </div>
               )}
               {nextMeetingPrep && renderMeetingPrep(nextMeetingPrep)}
@@ -3025,11 +3471,11 @@ function App() {
           </section>
         )}
 
-        <section className={`record-drawer ${activeScreen === 'build' || isRecordDrawerOpen ? 'active-record-drawer' : ''} ${activeScreen !== 'build' && isRecordDrawerOpen ? 'floating-record-drawer' : ''}`} data-testid="record-drawer" id="record">
+        <section className={`record-drawer ${isRecordDrawerOpen ? 'active-record-drawer' : ''} ${activeScreen !== 'build' && isRecordDrawerOpen ? 'floating-record-drawer' : ''}`} data-testid="record-drawer" id="record">
           <div className="drawer-header">
             <div>
               <span className="eyebrow">{selectedBuildTable?.label || 'Record'}</span>
-              <h2>{selectedBuildRecord ? getRecordTitle(base, selectedBuildRecord) : 'Select a record'}.</h2>
+              <h2>{selectedBuildRecord ? getRecordTitle(base, selectedBuildRecord) : 'Select a record'}</h2>
             </div>
             <div className="drawer-actions">
               <span className="metric-pill">{drawerBacklinks.length} backlinks</span>
@@ -3250,8 +3696,8 @@ function App() {
             </div>
             <div className="connection-grid">
               <article>
-                <span>Selected task</span>
-                <strong>{selectedTask ? getRecordTitle(base, selectedTask) : 'Task'}</strong>
+                <span>Selected work</span>
+                <strong>{selectedTask ? getRecordTitle(base, selectedTask) : 'Work item'}</strong>
                 <small>Lookup: community event date is {String(taskCommunityEventDate)}.</small>
               </article>
               <article>
@@ -3296,10 +3742,25 @@ function App() {
           <article className="screen-panel wide">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Timeline</span>
-                <h2>Records by date.</h2>
+                <span className="eyebrow">Views · Timeline</span>
+                <h2>Timeline has 5 ways to look.</h2>
               </div>
               <span className="metric-pill">{timelineRecords.length} shown</span>
+            </div>
+            <p className="panel-lede">The main header is the view type. Controls like fields, filter, sort, and group sit underneath.</p>
+            <div className="view-mode-tabs" role="tablist" aria-label="Timeline views">
+              {timelineViewOptions.map((option) => (
+                <button
+                  aria-selected={timelineView === option.value}
+                  className={timelineView === option.value ? 'selected' : ''}
+                  key={option.value}
+                  role="tab"
+                  type="button"
+                  onClick={() => setTimelineView(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
             <div className="grid-toolbar timeline-toolbar">
               <label>
@@ -3333,54 +3794,22 @@ function App() {
                 </select>
               </label>
             </div>
-            <div className="timeline-list" data-testid="timeline-list">
-              {timelineRecords.map((record) => {
-                const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
-                const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
-                const recordDate = getFirstDateValue(record)
-                const dependencySummary = getDependencySummary(record.id)
-                const ruleSummary = getTimelineRuleMatchesForRecord(record.id)
-
-                return (
-                  <button className="timeline-record-row" data-testid={`timeline-row-${record.id}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <span>{recordDate || 'No date'}</span>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{table?.label || record.tableId}. {recordStatus}. {getRecordContext(record)}</small>
-                    <span className="timeline-dependency-summary">
-                      {dependencySummary.length === 0 ? (
-                        <small>No dependencies</small>
-                      ) : (
-                        dependencySummary.slice(0, 2).map((dependency) => (
-                          <i key={dependency.id}>{dependency.label}: {dependency.title}</i>
-                        ))
-                      )}
-                      {dependencySummary.length > 2 && <small>+{dependencySummary.length - 2} more</small>}
-                    </span>
-                    {ruleSummary.length > 0 && (
-                      <span className="timeline-rule-summary">
-                        {ruleSummary.slice(0, 2).map((match) => (
-                          <i key={match.rule.id}>Rule: {getRulePreview(match.rule)}</i>
-                        ))}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-              {timelineRecords.length === 0 && <p className="empty-note">No records match. Clear the timeline filters.</p>}
-            </div>
+            {renderTimelineView()}
           </article>
 
           <article className="screen-panel">
             <div className="panel-title compact">
               <div>
-                <span className="eyebrow">Status board</span>
-                <h2>Current pressure.</h2>
+                <span className="eyebrow">Sub controls</span>
+                <h2>{timelineViewOptions.find((option) => option.value === timelineView)?.label} answers one question.</h2>
               </div>
             </div>
-            <div className="kanban-preview timeline-status-preview">
-              <div><b>Waiting</b><p>{waitingTaskRecords.length + waitingFollowupRecords.length} records</p></div>
-              <div><b>Blocked</b><p>{blockedTaskRecords.length} records</p></div>
-              <div><b>In progress</b><p>{openTaskRecords.filter((record) => getStringValue(record, 'status') === 'In progress').length} records</p></div>
+            <div className="view-helper-list">
+              <button type="button" onClick={() => setTimelineView('grid')}><strong>Grid</strong><span>Clean or edit rows.</span></button>
+              <button type="button" onClick={() => setTimelineView('kanban')}><strong>Kanban</strong><span>Move work by state.</span></button>
+              <button type="button" onClick={() => setTimelineView('calendar')}><strong>Calendar</strong><span>See date pressure.</span></button>
+              <button type="button" onClick={() => setTimelineView('timeline')}><strong>Timeline</strong><span>Read readiness before event day.</span></button>
+              <button type="button" onClick={() => setTimelineView('graph')}><strong>Graph</strong><span>Explain why a place is at risk.</span></button>
             </div>
 
             <div className="panel-title compact timeline-panel-gap">
@@ -3408,7 +3837,8 @@ function App() {
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Build</span>
-                <h2>{selectedBuildTable?.label}</h2>
+                <h2>Build is freeform first.</h2>
+                <p>The grid should feel like Excel or Google Sheets. Paste into cells, edit directly, then let Sundesk suggest structure after the fact.</p>
               </div>
               <div className="drawer-actions">
                 <span className="metric-pill">{sortedAndFilteredRecords.length} shown</span>
@@ -3418,11 +3848,16 @@ function App() {
                   </span>
                 )}
                 <button type="button" onClick={() => setBuildModal('table')}>Add table</button>
-                <button type="button" onClick={openTableSettings}>Rename table</button>
-                <button className="danger" disabled={!canDeleteSelectedBuildTable} type="button" onClick={requestDeleteTable}>Delete table</button>
                 <button type="button" onClick={() => setBuildModal('field')}>Add field</button>
                 <button type="button" onClick={saveGridView}>Save view</button>
-                <button className="danger" type="button" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
+                <details className="build-options-menu">
+                  <summary>Table options</summary>
+                  <div>
+                    <button type="button" onClick={openTableSettings}>Rename</button>
+                    <button className="danger" disabled={!canDeleteSelectedBuildTable} type="button" onClick={requestDeleteTable}>Delete table</button>
+                    <button className="danger" type="button" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
+                  </div>
+                </details>
               </div>
             </div>
             <div className="table-tabs" role="tablist" aria-label="Tables">
@@ -3559,9 +3994,14 @@ function App() {
                 ))}
               </div>
             </div>
-            <div className="local-state-strip">
-              <span>Local only</span>
-              <strong>Grid state, widths, and saved views persist in this browser.</strong>
+            <div className="local-state-strip build-helper-strip">
+              <span>{buildPasteReceipt ? 'Paste received' : 'Paste cells'}</span>
+              <strong>{buildPasteReceipt || 'Click a cell, paste rows, then shape the table.'}</strong>
+              <div className="paste-helper-steps" aria-label="Paste helper state">
+                <small className={selectedGridCell ? 'done' : ''}>{selectedGridCell ? `Target: ${visibleFieldsForGrid.find((field) => field.id === selectedGridCell.fieldId)?.label || 'field'}` : 'Choose target'}</small>
+                <small className={buildPasteReceipt ? 'done' : ''}>{buildPasteReceipt ? `${buildPasteCellCount} cells` : 'Paste rows'}</small>
+                <small>Shape fields</small>
+              </div>
             </div>
             {migrationMessages.length > 0 && (
               <div className="local-state-strip migration-strip">
@@ -3577,7 +4017,7 @@ function App() {
                     <span>{group.records.length} records</span>
                   </div>
                 )}
-                <div className="record-table-wrap">
+                <div className="record-table-wrap" onPaste={handleBuildGridPaste}>
                   <table className={`record-table density-${gridDensity}`}>
                     <thead>
                       <tr>
@@ -3694,134 +4134,151 @@ function App() {
               <button className="primary" type="button" onClick={createLocalRule}>New rule</button>
             </div>
             <div className="rules editable-rules">
-              {localRules.map((rule) => (
-                <article data-testid="local-rule-row" key={rule.id}>
-                  <label>
-                    <span>Table</span>
-                    <select
-                      value={rule.tableId}
-                      onChange={(event) => {
-                        const tableId = event.target.value
-                        const nextFieldId = base.fields.find((field) => field.tableId === tableId)?.id || ''
+              {localRules.map((rule) => {
+                const isExpanded = expandedRuleId === rule.id
+                const matchedRecords = getRuleMatchedRecords(rule)
 
-                        updateLocalRuleField(rule.id, tableId, nextFieldId)
-                      }}
-                    >
-                      {base.tables.map((table) => (
-                        <option key={table.id} value={table.id}>
-                          {table.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Field</span>
-                    <select
-                      value={rule.fieldId}
-                      onChange={(event) => updateLocalRuleField(rule.id, rule.tableId, event.target.value)}
-                    >
-                      {base.fields
-                        .filter((field) => field.tableId === rule.tableId)
-                        .map((field) => (
-                          <option key={field.id} value={field.id}>
-                            {field.label}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Operator</span>
-                    <select
-                      value={rule.operator}
-                      onChange={(event) => {
-                        const operator = event.target.value as LocalRule['operator']
+                return (
+                  <article className={isExpanded ? 'expanded-rule-row' : 'compact-rule-row'} data-testid="local-rule-row" key={rule.id}>
+                    <div className="rule-row-summary">
+                      <div>
+                        <strong>{getCommandReason(rule)}</strong>
+                        <small>{getRulePreview(rule)}</small>
+                      </div>
+                      <span className="rule-match-count">{getRuleMatchCount(rule)} matches</span>
+                      <button type="button" onClick={() => setExpandedRuleId(isExpanded ? '' : rule.id)}>
+                        {isExpanded ? 'Collapse' : 'Edit'}
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <>
+                        <label>
+                          <span>Table</span>
+                          <select
+                            value={rule.tableId}
+                            onChange={(event) => {
+                              const tableId = event.target.value
+                              const nextFieldId = base.fields.find((field) => field.tableId === tableId)?.id || ''
 
-                        updateLocalRule(rule.id, {
-                          operator,
-                          value: ruleOperatorNeedsValue(operator) ? rule.value : '',
-                        })
-                      }}
-                    >
-                      {getRuleOperatorOptionsForField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId))
-                        .map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Value</span>
-                    {base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator) ? (
-                      <select value={rule.value} onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}>
-                        <option value="">Choose record</option>
-                        {getRecordsForTable(
-                          base,
-                          base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.linkedTableId || '',
-                        ).map((record) => (
-                          <option key={record.id} value={record.id}>
-                            {getRecordTitle(base, record)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        disabled={!ruleOperatorNeedsValue(rule.operator)}
-                        type={isDateField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)) && ruleOperatorNeedsValue(rule.operator) ? 'date' : 'text'}
-                        value={rule.value}
-                        onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}
-                        placeholder={ruleOperatorNeedsValue(rule.operator) ? 'Value to match' : 'Computed from today'}
-                      />
+                              updateLocalRuleField(rule.id, tableId, nextFieldId)
+                            }}
+                          >
+                            {base.tables.map((table) => (
+                              <option key={table.id} value={table.id}>
+                                {table.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Field</span>
+                          <select
+                            value={rule.fieldId}
+                            onChange={(event) => updateLocalRuleField(rule.id, rule.tableId, event.target.value)}
+                          >
+                            {base.fields
+                              .filter((field) => field.tableId === rule.tableId)
+                              .map((field) => (
+                                <option key={field.id} value={field.id}>
+                                  {field.label}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Operator</span>
+                          <select
+                            value={rule.operator}
+                            onChange={(event) => {
+                              const operator = event.target.value as LocalRule['operator']
+
+                              updateLocalRule(rule.id, {
+                                operator,
+                                value: ruleOperatorNeedsValue(operator) ? rule.value : '',
+                              })
+                            }}
+                          >
+                            {getRuleOperatorOptionsForField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId))
+                              .map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Value</span>
+                          {base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator) ? (
+                            <select value={rule.value} onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}>
+                              <option value="">Choose record</option>
+                              {getRecordsForTable(
+                                base,
+                                base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.linkedTableId || '',
+                              ).map((record) => (
+                                <option key={record.id} value={record.id}>
+                                  {getRecordTitle(base, record)}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              disabled={!ruleOperatorNeedsValue(rule.operator)}
+                              type={isDateField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)) && ruleOperatorNeedsValue(rule.operator) ? 'date' : 'text'}
+                              value={rule.value}
+                              onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}
+                              placeholder={ruleOperatorNeedsValue(rule.operator) ? 'Value to match' : 'Computed from today'}
+                            />
+                          )}
+                        </label>
+                        <label>
+                          <span>Action</span>
+                          <select
+                            value={rule.action}
+                            onChange={(event) => updateLocalRule(rule.id, { action: event.target.value as LocalRule['action'] })}
+                          >
+                            {ruleActionOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Destination</span>
+                          <select
+                            value={rule.destination}
+                            onChange={(event) => updateLocalRule(rule.id, { destination: event.target.value as LocalRule['destination'] })}
+                          >
+                            {ruleDestinationOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {getRuleValidationMessages(rule).length > 0 && (
+                          <div className="rule-validation-list">
+                            {getRuleValidationMessages(rule).map((message) => (
+                              <span key={message}>{message}</span>
+                            ))}
+                          </div>
+                        )}
+                        {matchedRecords.length > 0 && (
+                          <div className="rule-match-list">
+                            {matchedRecords.slice(0, 3).map((record) => (
+                              <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
+                                <strong>{getRecordTitle(base, record)}</strong>
+                                <small>{base.tables.find((table) => table.id === record.tableId)?.label || record.tableId}</small>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <button className="danger" type="button" onClick={() => deleteLocalRule(rule.id)}>Delete</button>
+                      </>
                     )}
-                  </label>
-                  <label>
-                    <span>Action</span>
-                    <select
-                      value={rule.action}
-                      onChange={(event) => updateLocalRule(rule.id, { action: event.target.value as LocalRule['action'] })}
-                    >
-                      {ruleActionOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Destination</span>
-                    <select
-                      value={rule.destination}
-                      onChange={(event) => updateLocalRule(rule.id, { destination: event.target.value as LocalRule['destination'] })}
-                    >
-                      {ruleDestinationOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <p>{getRulePreview(rule)}</p>
-                  {getRuleValidationMessages(rule).length > 0 && (
-                    <div className="rule-validation-list">
-                      {getRuleValidationMessages(rule).map((message) => (
-                        <span key={message}>{message}</span>
-                      ))}
-                    </div>
-                  )}
-                  <span className="rule-match-count">{getRuleMatchCount(rule)} matching records</span>
-                  {getRuleMatchedRecords(rule).length > 0 && (
-                    <div className="rule-match-list">
-                      {getRuleMatchedRecords(rule).slice(0, 3).map((record) => (
-                        <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                          <strong>{getRecordTitle(base, record)}</strong>
-                          <small>{base.tables.find((table) => table.id === record.tableId)?.label || record.tableId}</small>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <button className="danger" type="button" onClick={() => deleteLocalRule(rule.id)}>Delete</button>
-                </article>
-              ))}
+                  </article>
+                )
+              })}
             </div>
           </article>
 
@@ -3938,23 +4395,45 @@ function App() {
               <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add field">
                 <div className="modal-header">
                   <div>
-                    <span className="eyebrow">Field</span>
-                    <h2>Add field.</h2>
+                    <span className="eyebrow">Column behavior</span>
+                    <h2>Choose what this column does.</h2>
+                    <p className="modal-lede">Start with the behavior. Sundesk handles the field type underneath.</p>
                   </div>
                   <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
                 </div>
+                <div className="field-behavior-grid" aria-label="Column behavior choices">
+                  {fieldBehaviorOptions.map((option) => (
+                    <button
+                      aria-pressed={fieldDraft.type === option.value}
+                      className={fieldDraft.type === option.value ? 'selected' : ''}
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFieldDraft((current) => ({
+                        ...current,
+                        type: option.value,
+                        sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
+                        sourceFieldId: '',
+                      }))}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  ))}
+                </div>
                 <div className="build-form field-builder-form">
                   <label>
-                    <span>Field name</span>
+                    <span>Column name</span>
                     <input
+                      aria-label="Field name"
                       value={fieldDraft.label}
                       onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
                       placeholder="COI status"
                     />
                   </label>
                   <label>
-                    <span>Type</span>
+                    <span>Behavior type</span>
                     <select
+                      aria-label="Type"
                       value={fieldDraft.type}
                       onChange={(event) => {
                         const type = event.target.value as FieldType
@@ -4075,11 +4554,6 @@ function App() {
                     </label>
                   )}
                 </div>
-                <div className="build-grid field-grid modal-field-types">
-                  {buildFieldTypes.map((fieldType) => (
-                    <button key={fieldType} type="button">{fieldType}</button>
-                  ))}
-                </div>
                 <div className="modal-actions">
                   <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
                   <button className="primary" type="button" onClick={createField}>Add field</button>
@@ -4093,22 +4567,43 @@ function App() {
               <section className="build-modal" role="dialog" aria-modal="true" aria-label="Field settings">
                 <div className="modal-header">
                   <div>
-                    <span className="eyebrow">Field settings</span>
+                    <span className="eyebrow">Column behavior</span>
                     <h2>{settingsField.label}</h2>
+                    <p className="modal-lede">Change what this column does without leaving the grid.</p>
                   </div>
                   <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
                 </div>
+                <div className="field-behavior-grid" aria-label="Column behavior choices">
+                  {fieldBehaviorOptions.map((option) => (
+                    <button
+                      aria-pressed={settingsField.type === option.value}
+                      className={settingsField.type === option.value ? 'selected' : ''}
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateField(settingsField.id, {
+                        type: option.value,
+                        sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
+                        sourceFieldId: '',
+                      })}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  ))}
+                </div>
                 <div className="build-form field-builder-form">
                   <label>
-                    <span>Field name</span>
+                    <span>Column name</span>
                     <input
+                      aria-label="Field name"
                       value={settingsField.label}
                       onChange={(event) => updateField(settingsField.id, { label: event.target.value })}
                     />
                   </label>
                   <label>
-                    <span>Type</span>
+                    <span>Behavior type</span>
                     <select
+                      aria-label="Type"
                       value={settingsField.type}
                       onChange={(event) => updateField(settingsField.id, { type: event.target.value as FieldType })}
                     >
@@ -4257,7 +4752,7 @@ function App() {
           <article className="settings-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Digest</span>
+                <span className="eyebrow">Command send</span>
                 <h2>Morning summary.</h2>
               </div>
             </div>
@@ -4266,8 +4761,8 @@ function App() {
               <p><strong>Recipient.</strong> lindsaybelldesign@gmail.com</p>
               <p><strong>Time.</strong> 7:30 AM</p>
               <p><strong>Timezone.</strong> America/Toronto</p>
-              <p><strong>Includes.</strong> Today queue, overdue follow-ups, at-risk communities, meeting prep.</p>
-              <p><strong>Actions.</strong> Preview digest. Send test digest.</p>
+              <p><strong>Includes.</strong> Today queue, waiting items, at-risk communities, meeting prep.</p>
+              <p><strong>Actions.</strong> Preview command send. Send test summary.</p>
             </div>
           </article>
 
@@ -4285,61 +4780,58 @@ function App() {
             </div>
           </article>
 
-          <article className="settings-panel">
+          <article className="settings-panel data-access-panel">
             <div className="panel-title">
               <div>
-                <span className="eyebrow">Local engine</span>
-                <h2>Browser state.</h2>
+                <span className="eyebrow">Data and access</span>
+                <h2>Local workspace.</h2>
               </div>
               <span className="metric-pill">Local only</span>
             </div>
-            <div className="engine-stat-grid">
-              {localEngineStats.map((stat) => (
-                <div key={stat.label}>
-                  <span>{stat.label}</span>
-                  <strong>{stat.value}</strong>
-                </div>
-              ))}
-            </div>
             <div className="settings-list">
-              <p><strong>Storage.</strong> Tables, fields, records, dependencies, Rules, and Build views are saved in this browser.</p>
-              <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
+              <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved in this browser.</p>
               <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
-              {firestoreReadShadowState.collections && (
-                <p><strong>Remote counts.</strong> {firestoreReadShadowState.collections.map((item) => `${item.name}: ${item.count}`).join('. ')}.</p>
-              )}
               <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
+              <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
             </div>
-            {firestoreReadShadowState.collections && (
-              <div className="read-shadow-compare" aria-label="Read shadow comparison">
-                {firestoreReadShadowComparison.map((item) => (
-                  <div className={item.status} key={item.name}>
-                    <span>{item.name}</span>
-                    <strong>{item.local} local / {item.remote} remote</strong>
-                    <small>{item.delta === 0 ? 'Matched' : `${item.delta > 0 ? '+' : ''}${item.delta} remote delta`}</small>
+            <details className="settings-details">
+              <summary>Show workspace counts</summary>
+              <div className="engine-stat-grid">
+                {localEngineStats.map((stat) => (
+                  <div key={stat.label}>
+                    <span>{stat.label}</span>
+                    <strong>{stat.value}</strong>
                   </div>
                 ))}
               </div>
-            )}
-          </article>
-
-          <article className="settings-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Rule engine</span>
-                <h2>Read targets.</h2>
+              {firestoreReadShadowState.collections && (
+                <>
+                  <p className="settings-detail-note"><strong>Remote counts.</strong> {firestoreReadShadowState.collections.map((item) => `${item.name}: ${item.count}`).join('. ')}.</p>
+                  <div className="read-shadow-compare" aria-label="Read shadow comparison">
+                    {firestoreReadShadowComparison.map((item) => (
+                      <div className={item.status} key={item.name}>
+                        <span>{item.name}</span>
+                        <strong>{item.local} local / {item.remote} remote</strong>
+                        <small>{item.delta === 0 ? 'Matched' : `${item.delta > 0 ? '+' : ''}${item.delta} remote delta`}</small>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </details>
+            <details className="settings-details">
+              <summary>Show command routing</summary>
+              <div className="rule-destination-grid" data-testid="rule-destination-grid">
+                {ruleDestinationStats.map((stat) => (
+                  <div key={stat.label}>
+                    <span>{stat.label}</span>
+                    <strong>{stat.matches}</strong>
+                    <small>{stat.rules} rules</small>
+                  </div>
+                ))}
               </div>
-              <span className="metric-pill">{localRules.length} Rules</span>
-            </div>
-            <div className="rule-destination-grid" data-testid="rule-destination-grid">
-              {ruleDestinationStats.map((stat) => (
-                <div key={stat.label}>
-                  <span>{stat.label}</span>
-                  <strong>{stat.matches}</strong>
-                  <small>{stat.rules} Rules</small>
-                </div>
-              ))}
-            </div>
+              <p className="settings-detail-note">{localRules.length} rules route records into command surfaces.</p>
+            </details>
           </article>
 
           <article className="settings-panel">
@@ -4353,7 +4845,7 @@ function App() {
             <div className="settings-list">
               <p><strong>Review privacy.</strong> Show the warning again.</p>
               <p><strong>Choose theme.</strong> Keep or change the saved theme.</p>
-              <p><strong>Check digest.</strong> Recipient, time, timezone, and included items.</p>
+              <p><strong>Check summary.</strong> Recipient, time, timezone, and included items.</p>
               <p><strong>Review starter tables.</strong> No data will be deleted.</p>
             </div>
           </article>

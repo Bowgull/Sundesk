@@ -20,7 +20,7 @@ export type CommunitySignal = {
 
 export type LinkedRecord = {
   id: string
-  type: 'Task' | 'Follow-up' | 'Meeting item' | 'Approval' | 'Risk'
+  type: 'Work' | 'Waiting On' | 'Meeting item' | 'Approval' | 'Risk'
   title: string
   detail: string
   priority: Priority
@@ -66,17 +66,17 @@ export const priorityItems: PriorityItem[] = [
     title: 'Confirm COI status for Halifax.',
     community: 'Halifax',
     priority: 'fire',
-    summary: 'Blocks venue readiness. Event date is 7 days out. Last follow-up was 3 days ago.',
+    summary: 'Blocks venue readiness. Event date is 7 days out. Last nudge was 3 days ago.',
     reasons: ['COI status missing', 'Venue readiness blocked', 'Halifax at risk'],
     linkedRecords: ['Halifax', 'Venue readiness', 'Venue lead nudge'],
   },
   {
     id: 'task-permit-moncton',
-    title: 'Send permit follow-up to Moncton.',
+    title: 'Send permit nudge to Moncton.',
     community: 'Moncton',
     priority: 'waiting',
-    summary: 'Permit update gates site map review. The linked follow-up is overdue.',
-    reasons: ['Permit status unclear', 'Site map review waiting', 'Follow-up overdue'],
+    summary: 'Permit update gates site map review. The waiting item is overdue.',
+    reasons: ['Permit status unclear', 'Site map review waiting', 'Waiting item overdue'],
     linkedRecords: ['Moncton', 'Permit approval', 'City contact'],
   },
   {
@@ -84,9 +84,9 @@ export const priorityItems: PriorityItem[] = [
     title: 'Build Charlottetown meeting prep.',
     community: 'Charlottetown',
     priority: 'prep',
-    summary: 'Meeting is tomorrow. 2 open tasks and 1 unanswered program note roll into the agenda.',
-    reasons: ['Meeting tomorrow', '2 open tasks', '1 follow-up waiting'],
-    linkedRecords: ['Meeting', '2 tasks', '1 follow-up'],
+    summary: 'Meeting is tomorrow. 2 open work items and 1 unanswered program note roll into the agenda.',
+    reasons: ['Meeting tomorrow', '2 open work items', '1 waiting item'],
+    linkedRecords: ['Meeting', '2 work items', '1 waiting item'],
   },
 ]
 
@@ -102,14 +102,14 @@ export const communities: CommunitySignal[] = [
 export const linkedRecords: LinkedRecord[] = [
   {
     id: 'linked-task-coi',
-    type: 'Task',
+    type: 'Work',
     title: 'Confirm COI status.',
     detail: 'Blocks venue readiness.',
     priority: 'fire',
   },
   {
     id: 'linked-followup-venue',
-    type: 'Follow-up',
+    type: 'Waiting On',
     title: 'Venue lead nudge.',
     detail: 'Overdue by 1 day.',
     priority: 'waiting',
@@ -133,8 +133,8 @@ export const selectedFields: FieldDefinition[] = [
 export const automationRules: AutomationRule[] = [
   {
     id: 'rule-overdue-followup',
-    when: 'a follow-up is overdue',
-    then: 'put it in Today and include it in the morning digest',
+    when: 'a waiting item is overdue',
+    then: 'put it in Today and include it in the morning summary',
   },
   {
     id: 'rule-blocked-status',
@@ -180,14 +180,14 @@ export const tables: TableDefinition[] = [
   },
   {
     id: 'tasks',
-    name: 'Tasks',
+    name: 'Work',
     purpose: 'Work items Lindsay can create, assign, link, block, and close.',
     records: 14,
   },
   {
     id: 'followups',
-    name: 'Follow-ups',
-    purpose: 'Waiting loops, nudges, owners, and due dates.',
+    name: 'Waiting On',
+    purpose: 'People, approvals, and updates that owe the next move.',
     records: 9,
   },
   {
@@ -225,15 +225,15 @@ export const savedViews: SavedView[] = [
   },
   {
     id: 'task-grid',
-    name: 'Task grid',
+    name: 'Work grid',
     type: 'Grid',
-    rule: 'All open tasks. Sorted by due date and priority.',
+    rule: 'All open work. Sorted by due date and priority.',
   },
   {
     id: 'status-board',
     name: 'Status board',
     type: 'Kanban',
-    rule: 'Tasks grouped by status. Uses the Status field.',
+    rule: 'Work grouped by status. Uses the Status field.',
   },
   {
     id: 'event-calendar',
@@ -245,7 +245,7 @@ export const savedViews: SavedView[] = [
     id: 'dependency-map',
     name: 'Dependency map',
     type: 'Gantt',
-    rule: 'Tasks with start dates, due dates, and dependency links.',
+    rule: 'Work with start dates, due dates, and dependency links.',
   },
 ]
 
@@ -259,15 +259,15 @@ export const taskDependencies: TaskDependency[] = [
   },
   {
     id: 'permit-map',
-    task: 'Send permit follow-up.',
+    task: 'Send permit nudge.',
     dependsOn: 'Site map review.',
-    linkedTable: 'Follow-ups',
+    linkedTable: 'Waiting On',
     reason: 'Site map review waits for the permit answer.',
   },
   {
     id: 'prep-agenda',
     task: 'Build meeting prep.',
-    dependsOn: 'Open tasks and risks.',
+    dependsOn: 'Open work and risks.',
     linkedTable: 'Meetings',
     reason: 'Agenda is built from linked work, not memory.',
   },

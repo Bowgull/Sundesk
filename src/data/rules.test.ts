@@ -103,6 +103,6 @@ describe('rule helpers', () => {
     expect(task).toBeDefined()
     expect(lookupField).toBeDefined()
     expect(getFieldDisplayValue(workbase, task!, lookupField!)).toBe('2026-05-22')
-    expect(getRulePreview(workbase, rule)).toBe('Tasks.Community is linked to "Halifax". show in screen: Today.')
+    expect(getRulePreview(workbase, rule)).toBe('Work.Community is linked to "Halifax". show in screen: Today.')
   })
 })

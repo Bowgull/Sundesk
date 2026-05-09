@@ -95,6 +95,22 @@ export const storedMigrationReport: StoredMigrationReport = {
   buildViewReset: false,
 }
 
+const canonicalTableLabels: Record<string, Pick<Workbase['tables'][number], 'label' | 'description'>> = {
+  tasks: {
+    label: 'Work',
+    description: 'Work Lindsay can create, link, block, and close.',
+  },
+  followups: {
+    label: 'Waiting On',
+    description: 'People, approvals, and updates that owe the next move.',
+  },
+}
+
+const canonicalFieldLabels: Record<string, string> = {
+  'communities:openTaskCount': 'Open work',
+  'meetings:tasks': 'Work',
+}
+
 export function cloneWorkbase(base: Workbase): Workbase {
   return {
     tables: base.tables.map((table) => ({ ...table })),
@@ -193,15 +209,24 @@ function isLocalGridView(value: unknown): value is LocalGridView {
 
 function normalizeStoredWorkbase(base: Workbase) {
   const defaultBase = cloneWorkbase(workbase)
-  const tables = base.tables.filter(
-    (table) =>
+  const tables = base.tables
+    .filter((table) =>
       typeof table.id === 'string' &&
       typeof table.label === 'string' &&
       typeof table.description === 'string' &&
       typeof table.primaryFieldId === 'string',
-  )
+    )
+    .map((table) => ({
+      ...table,
+      ...canonicalTableLabels[table.id],
+    }))
   const tableIds = new Set(tables.map((table) => table.id))
-  const fields = base.fields.filter((field) => isFieldDefinition(field) && tableIds.has(field.tableId))
+  const fields = base.fields
+    .filter((field) => isFieldDefinition(field) && tableIds.has(field.tableId))
+    .map((field) => ({
+      ...field,
+      label: canonicalFieldLabels[`${field.tableId}:${field.id}`] || field.label,
+    }))
   const fieldKeys = new Set(fields.map((field) => `${field.tableId}:${field.id}`))
   const records = base.records
     .filter((record) => isBaseRecord(record) && tableIds.has(record.tableId))

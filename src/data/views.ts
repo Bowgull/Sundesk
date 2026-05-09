@@ -115,7 +115,7 @@ export function getMeetingDigestPreview(base: Workbase, prep: MeetingPrep) {
   const sourceRecords = getUniqueAgendaSourceRecords(base, prep)
 
   return [
-    'Daily digest preview.',
+    'Command send preview.',
     `Meeting: ${asSentence(getRecordTitle(base, prep.meeting))}`,
     `Agenda items: ${prep.agenda.length}. Source records: ${sourceRecords.length}.`,
     '',
@@ -278,7 +278,7 @@ export function getMeetingPrep(base: Workbase, meetingId: string, todayDate: str
   const nextSteps = linkedTasks.filter((record) => getStringValue(record, 'status') !== 'Done')
   const sections = [
     { id: 'blocked', label: 'Blocked items', records: blockedItems },
-    { id: 'followups', label: 'Overdue follow-ups', records: overdueFollowups },
+    { id: 'followups', label: 'Waiting On', records: overdueFollowups },
     { id: 'approvals', label: 'Unresolved approvals', records: unresolvedApprovals },
     { id: 'risks', label: 'Risks', records: risks },
     { id: 'next', label: 'Next steps', records: nextSteps },
@@ -297,7 +297,7 @@ export function getMeetingPrep(base: Workbase, meetingId: string, todayDate: str
       title: 'Clear blockers first.',
       detail: blockedItems.length > 0
         ? blockedItems.map((record) => getRecordTitle(base, record)).join(', ')
-        : 'No blocked linked tasks.',
+        : 'No blocked linked work.',
       recordIds: blockedItems.map((record) => record.id),
     },
     {
@@ -305,7 +305,7 @@ export function getMeetingPrep(base: Workbase, meetingId: string, todayDate: str
       title: 'Settle approvals and waiting loops.',
       detail: [...unresolvedApprovals, ...overdueFollowups].length > 0
         ? [...unresolvedApprovals, ...overdueFollowups].map((record) => `${getRecordTitle(base, record)}: ${getRecordContext(record)}.`).join(' ')
-        : 'No open approvals or overdue follow-ups surfaced.',
+        : 'No open approvals or waiting items surfaced.',
       recordIds: [...unresolvedApprovals, ...overdueFollowups].map((record) => record.id),
     },
     {
@@ -525,8 +525,8 @@ export function getScreenStats(base: Workbase) {
 
   return [
     { label: 'Communities', value: communityRecords.length, detail: `${atRiskCommunityRecords.length} need attention` },
-    { label: 'Open tasks', value: openTaskRecords.length, detail: `${blockedTaskRecords.length} blocked` },
-    { label: 'Waiting loops', value: waitingFollowupRecords.length, detail: `${openApprovalRecords.length} open approvals` },
+    { label: 'Open work', value: openTaskRecords.length, detail: `${blockedTaskRecords.length} blocked` },
+    { label: 'Waiting On', value: waitingFollowupRecords.length, detail: `${openApprovalRecords.length} approvals open` },
     { label: 'Risks', value: riskRecords.length, detail: `${highRiskRecords.length} high` },
   ]
 }

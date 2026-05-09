@@ -10,32 +10,34 @@ test.beforeEach(async ({ page }) => {
   })
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Today builds the day.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Today builds the day.' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Preview unavailable' })).toBeDisabled()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Preview summary' })).toBeDisabled()
   await expect(page.getByTestId('today-lane-now')).toBeVisible()
   await expect(page.getByTestId('today-lane-waiting')).toBeVisible()
   await expect(page.getByTestId('today-lane-next')).toBeVisible()
   await expect(page.getByTestId('today-lane-rules')).toHaveCount(0)
+  await page.getByText('Show why items surfaced').click()
   await expect(page.getByTestId('today-rule-receipts').getByText('Rule matched').first()).toBeVisible()
-  await expect(page.getByTestId('today-rule-receipts').getByText('No automation ran').first()).toBeVisible()
+  await expect(page.getByTestId('today-rule-receipts').getByText('No send happened').first()).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText('Blocked by: Venue readiness may slip.')).toBeVisible()
-  await page.getByRole('button', { name: 'Open setup' }).click()
-  await expect(page.getByRole('heading', { name: 'Browser state.' })).toBeVisible()
+  await page.getByLabel('Onboarding status').getByRole('button', { name: 'Open Build' }).click()
+  await expect(page.getByTestId('build-screen')).toBeVisible()
 })
 
 test('Build renders table workshop, record drawer, dependency editor, and Rules panel', async ({ page }) => {
   await page.goto('/#build')
 
-  await expect(page.getByRole('heading', { name: 'Risks' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
   await expect(page.getByTestId('build-table-tasks')).toBeVisible()
   await page.getByTestId('build-table-tasks').click()
 
-  await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
+  await page.getByTestId('edit-record-task_coi_halifax').click()
   await expect(page.getByTestId('record-drawer')).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('Blocked')
   await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('2026-05-12')
@@ -44,7 +46,8 @@ test('Build renders table workshop, record drawer, dependency editor, and Rules 
   await expect(page.getByTestId('dependency-editor').getByPlaceholder('Search records')).toBeVisible()
   await expect(page.getByTestId('dependency-editor').getByRole('button', { name: 'Add dependency' })).toBeDisabled()
   await expect(page.getByTestId('rules-panel').getByRole('heading', { name: 'When this happens, do this.' })).toBeVisible()
-  await expect(page.getByTestId('rules-panel').getByText('matching records').first()).toBeVisible()
+  await expect(page.getByTestId('rules-panel').getByText('matches').first()).toBeVisible()
+  await expect(page.getByTestId('local-rule-row').first().getByRole('button', { name: 'Edit' })).toBeVisible()
 })
 
 test('Build record drawer supports linked-record picker editing', async ({ page }) => {
@@ -61,7 +64,7 @@ test('Build record drawer supports linked-record picker editing', async ({ page 
 test('Build linked-record edits persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
 
   const drawer = page.getByTestId('record-drawer')
 
@@ -163,6 +166,7 @@ test('Build menus and non-destructive modals close on Escape', async ({ page }) 
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: 'Add table' })).toBeHidden()
 
+  await page.getByText('Table options').click()
   await page.getByRole('button', { name: 'Delete table' }).click()
   await expect(page.getByRole('dialog', { name: 'Delete table' })).toBeVisible()
   await page.keyboard.press('Escape')
@@ -175,7 +179,7 @@ test('Build toolbar exposes ordered view controls and persists density', async (
   await page.getByTestId('build-table-tasks').click()
 
   await expect(page.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
-  await expect(page.getByRole('tab', { name: /Tasks/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByLabel('View')).toBeVisible()
   await expect(page.getByLabel('Fields')).toBeVisible()
   await expect(page.getByLabel('Filter')).toBeVisible()
@@ -199,13 +203,14 @@ test('Build toolbar colour applies semantic row tinting', async ({ page }) => {
 
   await page.getByLabel('Colour').selectOption('status')
   await expect(page.getByRole('row', { name: /Confirm COI status/ })).toHaveClass(/grid-row-color-coral/)
-  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toHaveClass(/grid-row-color-gold/)
+  await expect(page.getByRole('row', { name: /Send permit nudge/ })).toHaveClass(/grid-row-color-gold/)
   await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toHaveClass(/grid-row-color-lavender/)
 })
 
 test('Build chips use semantic colour and field type treatment', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
 
   await expect(page.getByTestId('grid-cell-task_coi_halifax-status').locator('.select-tag')).toHaveClass(/chip-coral/)
   await expect(page.getByTestId('grid-cell-task_permit_moncton-status').locator('.select-tag')).toHaveClass(/chip-gold/)
@@ -251,7 +256,7 @@ test('Build created records persist across reloads', async ({ page }) => {
 test('Build adds and removes a dependency link', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
 
   const editor = page.getByTestId('dependency-editor')
 
@@ -271,7 +276,7 @@ test('Build adds and removes a dependency link', async ({ page }) => {
 test('Build dependencies persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
 
   const editor = page.getByTestId('dependency-editor')
 
@@ -281,7 +286,7 @@ test('Build dependencies persist across reloads', async ({ page }) => {
   await editor.getByRole('button', { name: 'Add dependency' }).click()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Build Charlottetown meeting prep/ }).click()
+  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
 
   const dependencyRow = page.locator('.editable-dependency-list li').filter({ hasText: 'Permit approval' })
 
@@ -298,34 +303,36 @@ test('Build table create and rename persist across reloads', async ({ page }) =>
   await addTableModal.getByLabel('Table name').fill('Partners')
   await addTableModal.getByLabel('Purpose').fill('Groups tied to local work.')
   await addTableModal.getByRole('button', { name: 'Add table' }).click()
-  await expect(page.getByRole('heading', { name: 'Partners' })).toBeVisible()
-  await page.getByRole('button', { name: 'Rename table' }).click()
+  await expect(page.getByRole('tab', { name: /Partners/ })).toHaveAttribute('aria-selected', 'true')
+  await page.getByText('Table options').click()
+  await page.getByRole('button', { name: 'Rename' }).click()
 
   const settingsModal = page.getByRole('dialog', { name: 'Table settings' })
 
   await settingsModal.getByLabel('Table name').fill('Vendors')
   await settingsModal.getByRole('button', { name: 'Save table' }).click()
-  await expect(page.getByRole('heading', { name: 'Vendors' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Vendors/ })).toHaveAttribute('aria-selected', 'true')
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Vendors' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Vendors/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByTestId('build-table-partners').getByText('Vendors')).toBeVisible()
 })
 
 test('Build table delete repairs linked fields and persists', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-people').click()
+  await page.getByText('Table options').click()
   await page.getByRole('button', { name: 'Delete table' }).click()
   await page.getByRole('dialog', { name: 'Delete table' }).getByRole('button', { name: 'Delete table' }).click()
   await expect(page.getByTestId('build-table-people')).toBeHidden()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Confirm COI status/ }).click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 
   await page.reload()
   await expect(page.getByTestId('build-table-people')).toBeHidden()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('row', { name: /Confirm COI status/ }).click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 })
@@ -347,7 +354,7 @@ test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
   await savedView.getByRole('button', { name: 'Pin' }).click()
   await expect(page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ })).toBeVisible()
   await page.getByLabel('Pinned Build views').getByRole('button', { name: /view 1/ }).click()
-  await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
 
   await savedView.getByRole('button', { name: 'Delete' }).click()
   await expect(page.getByLabel('View name')).toBeHidden()
@@ -438,17 +445,18 @@ test('Build Rule edits persist as read-only previews', async ({ page }) => {
   await rule.getByLabel('Operator').selectOption('is')
   await rule.getByLabel('Value').fill('Blocked')
   await rule.getByLabel('Destination').selectOption('today')
-  await expect(rule.getByText('Tasks.Status is "Blocked". show in screen: Today.')).toBeVisible()
-  await expect(rule.getByText('1 matching records')).toBeVisible()
+  await expect(rule.getByText('Work.Status is "Blocked". show in screen: Today.')).toBeVisible()
+  await expect(rule.getByText('1 matches')).toBeVisible()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
 
   const persistedRule = page.getByTestId('local-rule-row').first()
 
-  await expect(persistedRule.getByText('Tasks.Status is "Blocked". show in screen: Today.')).toBeVisible()
-  await expect(persistedRule.getByText('1 matching records')).toBeVisible()
+  await expect(persistedRule.getByText('Work.Status is "Blocked". show in screen: Today.')).toBeVisible()
+  await expect(persistedRule.getByText('1 matches')).toBeVisible()
   await page.goto('/#today')
-  await expect(page.getByTestId('today-rule-receipts').getByText('No automation ran').first()).toBeVisible()
+  await page.getByText('Show why items surfaced').click()
+  await expect(page.getByTestId('today-rule-receipts').getByText('No send happened').first()).toBeVisible()
 })
 
 test('Build edits reflect in Today and Timeline after reload', async ({ page }) => {
@@ -474,20 +482,20 @@ test('Build edits reflect in Today and Timeline after reload', async ({ page }) 
 
 test('Timeline filters records and keeps rule receipts visible', async ({ page }) => {
   await page.goto('/#timeline')
-  await expect(page.getByRole('heading', { name: 'Records by date.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Timeline has 5 ways to look.' })).toBeVisible()
 
   await page.getByPlaceholder('Find records').fill('permit')
 
   await expect(page.getByTestId('timeline-row-task_permit_moncton')).toBeVisible()
   await expect(page.getByTestId('timeline-row-approval_permit_moncton')).toBeVisible()
-  await expect(page.getByTestId('timeline-list').getByText('Rule: Tasks.Due date is within 7 days. show in screen: Timeline.')).toBeVisible()
+  await expect(page.getByTestId('timeline-list').getByText('Rule: Work.Due date is within 7 days. show in screen: Timeline.')).toBeVisible()
 })
 
 test('Daily support actions open real local surfaces', async ({ page }) => {
-  await page.goto('/#tasks')
-  await page.getByRole('button', { name: 'Open dependency editor' }).click()
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
   await expect(page.getByTestId('record-drawer')).toBeVisible()
-  await page.getByTestId('record-drawer').getByRole('button', { name: 'Close' }).click()
 
   await page.goto('/#followups')
   await page.getByRole('button', { name: 'Adjust rule' }).click()
@@ -495,13 +503,14 @@ test('Daily support actions open real local surfaces', async ({ page }) => {
 
   await page.goto('/#meetings')
   await expect(page.getByTestId('meeting-prep').getByText('Computed prep').first()).toBeVisible()
+  await expect(page.getByTestId('meeting-weekly-note').getByText('Generated weekly note').first()).toBeVisible()
   await expect(page.getByTestId('meeting-prep').getByText('Source records').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByText('Generated agenda').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByText('Assign next steps.').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export .md' }).first()).toBeVisible()
-  await page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview digest' }).first().click()
-  await expect(page.getByTestId('agenda-digest-preview').getByText('Daily digest preview.').first()).toBeVisible()
+  await page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview summary' }).first().click()
+  await expect(page.getByTestId('agenda-digest-preview').getByText('Command send preview.').first()).toBeVisible()
   await expect(page.getByTestId('agenda-digest-preview').getByText('Agenda items: 5. Source records: 2.').first()).toBeVisible()
   await expect(page.getByTestId('meeting-prep').getByText('Next steps').first()).toBeVisible()
   await page.getByRole('button', { name: 'Open next meeting' }).click()
@@ -509,18 +518,19 @@ test('Daily support actions open real local surfaces', async ({ page }) => {
   await expect(page.getByTestId('record-drawer').getByTestId('meeting-prep')).toBeVisible()
 })
 
-test('Settings exposes local engine and Rule destination health', async ({ page }) => {
+test('Settings keeps data status visible and engine details manual', async ({ page }) => {
   await page.goto('/#settings')
 
-  await expect(page.getByRole('heading', { name: 'Browser state.' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Paper Light' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sunrise Soft' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Paper Light' }).click()
-  await expect(page.locator('.app')).toHaveAttribute('data-theme', 'paper-light')
-  await expect(page.getByRole('button', { name: 'Paper Light' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Local workspace.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Command Center' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Command Center' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Graphite' }).click()
+  await expect(page.locator('.app')).toHaveAttribute('data-theme', 'graphite')
+  await expect(page.getByRole('button', { name: 'Graphite' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('Write gate. Disabled. No Firestore writes can run in this build.')).toBeVisible()
   await expect(page.getByText('Read shadow. Off. Local storage is the active source.')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Read targets.' })).toBeVisible()
+  await expect(page.getByText('Show workspace counts')).toBeVisible()
+  await page.getByText('Show command routing').click()
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Timeline')).toBeVisible()
 })
