@@ -6,6 +6,7 @@ export type FirebaseSetupEnv = {
   VITE_FIREBASE_MESSAGING_SENDER_ID?: string
   VITE_FIREBASE_APP_ID?: string
   VITE_SUNDESK_ALLOWED_EMAILS?: string
+  VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL?: string
   VITE_SUNDESK_FIRESTORE_WRITES?: string
 }
 
@@ -16,7 +17,9 @@ export type FirebaseSetupState = {
   nextAction: string
   status: 'local' | 'partial' | 'ready' | 'write-ready'
   statusLabel: string
+  writeApprovalRecorded: boolean
   writeGateEnabled: boolean
+  writeIntentEnabled: boolean
 }
 
 export type FirebaseLaunchReadinessStatus =
@@ -65,7 +68,9 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
     .map((item) => item.toLowerCase())).size
   const hasAnyConfigValue = requiredConfigKeys.some((key) => String(env[key] || '').trim())
   const configComplete = missingConfigKeys.length === 0
-  const writeGateEnabled = env.VITE_SUNDESK_FIRESTORE_WRITES === 'enabled'
+  const writeIntentEnabled = env.VITE_SUNDESK_FIRESTORE_WRITES === 'enabled'
+  const writeApprovalRecorded = env.VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL === 'approved'
+  const writeGateEnabled = writeIntentEnabled && writeApprovalRecorded
 
   if (!hasAnyConfigValue && allowlistCount === 0) {
     return {
@@ -75,7 +80,9 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
       nextAction: 'Add Firebase config and approved accounts before hosted use.',
       status: 'local',
       statusLabel: 'Local mode',
+      writeApprovalRecorded,
       writeGateEnabled,
+      writeIntentEnabled,
     }
   }
 
@@ -87,7 +94,9 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
       nextAction: configComplete ? 'Add approved Google accounts in private config.' : 'Finish Firebase config in the private environment.',
       status: 'partial',
       statusLabel: 'Setup incomplete',
+      writeApprovalRecorded,
       writeGateEnabled,
+      writeIntentEnabled,
     }
   }
 
@@ -95,10 +104,16 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
     allowlistCount,
     configComplete,
     missingConfigKeys,
-    nextAction: writeGateEnabled ? 'Run a fake-data write smoke test after approval.' : 'Verify Google sign-in before enabling writes.',
+    nextAction: writeGateEnabled
+      ? 'Run a fake-data write smoke test after approval.'
+      : writeIntentEnabled
+        ? 'Record write approval before remote writes can run.'
+        : 'Verify Google sign-in before enabling writes.',
     status: writeGateEnabled ? 'write-ready' : 'ready',
     statusLabel: writeGateEnabled ? 'Write ready' : 'Sign-in ready',
+    writeApprovalRecorded,
     writeGateEnabled,
+    writeIntentEnabled,
   }
 }
 
@@ -134,7 +149,7 @@ export function getFirebaseLaunchReadinessSummary(
       label: 'Firestore writes',
       detail: inputs.writeApproved
         ? 'Write approval is recorded.'
-        : setupState.writeGateEnabled
+        : setupState.writeIntentEnabled
           ? 'Write gate is enabled. Write approval is still needed before remote writes.'
           : 'Write approval is needed before enabling remote writes.',
       status: inputs.writeApproved ? 'local-ready' : 'write-approval-needed',
@@ -144,6 +159,8 @@ export function getFirebaseLaunchReadinessSummary(
       label: 'No Firebase writes',
       detail: setupState.writeGateEnabled
         ? 'Write gate is enabled. Confirm write approval before using hosted data.'
+        : setupState.writeIntentEnabled
+          ? 'Write gate is armed without approval. Remote writes remain blocked.'
         : 'Write gate is disabled. No remote writes can run in this build.',
       status: setupState.writeGateEnabled ? 'write-approval-needed' : 'local-ready',
     },

@@ -46,12 +46,20 @@ describe('Firestore read shadow gates', () => {
     }).enabled).toBe(false)
   })
 
-  it('only opens the write gate with the explicit write flag', () => {
+  it('only opens the write gate with the explicit write flag and approval record', () => {
     expect(getFirestoreWriteGateState({ VITE_SUNDESK_FIRESTORE_WRITES: 'true' }).enabled).toBe(false)
     expect(getFirestoreWriteGateState({ VITE_SUNDESK_FIRESTORE_WRITES: 'enabled' })).toEqual({
+      enabled: false,
+      label: 'Approval needed',
+      detail: 'Write gate is armed, but remote writes stay blocked until approval is recorded.',
+    })
+    expect(getFirestoreWriteGateState({
+      VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL: 'approved',
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    })).toEqual({
       enabled: true,
       label: 'Enabled',
-      detail: 'Firestore writes are allowed by environment gate.',
+      detail: 'Firestore writes are allowed by environment gate and approval record.',
     })
   })
 

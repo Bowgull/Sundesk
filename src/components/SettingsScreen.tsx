@@ -329,7 +329,7 @@ export function SettingsScreen({
           <p><strong>Workspace.</strong> {workspaceLine}</p>
           <p><strong>Firebase setup.</strong> {firebaseSetupState.statusLabel}. {firebaseSetupState.configComplete ? 'Config present.' : `${firebaseSetupState.missingConfigKeys.length} config fields missing.`} {firebaseSetupState.allowlistCount} approved accounts in local config.</p>
           <p><strong>Next setup step.</strong> {firebaseSetupState.nextAction}</p>
-          <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore when the write gate is enabled.</p>
+          <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore only when the write gate and approval record are enabled.</p>
           <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
           <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
           <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>

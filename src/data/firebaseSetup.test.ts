@@ -49,15 +49,29 @@ describe('firebase setup state', () => {
     })
   })
 
-  it('reports write ready only when the explicit write gate is enabled', () => {
+  it('reports write ready only when the explicit write gate and approval record are enabled', () => {
     expect(getFirebaseSetupState({
       ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    })).toMatchObject({
+      status: 'ready',
+      statusLabel: 'Sign-in ready',
+      nextAction: 'Record write approval before remote writes can run.',
+      writeApprovalRecorded: false,
+      writeGateEnabled: false,
+      writeIntentEnabled: true,
+    })
+    expect(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL: 'approved',
       VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
     })).toMatchObject({
       status: 'write-ready',
       statusLabel: 'Write ready',
       nextAction: 'Run a fake-data write smoke test after approval.',
+      writeApprovalRecorded: true,
       writeGateEnabled: true,
+      writeIntentEnabled: true,
     })
   })
 
@@ -93,7 +107,8 @@ describe('firebase setup state', () => {
       nextAction: 'Finish Firebase config in the private environment.',
       status: 'partial',
       statusLabel: 'Setup incomplete',
-      writeGateEnabled: true,
+      writeGateEnabled: false,
+      writeIntentEnabled: true,
     })
 
     expect(getFirebaseSetupState({
@@ -106,7 +121,8 @@ describe('firebase setup state', () => {
       nextAction: 'Add approved Google accounts in private config.',
       status: 'partial',
       statusLabel: 'Setup incomplete',
-      writeGateEnabled: true,
+      writeGateEnabled: false,
+      writeIntentEnabled: true,
     })
   })
 })
@@ -203,15 +219,16 @@ describe('firebase launch readiness summary', () => {
       status: 'write-approval-needed',
     })
     expect(summary.items.find((item) => item.id === 'no-firebase-writes')).toMatchObject({
-      detail: 'Write gate is enabled. Confirm write approval before using hosted data.',
-      status: 'write-approval-needed',
+      detail: 'Write gate is armed without approval. Remote writes remain blocked.',
+      status: 'local-ready',
     })
     expect(summary.readyForLaunch).toBe(false)
   })
 
-  it('keeps launch blocked when the write gate is enabled before remote write use', () => {
+  it('keeps launch blocked when approved remote writes are enabled before remote write use', () => {
     const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState({
       ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL: 'approved',
       VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
     }), {
       backupRehearsed: true,

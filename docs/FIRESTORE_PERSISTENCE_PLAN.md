@@ -33,13 +33,14 @@ The database stores source records and user configuration. The app derives the r
 
 ## Write Gate
 
-Firestore writes stay behind a single explicit gate.
+Firestore writes stay behind a write intent flag and a separate approval record.
 
 Required before any write path ships:
 
 - `VITE_SUNDESK_FIRESTORE_WRITES=enabled`.
+- `VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL=approved`.
 - Authenticated allowlisted user.
-- Settings screen shows `Firestore writes enabled`.
+- Settings screen shows Firestore writes enabled after both values are present.
 - Tests cover disabled writes, failed writes, and local fallback.
 
 Default state:

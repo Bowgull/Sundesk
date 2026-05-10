@@ -170,6 +170,22 @@ describe('Firestore workspace client', () => {
 
   it('saves snapshots to the shared workspace path when the write gate is enabled', async () => {
     const writes: Array<{ path: string, updatedByUid: string, updatedByEmail?: string }> = []
+    const defaultEducationState = getDefaultSundeskEducationState()
+    const educationState = {
+      ...defaultEducationState,
+      copyMode: {
+        rupaulMode: true,
+        updatedAt: '2026-05-10T12:00:00.000Z',
+      },
+      lab: {
+        ...defaultEducationState.lab,
+        activeModuleId: 'tags',
+      },
+      meetingPdf: {
+        templateVersion: 1 as const,
+        lastExportedMeetingId: 'meeting_charlottetown',
+      },
+    }
     const client = createFirestoreWorkspaceClient({
       store: {
         async getDocument() {
@@ -190,6 +206,7 @@ describe('Firestore workspace client', () => {
       base: workbase,
       rules: getDefaultLocalRules(),
       buildViewState: getDefaultFirestoreBuildViewState(),
+      educationState,
       theme: 'graphite',
       metadata: {
         updatedAt: '2026-05-10T12:00:00.000Z',
@@ -204,6 +221,9 @@ describe('Firestore workspace client', () => {
       updatedByUid: 'lindsay',
       updatedByEmail: 'lindsay@example.com',
     })
+    expect(saved.snapshot.educationState?.copyMode.rupaulMode).toBe(true)
+    expect(saved.snapshot.educationState?.lab.activeModuleId).toBe('tags')
+    expect(saved.snapshot.educationState?.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
     expect(writes).toEqual([{
       path: 'workspaces/lindsay-sundesk/state/current',
       updatedByUid: 'lindsay',

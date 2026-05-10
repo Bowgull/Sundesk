@@ -4,6 +4,7 @@ type FirestoreEnv = {
   VITE_FIREBASE_PROJECT_ID?: string
   VITE_SUNDESK_FIRESTORE_READ_SHADOW?: string
   VITE_SUNDESK_FIRESTORE_READ_SHADOW_USER_ID?: string
+  VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL?: string
   VITE_SUNDESK_FIRESTORE_WRITES?: string
 }
 
@@ -45,19 +46,31 @@ function getDefaultFirestoreEnv(): FirestoreEnv {
 }
 
 export function getFirestoreWriteGateState(env: FirestoreEnv = getDefaultFirestoreEnv()): FirestoreWriteGateState {
-  const enabled = env.VITE_SUNDESK_FIRESTORE_WRITES === 'enabled'
+  const writeIntentEnabled = env.VITE_SUNDESK_FIRESTORE_WRITES === 'enabled'
+  const writeApprovalRecorded = env.VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL === 'approved'
+  const enabled = writeIntentEnabled && writeApprovalRecorded
 
-  return enabled
-    ? {
-        enabled: true,
-        label: 'Enabled',
-        detail: 'Firestore writes are allowed by environment gate.',
-      }
-    : {
-        enabled: false,
-        label: 'Disabled',
-        detail: 'No Firestore writes can run in this build.',
-      }
+  if (enabled) {
+    return {
+      enabled: true,
+      label: 'Enabled',
+      detail: 'Firestore writes are allowed by environment gate and approval record.',
+    }
+  }
+
+  if (writeIntentEnabled) {
+    return {
+      enabled: false,
+      label: 'Approval needed',
+      detail: 'Write gate is armed, but remote writes stay blocked until approval is recorded.',
+    }
+  }
+
+  return {
+    enabled: false,
+    label: 'Disabled',
+    detail: 'No Firestore writes can run in this build.',
+  }
 }
 
 export const firestoreReadShadowCollections = [

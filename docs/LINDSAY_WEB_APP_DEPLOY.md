@@ -119,7 +119,7 @@ When Firebase config and approved Google access are present, `App` now:
 - Subscribes to Firebase Auth.
 - Loads `workspaces/lindsay-sundesk/state/current` after an approved sign-in.
 - Applies the shared workspace to the local app state.
-- Saves shared workspace snapshots only when `VITE_SUNDESK_FIRESTORE_WRITES=enabled`.
+- Saves shared workspace snapshots only when `VITE_SUNDESK_FIRESTORE_WRITES=enabled` and `VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL=approved`.
 
 Observed local keys include:
 

@@ -119,9 +119,10 @@ Do not enable Firestore writes until the user explicitly approves it. The write 
 
 ```bash
 VITE_SUNDESK_FIRESTORE_WRITES=enabled
+VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL=approved
 ```
 
-Leave it blank for local verification without remote writes.
+Leave both blank for local verification without remote writes.
 
 ## 5. Environment Variables
 

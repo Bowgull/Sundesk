@@ -57,7 +57,7 @@ export function AuthGate({
         </div>
 
         <p className="panel-lede">{label.detail}</p>
-        <p className="auth-disclaimer">Google handles sign-in. Firestore opens after access is approved.</p>
+        <p className="auth-disclaimer">Google handles sign-in. Shared data opens after access is approved. Writes need separate approval.</p>
 
         {showAccount && (
           <div className="auth-account" aria-label="Signed-in account">

@@ -701,7 +701,7 @@ function App() {
   const launchReadinessSummary = getFirebaseLaunchReadinessSummary(firebaseSetupState, {
     backupRehearsed: localBackupRehearsed,
     deployApproved: false,
-    writeApproved: false,
+    writeApproved: firebaseSetupState.writeApprovalRecorded,
   })
   const firestoreWritesEnabled = firestoreWriteGateState.enabled
   const authAllowed = authRequired ? isSessionAllowed(authSession, allowedAuthEmails) : true
@@ -3250,13 +3250,14 @@ function App() {
         setBase(result.state.base)
         setLocalRules(result.state.rules)
         setSelectedTheme(result.state.theme)
+        setEducationState(writeSundeskEducationState(result.state.educationState))
         applyRemoteBuildViewState(result.state.buildViewState)
         writeWorkbaseState(result.state.base)
         writeRulesState(result.state.rules)
         localStorage.setItem('sundesk-theme', result.state.theme)
         localStorage.setItem(buildViewStateStorageKey, JSON.stringify(result.state.buildViewState))
 
-        return result.state.usedFallbacks.base || result.state.usedFallbacks.rules || result.state.usedFallbacks.buildViewState
+        return result.state.usedFallbacks.base || result.state.usedFallbacks.rules || result.state.usedFallbacks.buildViewState || result.state.usedFallbacks.educationState
           ? 'Shared workspace loaded with repaired defaults.'
           : 'Shared workspace loaded.'
       }
@@ -3424,6 +3425,7 @@ function App() {
             activeGridViewId,
             columnWidths,
           },
+          educationState,
           theme: selectedTheme,
           metadata: {
             updatedAt: new Date().toISOString(),
@@ -3457,6 +3459,7 @@ function App() {
     authSession,
     base,
     columnWidths,
+    educationState,
     firestoreWritesEnabled,
     gridColorFieldId,
     gridDensity,

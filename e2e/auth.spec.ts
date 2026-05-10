@@ -15,6 +15,7 @@ test('allowlist config requires sign-in before Today opens', async ({ page }) =>
   await expect(page.getByTestId('auth-gate')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Sign in required.' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible()
+  await expect(page.getByText('Shared data opens after access is approved. Writes need separate approval.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toHaveCount(0)
 })
 
