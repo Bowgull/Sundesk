@@ -107,6 +107,7 @@ export const mainScreens = [
   { id: 'followups', label: 'Waiting On', shortLabel: 'Waiting', group: 'Work' },
   { id: 'meetings', label: 'Meetings', shortLabel: 'Meet', group: 'Work' },
   { id: 'timeline', label: 'Timeline', shortLabel: 'Time', group: 'Work' },
+  { id: 'lab', label: 'Sundesk Lab', shortLabel: 'Lab', group: 'Work' },
   { id: 'build', label: 'Build', shortLabel: 'Build', group: 'System' },
   { id: 'settings', label: 'Settings', shortLabel: 'Set', group: 'System' },
   { id: 'tasks', label: 'Work', shortLabel: 'Work', group: 'Hidden' },

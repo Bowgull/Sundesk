@@ -85,7 +85,7 @@ export function MeetingPrepPanel({
             <small>Edit this note here. It stays local to this screen until copied or exported.</small>
             <div className="meeting-note-actions" aria-label="Weekly note actions">
               <button type="button" onClick={() => void onCopyMeetingNote(prep)}>Copy note</button>
-              <button type="button" onClick={() => onExportMeetingNote(prep)}>Export PDF</button>
+              <button data-onboarding-target="meeting-export-pdf" type="button" onClick={() => onExportMeetingNote(prep)}>Export PDF</button>
             </div>
           </div>
           <div className="meeting-note-summary">

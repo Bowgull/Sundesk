@@ -14,10 +14,12 @@ import { BuildViewsPanel } from './components/BuildViewsPanel'
 import { CommunitiesScreen } from './components/CommunitiesScreen'
 import { MeetingPrepPanel } from './components/MeetingPrepPanel'
 import { MeetingsScreen } from './components/MeetingsScreen'
+import { OnboardingTour } from './components/OnboardingTour'
 import { RecordFieldInput } from './components/RecordFieldInput'
 import { RecordDrawer } from './components/RecordDrawer'
 import { RecordModal } from './components/RecordModal'
 import { SettingsScreen } from './components/SettingsScreen'
+import { SundeskLabScreen } from './components/SundeskLabScreen'
 import { TasksScreen } from './components/TasksScreen'
 import { TimelineModes } from './components/TimelineModes'
 import { TimelineScreen } from './components/TimelineScreen'
@@ -27,9 +29,21 @@ import {
   savedViews,
 } from './data/demoData'
 import {
+  readSundeskEducationState,
+  type SundeskEducationState,
+  writeSundeskEducationState,
+} from './data/educationState'
+import {
   buildMeetingAgendaPdfExport,
   buildMeetingNotePdfExport,
 } from './data/meetingPdf'
+import {
+  advanceOnboarding,
+  dismissOnboarding,
+  getOnboardingStep,
+  restartOnboarding,
+  startOnboarding,
+} from './data/onboarding'
 import { exportTableCsv } from './data/tableExport'
 import {
   type DependencyRelationship,
@@ -82,6 +96,12 @@ import {
   storedMigrationReport,
   workbaseStorageKey,
 } from './data/localStorage'
+import {
+  resetSundeskLabModuleProgress,
+  resetSundeskLabProgress,
+  startSundeskLabModule,
+  sundeskLabModules,
+} from './data/sundeskLab'
 import { getFirebaseServices, hasFirebaseConfig } from './lib/firebase'
 import {
   type LocalRule,
@@ -373,6 +393,7 @@ function App() {
   const [timelineReadinessCommunityId, setTimelineReadinessCommunityId] = useState('')
   const [timelineGraphCommunityId, setTimelineGraphCommunityId] = useState('')
   const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
+  const [educationState, setEducationState] = useState<SundeskEducationState>(() => readSundeskEducationState())
   const [localBackupRehearsed, setLocalBackupRehearsed] = useState(() => readLocalBackupRehearsed())
   const [expandedRuleId, setExpandedRuleId] = useState('')
   const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
@@ -683,6 +704,7 @@ function App() {
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
   const firestoreReadShadowComparison = compareFirestoreReadShadowCounts(localEngineStats, firestoreReadShadowState.collections)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
+  const activeOnboardingStep = getOnboardingStep(educationState.onboarding.currentStepId)
 
   function writeWorkbaseState(nextBase: StoredWorkbaseState['base']) {
     const workbaseState: StoredWorkbaseState = {
@@ -720,6 +742,25 @@ function App() {
 
   function writeRulesState(nextRules: LocalRule[]) {
     localStorage.setItem(rulesStorageKey, JSON.stringify(nextRules))
+  }
+
+  function updateEducationState(updater: (current: SundeskEducationState) => SundeskEducationState) {
+    setEducationState((current) => writeSundeskEducationState(updater(current)))
+  }
+
+  function continueLabModule(moduleId: string) {
+    updateEducationState((current) => startSundeskLabModule(current, moduleId))
+    showToast('Lab module opened.')
+  }
+
+  function startLabModuleOver(moduleId: string) {
+    updateEducationState((current) => resetSundeskLabModuleProgress(current, moduleId))
+    showToast('Lab module reset.')
+  }
+
+  function resetLabProgress() {
+    updateEducationState((current) => resetSundeskLabProgress(current))
+    showToast('Lab sample data reset.')
   }
 
   function showToast(message: string) {
@@ -905,6 +946,43 @@ function App() {
         showToast('Backup import failed.')
       }
     })()
+  }
+
+  function updateRupaulMode(enabled: boolean) {
+    setEducationState((current) => {
+      const nextState = writeSundeskEducationState({
+        ...current,
+        copyMode: {
+          rupaulMode: enabled,
+          updatedAt: new Date().toISOString(),
+        },
+      })
+
+      return nextState
+    })
+  }
+
+  function restartOnboardingTour() {
+    updateEducationState((current) => restartOnboarding(current))
+    openScreen('today')
+    showToast('Onboarding restarted.')
+  }
+
+  function startOnboardingTour() {
+    updateEducationState((current) => startOnboarding(current))
+    openScreen('today')
+  }
+
+  function dismissOnboardingTour() {
+    updateEducationState((current) => dismissOnboarding(current))
+  }
+
+  function advanceOnboardingTourStep() {
+    if (!activeOnboardingStep) {
+      return
+    }
+
+    updateEducationState((current) => advanceOnboarding(current, activeOnboardingStep.id, activeOnboardingStep.actionId))
   }
 
   function closeBuildModal() {
@@ -3392,6 +3470,41 @@ function App() {
     return () => window.removeEventListener('hashchange', syncScreenFromHash)
   }, [])
 
+  useEffect(() => {
+    if (educationState.onboarding.status !== 'inProgress' || !activeOnboardingStep) {
+      return
+    }
+
+    const target = document.querySelector(`[data-onboarding-target="${activeOnboardingStep.targetId}"]`)
+
+    if (!target && activeOnboardingStep.screen && activeScreen !== activeOnboardingStep.screen) {
+      openScreen(activeOnboardingStep.screen)
+    }
+  }, [activeOnboardingStep, activeScreen, educationState.onboarding.status])
+
+  useEffect(() => {
+    if (
+      educationState.onboarding.status !== 'inProgress' ||
+      !activeOnboardingStep ||
+      activeOnboardingStep.requiredAction !== 'routeMounted' ||
+      activeOnboardingStep.screen !== activeScreen
+    ) {
+      return
+    }
+
+    const target = document.querySelector(`[data-onboarding-target="${activeOnboardingStep.targetId}"]`)
+
+    if (!target) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      updateEducationState((current) => advanceOnboarding(current, activeOnboardingStep.id, activeOnboardingStep.actionId))
+    }, 650)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [activeOnboardingStep, activeScreen, educationState.onboarding.status])
+
   if (authRequired && (authLoading || !authAllowed || !workspaceHydrated)) {
     return (
       <main className="app" data-theme={selectedTheme}>
@@ -3421,6 +3534,14 @@ function App() {
           {toastMessage}
         </div>
       )}
+      <OnboardingTour
+        status={educationState.onboarding.status}
+        step={activeOnboardingStep}
+        onAdvance={advanceOnboardingTourStep}
+        onDismiss={dismissOnboardingTour}
+        onSkip={dismissOnboardingTour}
+        onStart={startOnboardingTour}
+      />
       <aside className="rail">
         <div className="brand">
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
@@ -3438,7 +3559,7 @@ function App() {
               <a
                 aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
-                data-onboarding-target={`nav-${screen.id}`}
+                data-onboarding-target={screen.id === 'lab' ? 'nav-sundesk-lab' : `nav-${screen.id}`}
                 data-short={screen.shortLabel}
                 href={`#${screen.id}`}
                 key={screen.id}
@@ -3738,6 +3859,16 @@ function App() {
           />
         )}
 
+        {activeScreen === 'lab' && (
+          <SundeskLabScreen
+            educationState={educationState}
+            modules={sundeskLabModules}
+            onContinueModule={continueLabModule}
+            onResetLabProgress={resetLabProgress}
+            onStartModuleOver={startLabModuleOver}
+          />
+        )}
+
         {activeScreen === 'build' && (
         <section className="build-zone build-reset" data-testid="build-screen" id="build">
           <article className="builder-panel wide build-workbench">
@@ -3947,7 +4078,10 @@ function App() {
             migrationMessages={migrationMessages}
             onExportBackup={exportLocalBackup}
             onImportBackup={applyLocalBackupFile}
+            onRestartTour={restartOnboardingTour}
+            onRupaulModeChange={updateRupaulMode}
             openScreen={openScreen}
+            rupaulMode={educationState.copyMode.rupaulMode}
             ruleDestinationStats={ruleDestinationStats}
             selectedTheme={selectedTheme}
             themes={themes}

@@ -1,11 +1,13 @@
 import type { AppScreen, ThemeId } from '../appConfig'
-import type { ChangeEvent } from 'react'
+import { type ChangeEvent, useMemo, useState } from 'react'
+import { getCopyModeText } from '../data/copyMode'
 import type {
   FirestoreReadShadowComparison,
   FirestoreReadShadowState,
   FirestoreWriteGateState,
 } from '../data/firestoreReadShadow'
 import type { FirebaseSetupState } from '../data/firebaseSetup'
+import { searchHelpArticles } from '../data/help'
 import type { LocalRule } from '../data/rules'
 
 type ThemeSwatch = {
@@ -54,8 +56,11 @@ export type SettingsScreenProps = {
   migrationMessages: readonly string[]
   onExportBackup?: () => void
   onImportBackup?: (file: File) => void
+  onRestartTour?: () => void
+  onRupaulModeChange: (enabled: boolean) => void
   onThemeChange: (theme: ThemeId) => void
   openScreen: (screen: AppScreen) => void
+  rupaulMode: boolean
   ruleDestinationStats: readonly SettingsRuleDestinationStat[]
   selectedTheme: ThemeId
   themes: readonly SettingsThemeOption[]
@@ -77,14 +82,19 @@ export function SettingsScreen({
   migrationMessages,
   onExportBackup,
   onImportBackup,
+  onRestartTour,
+  onRupaulModeChange,
   onThemeChange,
   openScreen,
+  rupaulMode,
   ruleDestinationStats,
   selectedTheme,
   themes,
   workspaceHydrated,
   workspaceStatus,
 }: SettingsScreenProps) {
+  const [helpQuery, setHelpQuery] = useState('')
+  const helpResults = useMemo(() => searchHelpArticles(helpQuery), [helpQuery])
   const dataAccessTitle = authRequired ? 'Shared workspace.' : 'Local workspace.'
   const dataAccessPill = authRequired
     ? authAllowed && workspaceHydrated ? 'Shared ready' : 'Sign-in gated'
@@ -113,6 +123,41 @@ export function SettingsScreen({
 
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
+      <article className="settings-panel settings-help-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Help</span>
+            <h2>Find the local answer.</h2>
+          </div>
+          <span className="metric-pill">Local search</span>
+        </div>
+        <label className="settings-help-search">
+          <span>Search Help</span>
+          <input
+            aria-label="Search Help"
+            placeholder="tags, PDF, iPhone, privacy"
+            type="search"
+            value={helpQuery}
+            onChange={(event) => setHelpQuery(event.target.value)}
+          />
+        </label>
+        <div className="help-result-grid" aria-label="Help results">
+          {helpResults.length > 0 ? helpResults.map((article) => (
+            <article className="help-result-card" key={article.id}>
+              <span>{article.routeLabel}</span>
+              <strong>{article.title}</strong>
+              <p>{article.body}</p>
+            </article>
+          )) : (
+            <div className="help-empty-result">
+              <strong>{getCopyModeText('help.noResults', rupaulMode)}</strong>
+              <p>Try tags, PDF, Lab, iPhone, privacy, RuPaul, or backup.</p>
+              <p>Can’t find it here? Send Josh what you were trying to do and where you got stuck.</p>
+            </div>
+          )}
+        </div>
+      </article>
+
       <article className="settings-panel">
         <div className="panel-title">
           <div>
@@ -143,6 +188,27 @@ export function SettingsScreen({
             </button>
           ))}
         </div>
+      </article>
+
+      <article className="settings-panel settings-copy-mode-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Copy mode</span>
+            <h2>Voice layer.</h2>
+          </div>
+        </div>
+        <label className={`rupaul-toggle ${rupaulMode ? 'selected' : ''}`}>
+          <span>
+            <strong>RuPaul Mode</strong>
+            <small>Long hover shows plain version</small>
+          </span>
+          <input
+            aria-label="RuPaul Mode"
+            checked={rupaulMode}
+            type="checkbox"
+            onChange={(event) => onRupaulModeChange(event.target.checked)}
+          />
+        </label>
       </article>
 
       <article className="settings-panel settings-command-send-panel">
@@ -184,7 +250,7 @@ export function SettingsScreen({
       <article className="settings-panel settings-privacy-panel">
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Privacy</span>
+            <span className="eyebrow">Data and privacy</span>
             <h2>Data boundary.</h2>
           </div>
         </div>
@@ -194,6 +260,9 @@ export function SettingsScreen({
         </div>
         <p className="settings-risk-note">
           Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.
+        </p>
+        <p className="settings-disclaimer-note">
+          {getCopyModeText('settings.disclaimer', rupaulMode)}
         </p>
       </article>
 
@@ -357,7 +426,7 @@ export function SettingsScreen({
             <span className="eyebrow">Setup</span>
             <h2>Run setup again.</h2>
           </div>
-          <button type="button" onClick={() => openScreen('today')}>Review setup prompt</button>
+          <button type="button" onClick={onRestartTour || (() => openScreen('today'))}>Restart onboarding</button>
         </div>
         <div className="settings-list">
           <p><strong>Review privacy.</strong> Show the warning again.</p>

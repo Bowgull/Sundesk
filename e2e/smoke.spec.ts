@@ -18,8 +18,49 @@ const auditFirebaseWrites = (page: Page) => {
   return firebaseWriteRequests
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
   const consoleErrors: string[] = []
+
+  const exercisesFirstRunOnboarding = testInfo.title.startsWith('First-run onboarding') ||
+    testInfo.title.startsWith('Onboarding tour')
+
+  if (!exercisesFirstRunOnboarding) {
+    await page.addInitScript(() => {
+      if (!window.localStorage.getItem('sundesk-education-state-v1')) {
+        window.localStorage.setItem('sundesk-education-state-v1', JSON.stringify({
+          version: 1,
+          onboarding: {
+            status: 'dismissed',
+            currentStepId: null,
+            completedStepIds: [],
+            completedActionIds: [],
+            startedAt: null,
+            completedAt: null,
+            lastSeenAt: null,
+          },
+          lab: {
+            activeModuleId: null,
+            sampleWorkspaceVersion: 1,
+            sampleWorkspaceResetAt: null,
+            modules: {},
+          },
+          help: {
+            recentQueries: [],
+            dismissedCardIds: [],
+            lastArticleId: null,
+          },
+          copyMode: {
+            rupaulMode: false,
+            updatedAt: null,
+          },
+          meetingPdf: {
+            templateVersion: 1,
+            lastExportedMeetingId: null,
+          },
+        }))
+      }
+    })
+  }
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
@@ -82,6 +123,42 @@ test('Lindsay install basics are present and local no-config opens Today', async
   await expect(appleIcon).toBeOK()
   await expect(icon192).toBeOK()
   await expect(icon512).toBeOK()
+})
+
+test('First-run onboarding choice can start alone and persists dismissal', async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.removeItem('sundesk-education-state-v1'))
+  await page.goto('/')
+
+  await expect(page.getByTestId('onboarding-choice')).toBeVisible()
+  await page.getByRole('button', { name: 'Start on my own' }).click()
+  await expect(page.getByTestId('onboarding-choice')).toHaveCount(0)
+
+  const educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(educationState.onboarding.status).toBe('dismissed')
+})
+
+test('Onboarding tour advances only from exact highlighted target clicks', async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.removeItem('sundesk-education-state-v1'))
+  await page.goto('/')
+
+  await page.getByRole('button', { name: 'Start the tour' }).click()
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Build is where tables live.')
+
+  await page.mouse.click(520, 520)
+
+  let educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(educationState.onboarding.currentStepId).toBe('build-nav')
+  expect(educationState.onboarding.completedActionIds).not.toContain('click-build')
+
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByTestId('build-screen')).toBeVisible()
+
+  educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(educationState.onboarding.currentStepId).toBe('table-tabs')
+  expect(educationState.onboarding.completedActionIds).toContain('click-build')
 })
 
 test('Settings install surface is covered when present', async ({ page }) => {
@@ -194,6 +271,46 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
   await navigation.getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('Sundesk Lab is a real nav screen and persists module progress locally', async ({ page }) => {
+  const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
+  const labLink = navigation.getByRole('link', { name: 'Sundesk Lab' })
+
+  await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+  await expect(labLink).toBeVisible()
+
+  await labLink.click()
+  await expect(page).toHaveURL(/#lab$/)
+  await expect(page.getByTestId('sundesk-lab-screen')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Sundesk Lab' })).toBeVisible()
+  await expect(page.getByTestId('lab-module-list')).toContainText('First look')
+  await expect(page.getByTestId('lab-module-list')).toContainText('Scarborough')
+
+  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Tags')
+  await expect(page.getByTestId('lab-module-tags')).toContainText('In progress')
+
+  const storedAfterContinue = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(storedAfterContinue.lab.activeModuleId).toBe('tags')
+  expect(storedAfterContinue.lab.modules.tags.status).toBe('inProgress')
+  expect(storedAfterContinue.lab.modules.tags.currentStepId).toBe('tags-start')
+
+  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Start over' }).click()
+  const storedAfterModuleReset = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(storedAfterModuleReset.lab.modules.tags).toBeUndefined()
+
+  const realRecordCount = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
+
+  await page.getByRole('button', { name: 'Reset sample data' }).click()
+  const storedAfterLabReset = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+  const realRecordCountAfterReset = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
+
+  expect(storedAfterLabReset.lab.activeModuleId).toBeNull()
+  expect(storedAfterLabReset.lab.modules).toEqual({})
+  expect(realRecordCountAfterReset).toBe(realRecordCount)
 })
 
 test('Build renders table workshop, record drawer, dependency editor, and Rules panel', async ({ page }) => {
@@ -999,6 +1116,55 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+})
+
+test('Settings Help search and RuPaul Mode stay local and persistent', async ({ page }) => {
+  await page.goto('/#settings')
+
+  await expect(page.getByRole('heading', { name: 'Find the local answer.' })).toBeVisible()
+  await expect(page.getByText('Long hover shows plain version')).toBeVisible()
+  await expect(page.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeVisible()
+
+  await page.getByLabel('Search Help').fill('tags Steph')
+  await expect(page.getByLabel('Help results')).toContainText('Tags and labels')
+  await expect(page.getByLabel('Help results')).toContainText('Lab tags')
+
+  await page.getByLabel('Search Help').fill('PDF boss')
+  await expect(page.getByLabel('Help results')).toContainText('Meeting notes and PDFs')
+  await expect(page.getByLabel('Help results')).toContainText('Meetings')
+
+  await page.getByLabel('Search Help').fill('iPhone PWA')
+  await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
+
+  await page.getByLabel('Search Help').fill('privacy disclaimer')
+  await expect(page.getByLabel('Help results')).toContainText('Privacy and at-your-own-risk note')
+
+  await page.getByLabel('Search Help').fill('RuPaul plain version')
+  await expect(page.getByLabel('Help results')).toContainText('RuPaul Mode')
+
+  await page.getByLabel('Search Help').fill('Lab sample')
+  await expect(page.getByLabel('Help results')).toContainText('Sundesk Lab')
+
+  await page.getByLabel('Search Help').fill('not a local article')
+  await expect(page.getByLabel('Help results')).toContainText('No help results found.')
+  await expect(page.getByLabel('Help results')).toContainText('Can’t find it here? Send Josh what you were trying to do and where you got stuck.')
+
+  await page.getByLabel('RuPaul Mode').check()
+  await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
+  await expect(page.getByText('Put sensitive things in here at your own risk, my pookie. The system can organize the mess, but it cannot make a secret less secret')).toBeVisible()
+
+  const storedCopyMode = await page.evaluate(() => {
+    const rawState = window.localStorage.getItem('sundesk-education-state-v1')
+
+    return rawState ? JSON.parse(rawState).copyMode : null
+  })
+
+  expect(storedCopyMode.rupaulMode).toBe(true)
+
+  await page.reload()
+  await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
+  await page.getByLabel('Search Help').fill('unknown')
+  await expect(page.getByLabel('Help results')).toContainText('No help found for that. Try a messier word')
 })
 
 test('Settings exports and imports a local backup without changing Firebase write UI', async ({ page }, testInfo) => {

@@ -16,6 +16,130 @@
   min-height: 44px;
 }
 
+.settings-help-panel {
+  grid-column: span 2;
+}
+
+.settings-help-search {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.settings-help-search span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-help-search input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.help-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.help-result-card,
+.help-empty-result {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-glass);
+}
+
+.help-result-card span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.help-result-card strong,
+.help-empty-result strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.help-result-card p,
+.help-empty-result p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.help-empty-result {
+  grid-column: 1 / -1;
+  border-style: dashed;
+}
+
+.settings-copy-mode-panel {
+  align-self: start;
+}
+
+.rupaul-toggle {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--coral) 30%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sun-2) 28%, var(--surface));
+}
+
+.rupaul-toggle::before {
+  position: absolute;
+  top: 8px;
+  right: 44px;
+  color: color-mix(in srgb, var(--coral) 74%, var(--ink));
+  content: "*";
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.rupaul-toggle.selected {
+  border-color: color-mix(in srgb, var(--coral) 72%, var(--line));
+  background: color-mix(in srgb, var(--coral-2) 54%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 14%, transparent);
+}
+
+.rupaul-toggle span {
+  display: grid;
+  gap: 4px;
+}
+
+.rupaul-toggle strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.rupaul-toggle small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rupaul-toggle input {
+  width: 22px;
+  min-height: 22px;
+  accent-color: var(--coral);
+}
+
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -223,6 +347,13 @@
   border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.45;
+}
+
+.settings-disclaimer-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
   line-height: 1.45;
 }
 
