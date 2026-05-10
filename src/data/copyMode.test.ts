@@ -20,6 +20,18 @@ describe('copy mode text', () => {
       'button.addRecord',
       'button.resetLab',
       'button.restartOnboarding',
+      'button.close',
+      'button.cancel',
+      'button.saveTable',
+      'button.deleteTable',
+      'button.resetLocalData',
+      'button.deleteField',
+      'button.done',
+      'button.continueGoogle',
+      'button.useAnotherAccount',
+      'button.openSundesk',
+      'button.signOut',
+      'button.checkingAccess',
       'help.noResults',
       'settings.disclaimer',
     ]))
@@ -41,5 +53,17 @@ describe('copy mode text', () => {
     expect(getCopyModeText('button.addRecord', true)).toBe('Add the next problem')
     expect(getCopyModeText('button.resetLab', true)).toBe('Reset the fake chaos')
     expect(getCopyModeText('button.restartOnboarding', true)).toBe('Run the tour again')
+    expect(getCopyModeText('button.close', true)).toBe('Close the curtain')
+    expect(getCopyModeText('button.cancel', true)).toBe('Cancel. Leave it alone')
+    expect(getCopyModeText('button.saveTable', true)).toBe('Save table. The bucket has a name')
+    expect(getCopyModeText('button.deleteTable', true)).toBe('Delete table. No local undo')
+    expect(getCopyModeText('button.resetLocalData', true)).toBe('Reset local data. Back to starter chaos')
+    expect(getCopyModeText('button.deleteField', true)).toBe('Delete field. Cut the column')
+    expect(getCopyModeText('button.done', true)).toBe('Done. Park it')
+    expect(getCopyModeText('button.continueGoogle', true)).toBe('Continue with Google. Check the list')
+    expect(getCopyModeText('button.useAnotherAccount', true)).toBe('Use another account. This one is not on the list')
+    expect(getCopyModeText('button.openSundesk', true)).toBe('Open Sundesk. The door is clear')
+    expect(getCopyModeText('button.signOut', true)).toBe('Sign out. Swap the account')
+    expect(getCopyModeText('button.checkingAccess', true)).toBe('Checking access. Reading the room')
   })
 })

@@ -240,12 +240,32 @@ test('Settings install surface is covered when present', async ({ page }) => {
   }
 
   await expect(installSurface).toBeVisible()
-  await expect(settingsScreen).toContainText(/hosted URL|hosted web address/i)
-  await expect(settingsScreen).toContainText(/mobile/i)
+  await expect(settingsScreen).toContainText(/approved hosted address/i)
+  await expect(settingsScreen).toContainText(/local testing/i)
+  await expect(settingsScreen).toContainText(/iPhone/i)
   await expect(settingsScreen).toContainText(/home screen/i)
   await expect(settingsScreen).toContainText(/desktop/i)
   await expect(settingsScreen).toContainText(/bookmark/i)
   await expect(settingsScreen).toContainText(/Sundesk icon/i)
+})
+
+test('Settings explains local, shared, bookmark, and install paths without leading with risk copy', async ({ page }) => {
+  await page.goto('/#settings')
+
+  const settingsScreen = page.getByTestId('settings-screen')
+  const installPanel = page.getByLabel('Install and bookmark readiness')
+
+  await expect(settingsScreen).toBeVisible()
+  await expect(installPanel).toContainText('Open here for local testing.')
+  await expect(installPanel).toContainText('Use the approved hosted address for shared daily work.')
+  await expect(installPanel).toContainText('iPhone.')
+  await expect(installPanel).toContainText('Desktop.')
+  await expect(installPanel).toContainText('No deploy runs from this panel.')
+  await expect(installPanel).toContainText('No Firebase write starts here.')
+
+  await expect(settingsScreen.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeHidden()
+  await settingsScreen.getByText('Show sensitive data note').click()
+  await expect(settingsScreen.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeVisible()
 })
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
@@ -1158,6 +1178,8 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   const dataRiskNote = 'Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.'
 
   await expect(page.getByText(sensitiveStorageMessage)).toBeVisible()
+  await expect(page.getByText(dataRiskNote)).toBeHidden()
+  await page.getByText('Show sensitive data note').click()
   await expect(page.getByText(dataRiskNote)).toBeVisible()
   await expect(page.getByRole('alert').filter({ hasText: sensitiveStorageMessage })).toHaveCount(0)
   await expect(page.getByRole('banner').filter({ hasText: sensitiveStorageMessage })).toHaveCount(0)
@@ -1207,6 +1229,9 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
 
   await expect(page.getByRole('heading', { name: 'Find the local answer.' })).toBeVisible()
   await expect(page.getByText('Long hover shows plain version')).toBeVisible()
+  await expect(page.getByText('Show sensitive data note')).toBeVisible()
+  await expect(page.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeHidden()
+  await page.getByText('Show sensitive data note').click()
   await expect(page.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeVisible()
 
   await page.getByLabel('Search Help').fill('tags Steph')
@@ -1249,6 +1274,15 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await expect(page.getByRole('button', { name: 'Add field', exact: true }).first()).toContainText('Add a new little rule')
   await expect(page.getByRole('button', { name: 'Save view' })).toContainText('Save this angle')
   await expect(page.getByTestId('build-add-record')).toContainText('Add the next problem')
+
+  await page.getByRole('button', { name: 'Add table' }).click()
+  const addTableModal = page.getByRole('dialog', { name: 'Add table' })
+  await expect(addTableModal.getByRole('button', { name: 'Close' })).toContainText('Close the curtain')
+  await expect(addTableModal.getByRole('button', { name: 'Close' })).toHaveAttribute('data-copy-plain', 'Close')
+  await expect(addTableModal.getByRole('button', { name: 'Cancel' })).toContainText('Cancel. Leave it alone')
+  await expect(addTableModal.getByRole('button', { name: 'Add table' })).toContainText('Add another bucket')
+  await expect(addTableModal.getByRole('button', { name: 'Add table' })).toHaveAttribute('title', 'Add table')
+  await addTableModal.getByRole('button', { name: 'Close' }).click()
 
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' }).click()
   await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toContainText('Copy the agenda before somebody freestyles')
@@ -1458,6 +1492,72 @@ test('Mobile Build keeps dense controls, drawer, and onboarding inside the viewp
   await page.reload()
   await expect(page.getByTestId('onboarding-tour')).toBeVisible()
   await assertInViewport('.onboarding-annotation-card')
+})
+
+test('Mobile Build keeps modals and field editors inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const assertLocatorInViewport = async (locator: ReturnType<typeof page.locator>) => {
+    await locator.first().scrollIntoViewIfNeeded()
+
+    const box = await locator.first().boundingBox()
+
+    expect(box?.x).toBeGreaterThanOrEqual(0)
+    expect(box?.y).toBeGreaterThanOrEqual(0)
+    expect(box ? box.x + box.width : 0).toBeLessThanOrEqual(390)
+    expect(box ? box.y + box.height : 0).toBeLessThanOrEqual(844)
+  }
+
+  const assertLocatorCurrentlyInViewport = async (locator: ReturnType<typeof page.locator>) => {
+    const box = await locator.first().boundingBox()
+
+    expect(box?.x).toBeGreaterThanOrEqual(0)
+    expect(box?.y).toBeGreaterThanOrEqual(0)
+    expect(box ? box.x + box.width : 0).toBeLessThanOrEqual(390)
+    expect(box ? box.y + box.height : 0).toBeLessThanOrEqual(844)
+  }
+
+  await page.locator('[data-onboarding-target="build-add-field"]').first().click()
+
+  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+
+  await expect(addFieldModal).toBeVisible()
+  await assertLocatorInViewport(addFieldModal)
+  await assertLocatorInViewport(addFieldModal.getByLabel('Type'))
+  await assertLocatorInViewport(addFieldModal.locator('.modal-actions'))
+
+  await addFieldModal.getByLabel('Type').selectOption('checkbox')
+  await assertLocatorInViewport(addFieldModal.locator('.checkbox-style-grid'))
+  await assertLocatorInViewport(addFieldModal.locator('.checkbox-color-grid'))
+  await assertLocatorInViewport(addFieldModal.locator('.modal-actions'))
+  await addFieldModal.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  await assertLocatorCurrentlyInViewport(addFieldModal.getByRole('button', { name: 'Close' }))
+  await assertLocatorCurrentlyInViewport(addFieldModal.locator('.modal-actions'))
+
+  await addFieldModal.getByLabel('Type').selectOption('linkedRecord')
+  await assertLocatorInViewport(addFieldModal.getByLabel('Linked table'))
+  await assertLocatorInViewport(addFieldModal.getByText('Allow multiple linked records'))
+  await addFieldModal.getByRole('button', { name: 'Cancel' }).click()
+
+  await page.getByTestId('build-add-record').first().click()
+
+  const recordModal = page.getByTestId('record-modal')
+
+  await expect(recordModal).toBeVisible()
+  await assertLocatorInViewport(recordModal)
+  await assertLocatorInViewport(recordModal.locator('.modal-actions'))
+  await assertLocatorInViewport(recordModal.locator('[data-onboarding-target="linked-record-cell"]'))
+  await assertLocatorInViewport(recordModal.locator('[data-onboarding-target="field-tags-cell"]'))
+  await recordModal.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  await assertLocatorCurrentlyInViewport(recordModal.getByRole('button', { name: 'Close' }))
+  await assertLocatorCurrentlyInViewport(recordModal.locator('.modal-actions'))
+  await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 390)
 })
 
 test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page }) => {

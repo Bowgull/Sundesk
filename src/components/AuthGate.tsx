@@ -1,4 +1,5 @@
 import { getAuthStateLabel } from '../data/authAccess'
+import { getCopyModeText, type CopyEntryId } from '../data/copyMode'
 
 export type AuthGateProps = {
   allowed: boolean
@@ -6,6 +7,7 @@ export type AuthGateProps = {
   onContinue: () => void
   onSignIn: () => void
   onSignOut: () => void
+  rupaulMode: boolean
   userAvatarUrl?: string | null
   userEmail?: string | null
   userName?: string | null
@@ -17,6 +19,7 @@ export function AuthGate({
   onContinue,
   onSignIn,
   onSignOut,
+  rupaulMode,
   userAvatarUrl,
   userEmail,
   userName,
@@ -28,6 +31,19 @@ export function AuthGate({
   const isDenied = label.state === 'denied'
   const isSignedOut = label.state === 'signedOut'
   const accessStatus = loading ? 'Checking' : isSignedIn ? 'Approved' : isDenied ? 'Blocked' : 'Google'
+  const actionCopyId = getAuthActionCopyId(label.actionLabel)
+  const actionLabel = getCopyModeText(actionCopyId, rupaulMode)
+  const signOutLabel = getCopyModeText('button.signOut', rupaulMode)
+  const actionButtonProps = {
+    'aria-label': label.actionLabel,
+    'data-copy-plain': label.actionLabel,
+    title: label.actionLabel,
+  }
+  const signOutButtonProps = {
+    'aria-label': 'Sign out',
+    'data-copy-plain': 'Sign out',
+    title: 'Sign out',
+  }
 
   return (
     <section className={`auth-gate auth-gate-${label.state}`} data-testid="auth-gate" aria-busy={loading}>
@@ -61,32 +77,32 @@ export function AuthGate({
 
         <div className="auth-actions">
           {loading && (
-            <button type="button" disabled>
-              {label.actionLabel}
+            <button type="button" disabled {...actionButtonProps}>
+              {actionLabel}
             </button>
           )}
           {isSignedOut && (
-            <button className="primary" type="button" onClick={onSignIn}>
-              {label.actionLabel}
+            <button className="primary" type="button" {...actionButtonProps} onClick={onSignIn}>
+              {actionLabel}
             </button>
           )}
           {isDenied && (
             <>
-              <button className="primary" type="button" onClick={onSignIn}>
-                {label.actionLabel}
+              <button className="primary" type="button" {...actionButtonProps} onClick={onSignIn}>
+                {actionLabel}
               </button>
-              <button type="button" onClick={onSignOut}>
-                Sign out
+              <button type="button" {...signOutButtonProps} onClick={onSignOut}>
+                {signOutLabel}
               </button>
             </>
           )}
           {isSignedIn && (
             <>
-              <button className="primary" type="button" onClick={onContinue}>
-                {label.actionLabel}
+              <button className="primary" type="button" {...actionButtonProps} onClick={onContinue}>
+                {actionLabel}
               </button>
-              <button type="button" onClick={onSignOut}>
-                Sign out
+              <button type="button" {...signOutButtonProps} onClick={onSignOut}>
+                {signOutLabel}
               </button>
             </>
           )}
@@ -94,4 +110,20 @@ export function AuthGate({
       </article>
     </section>
   )
+}
+
+function getAuthActionCopyId(actionLabel: string): CopyEntryId {
+  if (actionLabel === 'Continue with Google') {
+    return 'button.continueGoogle'
+  }
+
+  if (actionLabel === 'Use another account') {
+    return 'button.useAnotherAccount'
+  }
+
+  if (actionLabel === 'Open Sundesk') {
+    return 'button.openSundesk'
+  }
+
+  return 'button.checkingAccess'
 }

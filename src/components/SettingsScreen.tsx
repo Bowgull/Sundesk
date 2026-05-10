@@ -258,12 +258,15 @@ export function SettingsScreen({
           <p><strong>Use.</strong> Status, dates, owners, links, and short notes.</p>
           <p><strong>Storage.</strong> You choose what to enter. Sensitive details are stored at your own risk.</p>
         </div>
-        <p className="settings-risk-note">
-          Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.
-        </p>
-        <p className="settings-disclaimer-note">
-          {getCopyModeText('settings.disclaimer', rupaulMode)}
-        </p>
+        <details className="settings-details settings-sensitive-details">
+          <summary>Show sensitive data note</summary>
+          <p className="settings-risk-note">
+            Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.
+          </p>
+          <p className="settings-disclaimer-note">
+            {getCopyModeText('settings.disclaimer', rupaulMode)}
+          </p>
+        </details>
       </article>
 
       <article className="settings-panel data-access-panel">
@@ -360,15 +363,16 @@ export function SettingsScreen({
           </div>
           <div className="settings-web-app-copy">
             <div className="settings-web-app-steps">
-              <p><strong>Hosted URL.</strong> Open Sundesk from the hosted web address used for daily work.</p>
-              <p><strong>Mobile.</strong> Add to Home Screen. Use the Sundesk icon to confirm the saved app.</p>
-              <p><strong>Desktop.</strong> Bookmark the hosted URL in the work browser. Today stays home.</p>
+              <p><strong>Local.</strong> Open here for local testing. This browser stores the local copy.</p>
+              <p><strong>Shared.</strong> Use the approved hosted address for shared daily work. Google sign-in gates shared data.</p>
+              <p><strong>iPhone.</strong> Open the approved address in Safari, then Add to Home Screen. Use the Sundesk icon to confirm the saved app.</p>
+              <p><strong>Desktop.</strong> Bookmark the approved address in the work browser. Today stays home.</p>
             </div>
             <p className="settings-web-app-readiness">
               <strong>Before hosted use.</strong> Check Launch readiness for Firebase config, deploy approval, write approval, and no Firebase writes.
             </p>
             <p className="settings-web-app-note">
-              This install surface is manual. It does not deploy, change Firebase setup, or write remote data.
+              This install surface is manual. No deploy runs from this panel. No Firebase write starts here.
             </p>
           </div>
         </div>

@@ -15,6 +15,18 @@ export type CopyEntryId =
   | 'button.addRecord'
   | 'button.resetLab'
   | 'button.restartOnboarding'
+  | 'button.close'
+  | 'button.cancel'
+  | 'button.saveTable'
+  | 'button.deleteTable'
+  | 'button.resetLocalData'
+  | 'button.deleteField'
+  | 'button.done'
+  | 'button.continueGoogle'
+  | 'button.useAnotherAccount'
+  | 'button.openSundesk'
+  | 'button.signOut'
+  | 'button.checkingAccess'
   | 'settings.disclaimer'
   | 'help.noResults'
 
@@ -136,6 +148,90 @@ export const copyEntries: readonly CopyEntry[] = [
     id: 'button.restartOnboarding',
     plain: 'Restart onboarding',
     rupaul: 'Run the tour again',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.close',
+    plain: 'Close',
+    rupaul: 'Close the curtain',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.cancel',
+    plain: 'Cancel',
+    rupaul: 'Cancel. Leave it alone',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.saveTable',
+    plain: 'Save table',
+    rupaul: 'Save table. The bucket has a name',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.deleteTable',
+    plain: 'Delete table',
+    rupaul: 'Delete table. No local undo',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.resetLocalData',
+    plain: 'Reset local data',
+    rupaul: 'Reset local data. Back to starter chaos',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.deleteField',
+    plain: 'Delete field',
+    rupaul: 'Delete field. Cut the column',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.done',
+    plain: 'Done',
+    rupaul: 'Done. Park it',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.continueGoogle',
+    plain: 'Continue with Google',
+    rupaul: 'Continue with Google. Check the list',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.useAnotherAccount',
+    plain: 'Use another account',
+    rupaul: 'Use another account. This one is not on the list',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.openSundesk',
+    plain: 'Open Sundesk',
+    rupaul: 'Open Sundesk. The door is clear',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.signOut',
+    plain: 'Sign out',
+    rupaul: 'Sign out. Swap the account',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.checkingAccess',
+    plain: 'Checking access',
+    rupaul: 'Checking access. Reading the room',
     scope: 'button',
     revealPlain: true,
   },

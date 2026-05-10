@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { getCopyModeText, type CopyEntryId } from '../data/copyMode'
 import type { Backlink, BaseRecord, FieldDefinition, RecordReference, RecordValue } from '../data/workbase'
 
 export type RecordModalLinkedRecord = {
@@ -24,6 +25,7 @@ export type RecordModalProps = {
   onSelectedRecordChange: (fieldId: string, value: RecordValue) => void
   onUpdateRecordDraft: (fieldId: string, value: RecordValue) => void
   recordDraft: Record<string, RecordValue>
+  rupaulMode: boolean
   selectedRecord: BaseRecord | null | undefined
   selectedRecordTitle: string
   selectedTableLabel: string | undefined
@@ -42,6 +44,7 @@ export function RecordModal({
   onSelectedRecordChange,
   onUpdateRecordDraft,
   recordDraft,
+  rupaulMode,
   selectedRecord,
   selectedRecordTitle,
   selectedTableLabel,
@@ -49,6 +52,17 @@ export function RecordModal({
   if (!isOpen) {
     return null
   }
+
+  const copyButtonProps = (copyId: CopyEntryId) => {
+    const plain = getCopyModeText(copyId, false)
+
+    return {
+      'aria-label': plain,
+      'data-copy-plain': plain,
+      title: plain,
+    }
+  }
+  const copyButtonText = (copyId: CopyEntryId) => getCopyModeText(copyId, rupaulMode)
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -58,7 +72,7 @@ export function RecordModal({
             <span className="eyebrow">{selectedTableLabel}</span>
             <h2>{isCreatingRecord || !selectedRecord ? 'New record.' : selectedRecordTitle}</h2>
           </div>
-          <button className="ghost" type="button" onClick={onClose}>Close</button>
+          <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={onClose}>{copyButtonText('button.close')}</button>
         </div>
         <div className="record-form">
           {isCreatingRecord || !selectedRecord
@@ -114,11 +128,11 @@ export function RecordModal({
           </div>
         )}
         <div className="modal-actions">
-          <button className="ghost" type="button" onClick={onClose}>Cancel</button>
+          <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={onClose}>{copyButtonText('button.cancel')}</button>
           {isCreatingRecord ? (
-            <button className="primary" type="button" onClick={onCreateRecord}>Add record</button>
+            <button className="primary" {...copyButtonProps('button.addRecord')} type="button" onClick={onCreateRecord}>{copyButtonText('button.addRecord')}</button>
           ) : (
-            <button className="primary" type="button" onClick={onClose}>Done</button>
+            <button className="primary" {...copyButtonProps('button.done')} type="button" onClick={onClose}>{copyButtonText('button.done')}</button>
           )}
         </div>
       </section>

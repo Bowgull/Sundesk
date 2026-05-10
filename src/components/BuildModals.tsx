@@ -1,4 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
+import { getCopyModeText, type CopyEntryId } from '../data/copyMode'
 import type {
   CheckboxColor,
   CheckboxIcon,
@@ -77,6 +78,7 @@ export type BuildModalsProps = {
   renameTable: () => void
   renderCheckboxIcon: (icon: CheckboxIcon) => ReactNode
   resetLocalWorkbase: () => void
+  rupaulMode: boolean
   selectedBuildTable: TableDefinition | undefined
   setFieldDraft: Dispatch<SetStateAction<FieldDraft>>
   setTableDraft: Dispatch<SetStateAction<TableDraft>>
@@ -110,6 +112,7 @@ export function BuildModals({
   renameTable,
   renderCheckboxIcon,
   resetLocalWorkbase,
+  rupaulMode,
   selectedBuildTable,
   setFieldDraft,
   setTableDraft,
@@ -120,6 +123,17 @@ export function BuildModals({
   tableSettingsDraft,
   updateField,
 }: BuildModalsProps) {
+  const copyButtonProps = (copyId: CopyEntryId) => {
+    const plain = getCopyModeText(copyId, false)
+
+    return {
+      'aria-label': plain,
+      'data-copy-plain': plain,
+      title: plain,
+    }
+  }
+  const copyButtonText = (copyId: CopyEntryId) => getCopyModeText(copyId, rupaulMode)
+
   return (
     <>
       {buildModal === 'table' && (
@@ -130,7 +144,7 @@ export function BuildModals({
                 <span className="eyebrow">Table</span>
                 <h2>Add table.</h2>
               </div>
-              <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+              <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={closeBuildModal}>{copyButtonText('button.close')}</button>
             </div>
             <div className="build-form table-builder-form">
               <label>
@@ -151,8 +165,8 @@ export function BuildModals({
               </label>
             </div>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="primary" type="button" onClick={createTable}>Add table</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="primary" {...copyButtonProps('button.addTable')} type="button" onClick={createTable}>{copyButtonText('button.addTable')}</button>
             </div>
           </section>
         </div>
@@ -166,7 +180,7 @@ export function BuildModals({
                 <span className="eyebrow">Table</span>
                 <h2>Rename table.</h2>
               </div>
-              <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+              <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={closeBuildModal}>{copyButtonText('button.close')}</button>
             </div>
             <div className="build-form table-builder-form">
               <label>
@@ -185,8 +199,8 @@ export function BuildModals({
               </label>
             </div>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="primary" type="button" onClick={renameTable}>Save table</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="primary" {...copyButtonProps('button.saveTable')} type="button" onClick={renameTable}>{copyButtonText('button.saveTable')}</button>
             </div>
           </section>
         </div>
@@ -204,8 +218,8 @@ export function BuildModals({
             <p>This removes the table, its fields, its records, its saved views, and any links pointing to those records.</p>
             <p>This cannot be undone in this local build.</p>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="danger" type="button" onClick={() => deleteTable(pendingDeleteTable.id)}>Delete table</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="danger" {...copyButtonProps('button.deleteTable')} type="button" onClick={() => deleteTable(pendingDeleteTable.id)}>{copyButtonText('button.deleteTable')}</button>
             </div>
           </section>
         </div>
@@ -223,8 +237,8 @@ export function BuildModals({
             <p>This restores the starter workbase in this browser.</p>
             <p>Saved views and rules stay local. Record, table, and field edits return to the starter set.</p>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="danger" type="button" onClick={resetLocalWorkbase}>Reset local data</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="danger" {...copyButtonProps('button.resetLocalData')} type="button" onClick={resetLocalWorkbase}>{copyButtonText('button.resetLocalData')}</button>
             </div>
           </section>
         </div>
@@ -239,7 +253,7 @@ export function BuildModals({
                 <h2>Choose what this column does.</h2>
                 <p className="modal-lede">Start with the behavior. Sundesk handles the field type underneath.</p>
               </div>
-              <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+              <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={closeBuildModal}>{copyButtonText('button.close')}</button>
             </div>
             <div className="field-behavior-grid" aria-label="Column behavior choices">
               {fieldBehaviorOptions.map((option) => (
@@ -403,8 +417,8 @@ export function BuildModals({
               )}
             </div>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="primary" type="button" onClick={createField}>Add field</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="primary" {...copyButtonProps('button.addField')} type="button" onClick={createField}>{copyButtonText('button.addField')}</button>
             </div>
           </section>
         </div>
@@ -419,7 +433,7 @@ export function BuildModals({
                 <h2>{settingsField.label}</h2>
                 <p className="modal-lede">Change what this column does without leaving the grid.</p>
               </div>
-              <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
+              <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={closeBuildModal}>{copyButtonText('button.close')}</button>
             </div>
             <div className="field-behavior-grid" aria-label="Column behavior choices">
               {fieldBehaviorOptions.map((option) => (
@@ -543,7 +557,7 @@ export function BuildModals({
               )}
             </div>
             <div className="modal-actions">
-              <button className="primary" type="button" onClick={closeBuildModal}>Done</button>
+              <button className="primary" {...copyButtonProps('button.done')} type="button" onClick={closeBuildModal}>{copyButtonText('button.done')}</button>
             </div>
           </section>
         </div>
@@ -561,8 +575,8 @@ export function BuildModals({
             <p>This removes the field from every record in this table.</p>
             <p>This cannot be undone in this local build.</p>
             <div className="modal-actions">
-              <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-              <button className="danger" type="button" onClick={() => deleteField(pendingDeleteField)}>Delete field</button>
+              <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
+              <button className="danger" {...copyButtonProps('button.deleteField')} type="button" onClick={() => deleteField(pendingDeleteField)}>{copyButtonText('button.deleteField')}</button>
             </div>
           </section>
         </div>

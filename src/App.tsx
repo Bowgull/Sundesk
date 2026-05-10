@@ -3155,6 +3155,7 @@ function App() {
         isCreatingRecord={isCreatingRecord}
         isOpen={buildModal === 'record'}
         recordDraft={recordDraft}
+        rupaulMode={rupaulMode}
         selectedRecord={selectedBuildRecord}
         selectedRecordTitle={selectedBuildRecord ? getRecordTitle(base, selectedBuildRecord) : ''}
         selectedTableLabel={selectedBuildTable?.label}
@@ -3550,6 +3551,7 @@ function App() {
           userEmail={authSession?.email}
           userName={authSession?.displayName}
           onContinue={() => setWorkspaceHydrated(true)}
+          rupaulMode={rupaulMode}
           onSignIn={signInToSundesk}
           onSignOut={signOutOfSundesk}
         />
@@ -4129,6 +4131,7 @@ function App() {
             renameTable={renameTable}
             renderCheckboxIcon={renderCheckboxIcon}
             resetLocalWorkbase={resetLocalWorkbase}
+            rupaulMode={rupaulMode}
             selectedBuildTable={selectedBuildTable}
             setFieldDraft={setFieldDraft}
             setTableDraft={setTableDraft}
