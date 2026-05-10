@@ -77,6 +77,25 @@ Before deploy, Settings should also expose a Launch readiness panel. Treat it as
 
 The panel should read from the same visible boundaries as the rest of Settings. Firebase setup comes from the config state. Firestore write status comes from the write gate. Deploy and write approvals stay manual. No deploy runs from the app. No Firebase write runs from the panel.
 
+## Install And Bookmark Path
+
+The web app path is:
+
+1. Open the approved hosted URL.
+2. On mobile, use Add to Home Screen.
+3. On desktop, create a browser bookmark named Sundesk.
+
+Expected result:
+
+- The mobile home-screen entry is named Sundesk.
+- The mobile home-screen entry uses the Sundesk icon.
+- The desktop bookmark is named Sundesk.
+- The desktop bookmark shows the Sundesk favicon.
+- Today opens first.
+- Build remains visible in the sidebar.
+
+Current local checks cover `manifest.webmanifest`, `favicon.svg`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, install metadata in `index.html`, Today as home, and Build in the sidebar. Settings should expose the same install/bookmark path once that surface is wired.
+
 ## Persistence Caveats
 
 Current runtime persistence is local browser storage when Firebase is not configured.
@@ -181,7 +200,7 @@ Then smoke test the preview URL with fake data only:
 - Confirm Settings shows the actual Export backup and Import backup controls.
 - Confirm Settings shows the Launch readiness panel with backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes status.
 - Confirm backup rehearsal starts pending before the fake-data import.
-- Confirm the app icon appears for browser bookmark and Add to Home Screen.
+- Confirm the app icon appears for desktop bookmark and mobile Add to Home Screen.
 - Run the local fake-data backup/import rehearsal from Settings.
 - Confirm backup rehearsal becomes complete after the fake-data import succeeds.
 - Confirm Firestore writes remain disabled.
@@ -220,6 +239,7 @@ npm run test:e2e
 - Google login is wired with browser session persistence.
 - Firestore workspace save and hydrate are wired.
 - Firestore rules limit access to approved users.
+- Desktop bookmark uses the Sundesk favicon.
 - Mobile Add to Home Screen uses the Sundesk icon.
 
 Static hosting alone is not enough for the requested Lindsay web app. The finished first version needs Hosting, Google Auth, and Firestore.

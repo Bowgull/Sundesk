@@ -258,6 +258,27 @@ export function SettingsScreen({
         </div>
       </article>
 
+      <article className="settings-panel settings-web-app-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Install</span>
+            <h2>Open as a web app.</h2>
+          </div>
+          <span className="metric-pill">Manual</span>
+        </div>
+        <div className="settings-web-app-layout" aria-label="Install and bookmark readiness">
+          <div className="settings-web-app-icon" aria-hidden="true">
+            <img src="/brand/sundesk-icon.png" alt="" />
+          </div>
+          <div className="settings-web-app-copy">
+            <p><strong>Hosted URL.</strong> Open Sundesk from the hosted web address Lindsay uses for daily work.</p>
+            <p><strong>Mobile.</strong> Add the hosted URL to the home screen so Sundesk opens from its own icon.</p>
+            <p><strong>Desktop.</strong> Bookmark the hosted URL in the work browser. Keep Today as the first stop.</p>
+            <p><strong>Icon.</strong> Use the Sundesk icon to confirm the saved app or bookmark is the right one.</p>
+          </div>
+        </div>
+      </article>
+
       <article className="settings-panel settings-backup-panel">
         <div className="panel-title">
           <div>

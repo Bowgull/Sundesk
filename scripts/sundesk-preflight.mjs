@@ -12,6 +12,12 @@ const requiredAssets = [
   "public/apple-touch-icon.png",
   "public/icon-192.png",
   "public/icon-512.png",
+  "public/sundesk-sw.js",
+];
+
+const optionalInstallAssets = [
+  "public/brand/sundesk-icon.png",
+  "public/brand/sundesk-logo.png",
 ];
 
 const requiredFirebaseFiles = [
@@ -73,6 +79,29 @@ const requiredIndexLinks = [
   {
     label: "apple-touch-icon",
     pattern: /<link\b(?=[^>]*\brel=["']apple-touch-icon["'])(?=[^>]*\bhref=["']\/apple-touch-icon\.png["'])[^>]*>/i,
+  },
+];
+
+const requiredIndexInstallMeta = [
+  {
+    label: "application-name",
+    pattern: /<meta\b(?=[^>]*\bname=["']application-name["'])(?=[^>]*\bcontent=["']Sundesk["'])[^>]*>/i,
+  },
+  {
+    label: "apple-mobile-web-app-title",
+    pattern: /<meta\b(?=[^>]*\bname=["']apple-mobile-web-app-title["'])(?=[^>]*\bcontent=["']Sundesk["'])[^>]*>/i,
+  },
+  {
+    label: "apple-mobile-web-app-capable",
+    pattern: /<meta\b(?=[^>]*\bname=["']apple-mobile-web-app-capable["'])(?=[^>]*\bcontent=["']yes["'])[^>]*>/i,
+  },
+  {
+    label: "mobile-web-app-capable",
+    pattern: /<meta\b(?=[^>]*\bname=["']mobile-web-app-capable["'])(?=[^>]*\bcontent=["']yes["'])[^>]*>/i,
+  },
+  {
+    label: "theme-color",
+    pattern: /<meta\b(?=[^>]*\bname=["']theme-color["'])(?=[^>]*\bcontent=["'][^"']+["'])[^>]*>/i,
   },
 ];
 
@@ -272,19 +301,35 @@ async function checkIndexLinks() {
 
   if (!(await exists(indexPath))) {
     printCheck(false, "index pwa links", "index.html missing");
+    printCheck(false, "index install meta", "index.html missing");
     return false;
   }
 
   const contents = await readFile(path.join(root, indexPath), "utf8");
   const missingLinks = requiredIndexLinks.filter((link) => !link.pattern.test(contents)).map((link) => link.label);
+  const missingMeta = requiredIndexInstallMeta.filter((meta) => !meta.pattern.test(contents)).map((meta) => meta.label);
 
   printCheck(
     missingLinks.length === 0,
     "index pwa links",
     `${requiredIndexLinks.length - missingLinks.length}/${requiredIndexLinks.length} present; ${namesDetail(missingLinks)}`,
   );
+  printCheck(
+    missingMeta.length === 0,
+    "index install meta",
+    `${requiredIndexInstallMeta.length - missingMeta.length}/${requiredIndexInstallMeta.length} present; ${namesDetail(missingMeta)}`,
+  );
 
-  return missingLinks.length === 0;
+  return missingLinks.length === 0 && missingMeta.length === 0;
+}
+
+async function checkOptionalInstallAssets() {
+  const checks = await Promise.all(optionalInstallAssets.map(async (file) => [file, await exists(file)]));
+  const present = checks.filter(([, isPresent]) => isPresent).map(([file]) => file);
+
+  printCheck(true, "optional install assets", `${present.length}/${optionalInstallAssets.length} present${present.length > 0 ? `: ${present.join(", ")}` : ""}`);
+
+  return true;
 }
 
 async function checkEnvExample() {
@@ -399,6 +444,7 @@ checks.push(await checkRequiredFiles("public assets", requiredAssets));
 checks.push(await checkRequiredFiles("firebase config", requiredFirebaseFiles));
 checks.push(await checkManifest());
 checks.push(await checkIndexLinks());
+checks.push(await checkOptionalInstallAssets());
 checks.push(await checkEnvExample());
 checks.push(await checkFirestoreRulesSafety());
 checks.push(await checkForbiddenEmail());

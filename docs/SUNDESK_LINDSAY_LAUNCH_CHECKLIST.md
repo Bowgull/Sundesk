@@ -123,7 +123,8 @@ Then test the preview URL with fake data only. No private emails, real records, 
 10. Confirm the quiet data-boundary note is there.
 11. Confirm Settings shows the actual Export backup and Import backup controls.
 12. Confirm the Settings Launch readiness panel is visible when wired.
-13. Confirm Firestore writes are shown as disabled unless approval has been given.
+13. Confirm Settings shows the install/bookmark path when wired.
+14. Confirm Firestore writes are shown as disabled unless approval has been given.
 
 If write approval has not been given, stop here. No remote write test should run.
 
@@ -202,7 +203,9 @@ After deploy:
 
 Firestore writes require separate explicit write approval after the local fake-data backup/import rehearsal. Deploy approval is not write approval. Deploying Hosting and rules is not write approval.
 
-## 9. Mobile Install Check
+## 9. Install And Bookmark Check
+
+The expected web app path is hosted URL plus mobile Add to Home Screen plus desktop bookmark. Sundesk should show the Sundesk icon on mobile and the Sundesk favicon in desktop bookmarks.
 
 On iPhone:
 
@@ -210,7 +213,7 @@ On iPhone:
 2. Use Share.
 3. Choose Add to Home Screen.
 4. Confirm the name is Sundesk.
-5. Confirm the icon appears.
+5. Confirm the Sundesk icon appears.
 6. Open from the home screen.
 7. Confirm Google sign-in works.
 8. Confirm Today opens first.
@@ -221,25 +224,23 @@ On Android:
 1. Open the hosted URL in Chrome.
 2. Use Install app or Add to Home screen.
 3. Confirm the name is Sundesk.
-4. Confirm the icon appears.
+4. Confirm the Sundesk icon appears.
 5. Open from the launcher.
 6. Confirm Google sign-in works.
 7. Confirm Today opens first.
 8. Confirm Build is reachable from the sidebar.
 
-## 10. Desktop Bookmark Check
-
 On desktop:
 
 1. Open the hosted URL in Chrome or Safari.
 2. Create a bookmark named Sundesk.
-3. Confirm the favicon appears.
+3. Confirm the Sundesk favicon appears.
 4. Reopen from the bookmark.
 5. Confirm the session persists.
 6. Confirm Today opens first.
 7. Confirm Build is reachable from the sidebar.
 
-## 11. Backup And Rollback
+## 10. Backup And Rollback
 
 Before enabling Firestore writes:
 

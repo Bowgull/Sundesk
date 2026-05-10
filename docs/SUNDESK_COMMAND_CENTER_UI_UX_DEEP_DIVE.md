@@ -296,6 +296,7 @@ Current resolved alignment:
 - The twenty-first docs block clarified that Settings has the actual Export backup and Import backup controls, and that launch rehearsal must round-trip a tiny fake dataset locally before any Firestore write approval.
 - The twenty-second readiness block added the Settings Launch readiness panel, wired it to the Firebase setup summary, and made local backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes visible in the app.
 - The twenty-third backup readiness block updates the E2E and docs contract so Launch readiness starts with local backup rehearsal pending, then marks it complete only after a successful fake-data Export backup and Import backup round trip. No deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data are part of that check.
+- The twenty-fourth install path block verifies the PWA manifest, icon links, install metadata, service worker shell, Today as home, and Build in the sidebar. The documented user path is hosted URL, mobile Add to Home Screen, and desktop bookmark with the Sundesk icon or favicon. Settings now shows the same install/bookmark path.
 
 Remaining gaps:
 

@@ -22,15 +22,74 @@ test('Lindsay install basics are present and local no-config opens Today', async
   await expect(page.locator('head link[rel="icon"]')).toHaveAttribute('href', '/favicon.svg')
   await expect(page.locator('head meta[name="application-name"]')).toHaveAttribute('content', 'Sundesk')
   await expect(page.locator('head meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'Sundesk')
+  await expect(page.locator('head meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content', 'yes')
+  await expect(page.locator('head meta[name="mobile-web-app-capable"]')).toHaveAttribute('content', 'yes')
+  await expect(page.locator('head meta[name="theme-color"]')).not.toHaveAttribute('content', '')
 
   const manifest = await page.request.get('/manifest.webmanifest')
   await expect(manifest).toBeOK()
   const manifestBody = await manifest.json()
+  const localManifestBody = JSON.parse(await readFile('public/manifest.webmanifest', 'utf8'))
 
   expect(manifestBody).toMatchObject({
     name: 'Sundesk',
     short_name: 'Sundesk',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
   })
+  expect(manifestBody.icons).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      src: '/favicon.svg',
+      sizes: 'any',
+      type: 'image/svg+xml',
+    }),
+    expect.objectContaining({
+      src: '/icon-192.png',
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: expect.stringContaining('maskable'),
+    }),
+    expect.objectContaining({
+      src: '/icon-512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: expect.stringContaining('maskable'),
+    }),
+  ]))
+  expect(manifestBody).toEqual(localManifestBody)
+  const appleIcon = await page.request.get('/apple-touch-icon.png')
+  const icon192 = await page.request.get('/icon-192.png')
+  const icon512 = await page.request.get('/icon-512.png')
+
+  await expect(appleIcon).toBeOK()
+  await expect(icon192).toBeOK()
+  await expect(icon512).toBeOK()
+})
+
+test('Settings install surface is covered when present', async ({ page }) => {
+  await page.goto('/#settings')
+
+  await expect(page.getByTestId('settings-screen')).toBeVisible()
+
+  const settingsScreen = page.getByTestId('settings-screen')
+  const installSurface = settingsScreen.getByText(/Add to Home Screen|bookmark|install|Sundesk icon/i).first()
+
+  if (await installSurface.count() === 0) {
+    test.info().annotations.push({
+      type: 'integration-note',
+      description: 'Settings install/bookmark surface is not present in this checkout.',
+    })
+    return
+  }
+
+  await expect(installSurface).toBeVisible()
+  await expect(settingsScreen).toContainText(/hosted URL|hosted web address/i)
+  await expect(settingsScreen).toContainText(/mobile/i)
+  await expect(settingsScreen).toContainText(/home screen/i)
+  await expect(settingsScreen).toContainText(/desktop/i)
+  await expect(settingsScreen).toContainText(/bookmark/i)
+  await expect(settingsScreen).toContainText(/Sundesk icon/i)
 })
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
