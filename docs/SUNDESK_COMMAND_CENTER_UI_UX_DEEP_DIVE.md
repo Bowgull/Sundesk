@@ -284,6 +284,7 @@ Current resolved alignment:
 - The ninth parallel block used workers to extract Build grid cells, record field inputs, and meeting prep into dedicated components while preserving the same tested behavior.
 - The tenth parallel block used workers to extract Build field headers, Build modals, and Settings into dedicated components while preserving all tested modal, menu, theme, and settings behavior.
 - The eleventh parallel block extracted the record modal and Timeline modes into dedicated components, and added a Lindsay-only web app deploy readiness note.
+- The twelfth parallel block added the Firestore workspace snapshot layer, Google-login access helpers, the Auth gate surface, PWA bookmark assets, and the quiet Settings data-boundary disclaimer for the Lindsay-ready web app path.
 
 Remaining gaps:
 
@@ -295,7 +296,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Firestore workspace persistence, Google login, PWA icon/manifest.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: wire Firebase Auth into `App`, hydrate and save the shared Firestore workspace, and harden Firestore rules around the Josh/Lindsay workspace.
 
 ## UI/UX Audit Checklist
 

@@ -1,22 +1,23 @@
 # Lindsay Web App Deploy Readiness
 
-Status: local-only readiness note.
+Status: shared web app direction approved. Implementation in progress.
 
-Sundesk is a Vite React app. The near-term path is a static web app for Lindsay only.
+Sundesk is a Vite React app. The near-term path is a real hosted web app for Josh and Lindsay.
 
-No deploy in this step. No Firebase writes. No config edits.
+No deploy in this step. No Firebase writes. No remote data changes.
 
 ## Recommended Path
 
-Use Firebase Hosting for the first Lindsay web app.
+Use Firebase Hosting, Firebase Auth, and Firestore for the first Lindsay web app.
 
 Reason:
 
 - The repo already has `firebase.json`.
 - Hosting serves `dist`.
 - SPA rewrites already point to `index.html`.
-- No server runtime is needed for the current app.
-- Firebase writes can stay off.
+- Firebase Auth gives Google sign-in with browser session persistence.
+- Firestore gives the shared cross-device workspace Lindsay needs.
+- No server runtime is needed for the first hosted app.
 
 The deploy path, after explicit approval:
 
@@ -27,20 +28,22 @@ firebase deploy --only hosting
 
 Use one Firebase project. Keep billing off. Do not enable Cloud Functions, Cloud Storage, App Hosting, Extensions, imports, or file upload.
 
-For Lindsay-only use, the first deploy can stay simple:
+For Josh and Lindsay use, the first deploy should stay simple:
 
 - Static app hosted from `dist`.
-- Browser-local state remains the working state.
-- Firestore writes remain disabled.
-- Firestore read-shadow remains optional and gated.
-- No multi-user account model.
-- No team permissions.
+- Google sign-in with local browser persistence.
+- Approved-user allowlist for Josh and Lindsay.
+- Firestore workspace document at `workspaces/lindsay-sundesk/state/current`.
+- Browser-local storage remains a fallback and cache only.
+- No broad team permissions.
+- No file storage.
+- No document imports.
 
 Before any public URL is shared, confirm the app has no real SALTXC records, document contents, private contact data, permit contents, COI contents, or contract text baked into source, demo data, screenshots, or local export files.
 
 ## Persistence Caveats
 
-Current runtime persistence is local browser storage.
+Current runtime persistence is local browser storage until the Firestore bridge is wired into `App`.
 
 Observed local keys include:
 
@@ -49,7 +52,7 @@ Observed local keys include:
 - Rules.
 - Theme.
 
-This is enough for Lindsay-only use during early validation.
+This is enough for local validation only.
 
 It has limits:
 
@@ -60,26 +63,35 @@ It has limits:
 - There is no team backup.
 - A hosted static app does not make local state portable by itself.
 
-For daily use, keep one primary browser profile. Add manual JSON export before relying on the app for real operations.
+For daily use, Firestore must become the source of truth before Lindsay relies on Sundesk across browser, mobile, and another device.
 
 ## Firebase Boundary
 
 Firebase files exist.
 
-Current deploy readiness should treat Firebase as hosting only.
+Current deploy readiness should treat Firebase as hosting plus an approved Auth and Firestore path.
 
-Do not turn on Firestore writes without a separate approval and review. The existing persistence plan keeps writes behind `VITE_SUNDESK_FIRESTORE_WRITES=enabled`.
+Do not turn on Firestore writes without a separate deploy/setup approval and review. The shared workspace helpers keep writes behind an explicit gate.
 
-Firestore read-shadow can be used later to compare remote collection counts. It does not replace local state.
+Firestore workspace snapshot helpers are local code only until the Firebase client is wired into runtime.
+
+The intended shared workspace path is:
+
+- `workspaces/lindsay-sundesk`
+- `workspaces/lindsay-sundesk/state/current`
+
+The quiet user-facing disclaimer belongs in Settings, not in the first-run path.
 
 ## Not Included
 
 This readiness path does not include:
 
-- Firebase write activation.
-- Firestore migration.
-- Account management.
-- Multi-user permissions.
+- Firebase deployment.
+- Firebase write activation in production.
+- Firestore security-rule hardening.
+- Runtime Auth wiring.
+- Runtime Firestore hydration and save.
+- Boss or broader team account management.
 - File uploads.
 - Document imports.
 - Google Drive sync.
@@ -112,7 +124,8 @@ Then smoke test the preview URL:
 - Refresh again.
 - Confirm the theme remains.
 - Open Settings.
-- Confirm Firestore writes are off.
+- Confirm the data boundary note is present.
+- Confirm the app icon appears for browser bookmark and Add to Home Screen.
 
 If E2E is expected for the release check:
 
@@ -129,8 +142,11 @@ npm run test:e2e
 - Build remains visible in the sidebar.
 - Today remains home.
 - No real Lindsay or SALTXC data is committed.
-- No Firebase writes are enabled.
+- No Firebase writes are enabled before deploy approval.
 - No Firebase deploy has run without explicit approval.
-- Local persistence caveats are accepted for this phase.
+- Google login is wired with browser session persistence.
+- Firestore workspace save and hydrate are wired.
+- Firestore rules limit access to approved users.
+- Mobile Add to Home Screen uses the Sundesk icon.
 
-Static hosting is enough for the first Lindsay-only web app. Persistence is the known risk.
+Static hosting alone is not enough for the requested Lindsay web app. The finished first version needs Hosting, Google Auth, and Firestore.
