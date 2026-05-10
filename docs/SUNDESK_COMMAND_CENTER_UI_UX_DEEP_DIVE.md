@@ -24,9 +24,11 @@ Obsidian note:
 
 Obsidian handoffs:
 
-`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/snapshots/2026-05-08 0724 Sundesk Session Handoff - Command Center Training Deck.md`
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/snapshots`
 
-`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/snapshots/2026-05-08 0811 Sundesk Session Handoff - Final Build Target Deck.md`
+Current index:
+
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/Sundesk Build History.md`
 
 SHA-256:
 
@@ -235,6 +237,7 @@ Current resolved alignment:
 - Build now keeps constructive actions visible and moves table admin actions behind `Table options`.
 - Build now keeps only View, Filter, and `Shape grid` in the first toolbar read.
 - Secondary grid controls now live behind `Shape grid`.
+- Build CSV export is specified as a local browser download for the current visible table or saved view. It does not sync remotely and does not write Firebase.
 - Field creation and field editing now open on column behavior cards before raw type details.
 - Work now has a visible `Tags` column with tag route chips in Build.
 - Today now shows workflow tags on surfaced records.
@@ -299,6 +302,7 @@ Current resolved alignment:
 - The twenty-third backup readiness block updates the E2E and docs contract so Launch readiness starts with local backup rehearsal pending, then marks it complete only after a successful fake-data Export backup and Import backup round trip. No deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data are part of that check.
 - The twenty-fourth install path block verifies the PWA manifest, icon links, install metadata, service worker shell, Today as home, and Build in the sidebar. The documented user path is hosted URL, mobile Add to Home Screen, and desktop bookmark with the Sundesk icon or favicon. Settings now shows the same install/bookmark path.
 - The twenty-fifth command-send preview block wires the Today summary preview as local-only. Preview summary opens a no-send command preview with Now, Waiting, Next, focus, why, and meeting prep context.
+- The twenty-sixth Build CSV export block wires a local CSV download for the current visible Build table or saved view. The E2E confirms headers, a visible row, Today as home, and Build in the sidebar.
 
 Remaining gaps:
 

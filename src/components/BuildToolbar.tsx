@@ -19,6 +19,7 @@ type BuildToolbarProps = {
   onAddField: () => void
   onApplyGridView: (view: LocalGridView) => void
   onClearActiveGridView: () => void
+  onExportCsv: () => void
   onGridColorFieldChange: (fieldId: string) => void
   onGridDensityChange: (density: GridDensity) => void
   onGridFilterChange: (filter: string) => void
@@ -43,6 +44,7 @@ export function BuildToolbar({
   onAddField,
   onApplyGridView,
   onClearActiveGridView,
+  onExportCsv,
   onGridColorFieldChange,
   onGridDensityChange,
   onGridFilterChange,
@@ -91,6 +93,9 @@ export function BuildToolbar({
             placeholder="Find in visible table"
           />
         </label>
+        <button className="toolbar-export-button" type="button" onClick={onExportCsv}>
+          Export CSV
+        </button>
         <details className="grid-shape-controls">
           <summary>Shape grid</summary>
           <div>

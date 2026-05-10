@@ -26,6 +26,7 @@ import { WaitingOnScreen } from './components/WaitingOnScreen'
 import {
   savedViews,
 } from './data/demoData'
+import { exportTableCsv } from './data/tableExport'
 import {
   type DependencyRelationship,
   getDependencySummary as getDependencySummaryForBase,
@@ -229,6 +230,16 @@ function toSlug(value: string) {
     .replace(/^_+|_+$/g, '')
 
   return slug || 'local_item'
+}
+
+function toFileSlug(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return slug || 'local-table'
 }
 
 function getUniqueSlug(baseId: string, existingIds: string[]) {
@@ -836,6 +847,23 @@ function App() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     showToast('Local backup exported.')
+  }
+
+  function exportBuildCsv() {
+    const csv = exportTableCsv(base, visibleFieldsForGrid, sortedAndFilteredRecords)
+    const tableName = selectedBuildTable?.label || selectedBuildTable?.id || 'build'
+    const fileName = `sundesk-${toFileSlug(tableName)}.csv`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast(`CSV exported: ${fileName}.`)
   }
 
   function applyLocalBackupFile(file: File) {
@@ -3750,6 +3778,7 @@ function App() {
               onAddField={() => setBuildModal('field')}
               onApplyGridView={applyGridView}
               onClearActiveGridView={() => setActiveGridViewId('')}
+              onExportCsv={exportBuildCsv}
               onGridColorFieldChange={setGridColorFieldId}
               onGridDensityChange={setGridDensity}
               onGridFilterChange={setGridFilter}

@@ -140,6 +140,10 @@ Then test the preview URL with fake data only. No private emails, real records, 
 15. Open Today and click Preview summary.
 16. Confirm the command-send preview says no send happened.
 17. Confirm the preview includes Now, Waiting, Next, and meeting prep context.
+18. Open Build and choose a table or saved view with visible rows.
+19. Use Export CSV only as a local browser download for that current visible table or view.
+20. Confirm the CSV has headers and at least one visible row from the selected table.
+21. Confirm this export does not change Firebase setup, does not sync remotely, and does not write remote data.
 
 If write approval has not been given, stop here. No remote write test should run.
 
@@ -192,6 +196,8 @@ Steps:
 13. Confirm Build remains visible in the sidebar.
 14. Confirm the restored data is fake.
 15. Confirm Settings still shows Firestore writes as disabled.
+16. If Build Export CSV is wired, export the current visible fake table or view as CSV and confirm the downloaded file has headers and visible fake rows only.
+17. Treat Build Export CSV as local browser output only. It is not a backup, not remote sync, and not Firebase write approval.
 
 Stop after the local rehearsal. This step does not approve Firestore writes. This step does not approve deploy. This step does not move any real Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 

@@ -247,6 +247,7 @@ Build should contain:
 - `Add record` row.
 - Static saved records.
 - Explicit `Edit` actions.
+- Local `Export CSV` for the current visible table or saved view.
 - Record modal.
 
 Always-visible builder panels should be removed.
@@ -572,10 +573,11 @@ The remaining path should be checked against the UI/UX spec as it is built:
    - Linked records, backlinks, and dependencies read clearly inside the drawer.
 
 4. View engine.
-   - Build toolbar order is View, Fields, Filter, Sort, Group, Colour, Density, Export later.
+   - Build toolbar order is View, Fields, Filter, Sort, Group, Colour, Density, and local CSV export.
    - Visible fields, widths, filter, sort, group, colour, density, and saved views persist.
    - Changed saved views show a subtle marker.
    - Pinned views keep table and view context.
+   - Build CSV export is a browser download for the current visible table or view only. It is not a remote sync, not an import path, and not a Firebase write.
 
 5. Today and Rules logic.
    - Today remains Now, Waiting, Next.

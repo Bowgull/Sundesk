@@ -3010,7 +3010,7 @@ h2 {
 }
 
 .grid-toolbar.build-toolbar {
-  grid-template-columns: minmax(150px, 0.28fr) minmax(220px, 0.44fr) minmax(180px, 0.28fr);
+  grid-template-columns: minmax(150px, 0.28fr) minmax(220px, 0.44fr) minmax(130px, 0.2fr) minmax(180px, 0.28fr);
   align-items: end;
 }
 
@@ -3085,6 +3085,18 @@ h2 {
 .toolbar-field-count {
   justify-content: flex-start;
   color: var(--ink);
+}
+
+.toolbar-export-button {
+  min-height: 38px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .visible-field-list {

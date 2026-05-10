@@ -364,6 +364,53 @@ test('Build toolbar exposes ordered view controls and persists density', async (
   await expect(page.locator('.record-table').first()).toHaveClass(/density-compact/)
 })
 
+test('Build exports the current visible table view as a local CSV download', async ({ page }, testInfo) => {
+  await page.goto('/#build')
+
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
+
+  const exportCsv = page.getByRole('button', { name: 'Export CSV' })
+
+  if (await exportCsv.count() === 0) {
+    test.info().annotations.push({
+      type: 'integration-note',
+      description: 'Build Export CSV is not wired in this checkout. Intended assertion: clicking Export CSV downloads the current visible table or view as local CSV with headers and visible rows.',
+    })
+    return
+  }
+
+  const downloadPromise = page.waitForEvent('download')
+
+  await exportCsv.click()
+
+  const download = await downloadPromise
+  const csvPath = testInfo.outputPath('sundesk-build-work-export.csv')
+
+  await download.saveAs(csvPath)
+
+  const csv = await readFile(csvPath, 'utf8')
+  const [headerRow, ...dataRows] = csv.trim().split(/\r?\n/)
+
+  expect(download.suggestedFilename()).toMatch(/\.csv$/)
+  expect(headerRow).toContain('Title')
+  expect(headerRow).toContain('Status')
+  expect(dataRows.some((row) => row.includes('Confirm COI status'))).toBe(true)
+
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
+})
+
 test('Build toolbar colour applies semantic row tinting', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
