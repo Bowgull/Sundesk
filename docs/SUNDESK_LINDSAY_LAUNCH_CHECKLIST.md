@@ -133,13 +133,13 @@ Settings should show one manual launch readiness panel before deploy.
 
 The panel should confirm:
 
-- Local backup rehearsal. Complete only after the fake-data Export backup and Import backup round trip has been rehearsed locally.
+- Local backup rehearsal. Pending on first read. Complete only after the fake-data Export backup and Import backup round trip has been rehearsed locally.
 - Firebase config status. Local, partial, sign-in-ready, or write-ready from the private environment config.
 - Deploy approval. Pending until explicit deploy approval is given.
 - Write approval. Pending until explicit Firestore write approval is given.
 - No Firebase writes. Confirmed while `VITE_SUNDESK_FIRESTORE_WRITES` is blank and Settings shows writes disabled.
 
-If the panel shows any pending item, stop at the local build. Deploy approval is not write approval. A backup rehearsal is not write approval. No Firebase write is implied by any other check.
+On a fresh local run, Launch readiness should start with the backup rehearsal pending. After a successful fake-data Export backup and Import backup round trip, the backup item may become complete. If the panel shows any pending item, stop at the local build. Deploy approval is not write approval. A backup rehearsal is not write approval. No Firebase write is implied by any other check.
 
 ## 7. Local Fake-Data Backup And Import Rehearsal
 
@@ -169,12 +169,13 @@ Steps:
 6. Use Export backup to preserve that fake local state as JSON.
 7. Clear or isolate the local browser state only if needed for the rehearsal.
 8. Use Import backup to restore the exported JSON back into the local app.
-9. Confirm the restored fake dataset matches the exported fake dataset.
-10. Confirm tables, fields, tags, links, and views survived the local round trip.
-11. Confirm Today remains home.
-12. Confirm Build remains visible in the sidebar.
-13. Confirm the restored data is fake.
-14. Confirm Settings still shows Firestore writes as disabled.
+9. Confirm Settings Launch readiness changes the local backup rehearsal item from pending to complete.
+10. Confirm the restored fake dataset matches the exported fake dataset.
+11. Confirm tables, fields, tags, links, and views survived the local round trip.
+12. Confirm Today remains home.
+13. Confirm Build remains visible in the sidebar.
+14. Confirm the restored data is fake.
+15. Confirm Settings still shows Firestore writes as disabled.
 
 Stop after the local rehearsal. This step does not approve Firestore writes. This step does not approve deploy. This step does not move any real Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 

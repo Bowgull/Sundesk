@@ -295,6 +295,7 @@ Current resolved alignment:
 - The twentieth backup block added local JSON backup/import helpers, a quiet Settings backup panel, and the local fake-data backup/import rehearsal gate before any Firestore write approval, with no deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data.
 - The twenty-first docs block clarified that Settings has the actual Export backup and Import backup controls, and that launch rehearsal must round-trip a tiny fake dataset locally before any Firestore write approval.
 - The twenty-second readiness block added the Settings Launch readiness panel, wired it to the Firebase setup summary, and made local backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes visible in the app.
+- The twenty-third backup readiness block updates the E2E and docs contract so Launch readiness starts with local backup rehearsal pending, then marks it complete only after a successful fake-data Export backup and Import backup round trip. No deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data are part of that check.
 
 Remaining gaps:
 

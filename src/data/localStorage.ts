@@ -17,6 +17,7 @@ import {
 export const workbaseStorageKey = 'sundesk-local-workbase-v1'
 export const buildViewStateStorageKey = 'sundesk-build-view-state-v1'
 export const rulesStorageKey = 'sundesk-local-rules-v1'
+export const localBackupRehearsalStorageKey = 'sundesk-local-backup-rehearsal-v1'
 export const sundeskLocalBackupAppName = 'Sundesk'
 export const sundeskLocalBackupVersion = 1
 
@@ -532,6 +533,30 @@ export function normalizeSundeskLocalBackupImport(value: unknown): NormalizedSun
       rules: normalizedRules.reset,
       buildViewState: normalizedBuildViewState.reset,
     },
+  }
+}
+
+export function readLocalBackupRehearsed(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return window.localStorage.getItem(localBackupRehearsalStorageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+export function markLocalBackupRehearsed(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(localBackupRehearsalStorageKey, 'true')
+  } catch {
+    return
   }
 }
 

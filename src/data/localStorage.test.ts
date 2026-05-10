@@ -6,7 +6,10 @@ import {
   defaultVisibleFieldIdsByTable,
   getEmptyFieldValue,
   getEmptyRecordValues,
+  localBackupRehearsalStorageKey,
+  markLocalBackupRehearsed,
   normalizeSundeskLocalBackupImport,
+  readLocalBackupRehearsed,
   readStoredBuildViewState,
   readStoredRules,
   readStoredWorkbase,
@@ -268,6 +271,38 @@ describe('local storage helpers', () => {
     expect(workbase.records[0].values.name).toBe('Halifax')
     expect(getItem).not.toHaveBeenCalled()
     expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('reads the local backup rehearsal marker as false without window storage', () => {
+    expect(readLocalBackupRehearsed()).toBe(false)
+    expect(() => markLocalBackupRehearsed()).not.toThrow()
+  })
+
+  it('reads the local backup rehearsal marker as false when it is missing or malformed', () => {
+    stubLocalStorage({})
+
+    expect(readLocalBackupRehearsed()).toBe(false)
+
+    stubLocalStorage({
+      [localBackupRehearsalStorageKey]: 'yes',
+    })
+
+    expect(readLocalBackupRehearsed()).toBe(false)
+  })
+
+  it('marks the local backup rehearsal marker explicitly', () => {
+    const values = new Map<string, string>()
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => values.get(key) || null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    })
+
+    markLocalBackupRehearsed()
+
+    expect(values.get(localBackupRehearsalStorageKey)).toBe('true')
+    expect(readLocalBackupRehearsed()).toBe(true)
   })
 
   it('normalizes imported backup slices through existing repair paths without touching localStorage', () => {

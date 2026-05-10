@@ -729,7 +729,7 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByLabel('Launch readiness checks')).toContainText('Deploy approval')
   await expect(page.getByLabel('Launch readiness checks')).toContainText('Firestore writes')
   await expect(page.getByLabel('Launch readiness checks')).toContainText('No Firebase writes')
-  await expect(page.getByLabel('Launch readiness checks')).toContainText('Backup export and import rehearsal is done.')
+  await expect(page.getByLabel('Launch readiness checks')).toContainText('Run a local backup export and import rehearsal before launch.')
   await expect(page.getByLabel('Launch readiness checks')).toContainText('6 config fields missing. Add Firebase config before hosted use.')
   await expect(page.getByLabel('Launch readiness checks')).toContainText('Write gate is disabled. No remote writes can run in this build.')
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
@@ -779,6 +779,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByText(backupNoteText)).toBeVisible()
   await expect(page.getByText(firebaseSetupText)).toBeVisible()
   await expect(page.getByText(writeGateText)).toBeVisible()
+  await expect(page.getByLabel('Launch readiness checks')).toContainText('Run a local backup export and import rehearsal before launch.')
 
   const downloadPromise = page.waitForEvent('download')
 
@@ -834,11 +835,16 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByText(backupNoteText)).toBeVisible()
   await expect(page.getByText(firebaseSetupText)).toBeVisible()
   await expect(page.getByText(writeGateText)).toBeVisible()
+  await expect(page.getByLabel('Launch readiness checks')).toContainText('Backup export and import rehearsal is done.')
 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
   await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeHidden()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
 })
 
 test('Mobile keeps navigation and touch targets usable', async ({ page }) => {

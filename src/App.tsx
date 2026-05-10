@@ -66,7 +66,9 @@ import {
   getDefaultVisibleFieldIds,
   getEmptyFieldValue,
   getEmptyRecordValues,
+  markLocalBackupRehearsed,
   normalizeSundeskLocalBackupImport,
+  readLocalBackupRehearsed,
   readStoredBuildViewState,
   readStoredRules,
   readStoredWorkbase,
@@ -355,6 +357,7 @@ function App() {
   const [timelineReadinessCommunityId, setTimelineReadinessCommunityId] = useState('')
   const [timelineGraphCommunityId, setTimelineGraphCommunityId] = useState('')
   const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
+  const [localBackupRehearsed, setLocalBackupRehearsed] = useState(() => readLocalBackupRehearsed())
   const [expandedRuleId, setExpandedRuleId] = useState('')
   const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
   const [todayDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -645,7 +648,7 @@ function App() {
   const firestoreWriteGateState = getFirestoreWriteGateState()
   const firebaseSetupState = getFirebaseSetupState()
   const launchReadinessSummary = getFirebaseLaunchReadinessSummary(firebaseSetupState, {
-    backupRehearsed: true,
+    backupRehearsed: localBackupRehearsed,
     deployApproved: false,
     writeApproved: false,
   })
@@ -843,6 +846,8 @@ function App() {
         localStorage.setItem(buildViewStateStorageKey, JSON.stringify(importedBackup.buildViewState))
         setSelectedBuildRecordId(getRecordsForTable(importedBackup.workbase, importedBackup.buildViewState.selectedBuildTableId)[0]?.id || '')
         setRecordDraft(getEmptyRecordValues(importedBackup.workbase, importedBackup.buildViewState.selectedBuildTableId))
+        markLocalBackupRehearsed()
+        setLocalBackupRehearsed(true)
         setBuildModal('')
         showToast('Local backup imported.')
       } catch {

@@ -63,13 +63,13 @@ Scope:
 - No deploy.
 - No Firebase writes.
 
-The rehearsal proves the local backup and restore path before the shared workspace can receive writes. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank. Use the local preview or browser build. Create a tiny fake dataset. Open Settings. Use the actual Export backup control to write a backup JSON file. Clear or isolate local browser state only if needed. Use the actual Import backup control to restore that JSON locally. Confirm the restored fake dataset matches the exported fake dataset. Confirm Today, Build, Settings, and the data boundary still read correctly.
+The rehearsal proves the local backup and restore path before the shared workspace can receive writes. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank. Use the local preview or browser build. Create a tiny fake dataset. Open Settings. Confirm Launch readiness starts with local backup rehearsal pending. Use the actual Export backup control to write a backup JSON file. Clear or isolate local browser state only if needed. Use the actual Import backup control to restore that JSON locally. Confirm Launch readiness marks the local backup rehearsal complete only after the import succeeds. Confirm the restored fake dataset matches the exported fake dataset. Confirm Today, Build, Settings, and the data boundary still read correctly.
 
 This rehearsal is not migration. It does not move Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 
 Before deploy, Settings should also expose a Launch readiness panel. Treat it as a manual gate. It should show:
 
-- Local backup rehearsal status.
+- Local backup rehearsal status. Pending before the local fake-data backup import. Complete only after the import succeeds.
 - Firebase config status.
 - Deploy approval status.
 - Write approval status.
@@ -180,8 +180,10 @@ Then smoke test the preview URL with fake data only:
 - Confirm the data boundary note is present.
 - Confirm Settings shows the actual Export backup and Import backup controls.
 - Confirm Settings shows the Launch readiness panel with backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes status.
+- Confirm backup rehearsal starts pending before the fake-data import.
 - Confirm the app icon appears for browser bookmark and Add to Home Screen.
 - Run the local fake-data backup/import rehearsal from Settings.
+- Confirm backup rehearsal becomes complete after the fake-data import succeeds.
 - Confirm Firestore writes remain disabled.
 
 Hosted smoke test order after deploy approval:
