@@ -132,19 +132,20 @@ export function SettingsScreen({
         </div>
       </article>
 
-      <article className="settings-panel">
+      <article className="settings-panel settings-privacy-panel">
         <div className="panel-title">
           <div>
             <span className="eyebrow">Privacy</span>
             <h2>Data boundary.</h2>
           </div>
         </div>
-        <div className="settings-list">
-          <p><strong>Boundary.</strong> Sundesk is for status, dates, owners, links, and short notes.</p>
-          <p><strong>Discretion.</strong> You choose what to enter. You are responsible for any sensitive details you add.</p>
-          <p><strong>Sensitive information.</strong> Files, document contents, private numbers, permits, COI files, and contract text are your responsibility if added.</p>
-          <p><strong>Build notes.</strong> Obsidian is for session memory only. No product data goes there.</p>
+        <div className="settings-list settings-quiet-list">
+          <p><strong>Use.</strong> Status, dates, owners, links, and short notes.</p>
+          <p><strong>Storage.</strong> You choose what to enter. Sensitive details are stored at your own risk.</p>
         </div>
+        <p className="settings-risk-note">
+          Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.
+        </p>
       </article>
 
       <article className="settings-panel data-access-panel">

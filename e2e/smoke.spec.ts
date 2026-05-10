@@ -14,6 +14,24 @@ test.beforeEach(async ({ page }) => {
   expect(consoleErrors).toEqual([])
 })
 
+test('Lindsay install basics are present and local no-config opens Today', async ({ page }) => {
+  await expect(page).toHaveTitle('Sundesk')
+  await expect(page.locator('head link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest')
+  await expect(page.locator('head link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/apple-touch-icon.png')
+  await expect(page.locator('head link[rel="icon"]')).toHaveAttribute('href', '/favicon.svg')
+  await expect(page.locator('head meta[name="application-name"]')).toHaveAttribute('content', 'Sundesk')
+  await expect(page.locator('head meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'Sundesk')
+
+  const manifest = await page.request.get('/manifest.webmanifest')
+  await expect(manifest).toBeOK()
+  const manifestBody = await manifest.json()
+
+  expect(manifestBody).toMatchObject({
+    name: 'Sundesk',
+    short_name: 'Sundesk',
+  })
+})
+
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()

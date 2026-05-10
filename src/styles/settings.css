@@ -118,6 +118,31 @@
   margin-right: 6px;
 }
 
+.settings-privacy-panel {
+  align-self: start;
+}
+
+.settings-quiet-list p {
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+
+.settings-quiet-list p:last-child {
+  border-bottom: 0;
+}
+
+.settings-risk-note {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .data-access-panel {
   grid-column: span 2;
 }
