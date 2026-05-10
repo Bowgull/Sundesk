@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 const firebaseWriteMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 const firebaseWriteHostPattern = /(?:^|\.)firestore\.googleapis\.com$|(?:^|\.)firebaseio\.com$|(?:^|\.)firebase\.google\.com$/
@@ -1290,9 +1290,12 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByRole('banner').filter({ hasText: sensitiveStorageMessage })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Local copy.' })).toBeVisible()
   await expect(page.getByText('Backup controls are local commands. They do not change Firebase setup or write remote data.')).toBeVisible()
+  await expect(page.getByText('Import replaces local tables, records, rules, and Build views after you choose a file.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Export backup' })).toBeEnabled()
-  await expect(page.getByText('Import backup', { exact: true })).toBeVisible()
+  await expect(page.getByText('Prepare import', { exact: true })).toBeVisible()
   await expect(page.getByLabel('Import Sundesk backup JSON file')).toBeEnabled()
+  await page.getByText('Prepare import', { exact: true }).click()
+  await expect(page.getByText('Choose backup file', { exact: true })).toBeVisible()
   await expect(page.getByText('Backup handlers are not connected in this build.')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Readiness.' })).toBeVisible()
   await expect(page.getByLabel('Launch readiness checks')).toContainText('Local backup rehearsal')
@@ -1545,7 +1548,8 @@ test('Settings exports and imports a local backup without changing Firebase writ
 
   const fileChooserPromise = page.waitForEvent('filechooser')
 
-  await page.getByText('Import backup', { exact: true }).click()
+  await page.getByText('Prepare import', { exact: true }).click()
+  await page.getByText('Choose backup file', { exact: true }).click()
 
   const fileChooser = await fileChooserPromise
 
@@ -1566,6 +1570,59 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByTestId('today-lane-now').getByText(originalTitle)).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+  expect(firebaseWriteRequests).toEqual([])
+})
+
+test('Settings rejects unsupported backup imports without changing local work', async ({ page }, testInfo) => {
+  const firebaseWriteRequests = auditFirebaseWrites(page)
+  const seedTitle = 'Import guard seed'
+  const unsupportedBackupPath = testInfo.outputPath('unsupported-sundesk-backup.json')
+
+  await writeFile(unsupportedBackupPath, JSON.stringify({
+    appName: 'Other',
+    version: 1,
+    workbase: {
+      records: [
+        {
+          id: 'bad_record',
+          values: {
+            title: 'Bad import should not land',
+          },
+        },
+      ],
+    },
+  }))
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await modal.getByLabel('Title').fill(seedTitle)
+  await modal.getByLabel('Status').selectOption('Waiting')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(seedTitle) })).toBeVisible()
+
+  await page.goto('/#settings')
+  await expect(page.getByLabel('Launch readiness checks')).toContainText('Run a local backup export and import rehearsal before launch.')
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+
+  await page.getByText('Prepare import', { exact: true }).click()
+  await page.getByText('Choose backup file', { exact: true }).click()
+
+  const fileChooser = await fileChooserPromise
+
+  await fileChooser.setFiles(unsupportedBackupPath)
+  await expect(page.getByRole('status')).toContainText('Unsupported Sundesk backup.')
+  await expect(page.getByLabel('Launch readiness checks')).toContainText('Run a local backup export and import rehearsal before launch.')
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('row', { name: new RegExp(seedTitle) })).toBeVisible()
+  await expect(page.getByText('Bad import should not land')).toHaveCount(0)
   expect(firebaseWriteRequests).toEqual([])
 })
 

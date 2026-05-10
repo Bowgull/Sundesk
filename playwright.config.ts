@@ -19,6 +19,11 @@ export default defineConfig({
       reuseExistingServer: true,
       url: 'http://127.0.0.1:5176',
     },
+    {
+      command: 'VITE_SUNDESK_ALLOWED_EMAILS= VITE_SUNDESK_FIRESTORE_WRITES= VITE_SUNDESK_FIRESTORE_WRITE_APPROVAL= npm run build && npm run preview -- --host 127.0.0.1 --port 5177',
+      reuseExistingServer: true,
+      url: 'http://127.0.0.1:5177',
+    },
   ],
   projects: [
     {

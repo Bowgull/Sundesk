@@ -96,6 +96,7 @@ export function SettingsScreen({
   workspaceStatus,
 }: SettingsScreenProps) {
   const [helpQuery, setHelpQuery] = useState('')
+  const [backupImportArmed, setBackupImportArmed] = useState(false)
   const helpResults = useMemo(() => searchHelpArticles(helpQuery), [helpQuery])
   const dataAccessTitle = authRequired ? 'Shared workspace.' : 'Local workspace.'
   const dataAccessPill = authRequired
@@ -116,6 +117,7 @@ export function SettingsScreen({
       onImportBackup?.(file)
     }
 
+    setBackupImportArmed(false)
     event.currentTarget.value = ''
   }
 
@@ -441,6 +443,9 @@ export function SettingsScreen({
             <p className="settings-backup-note" id="settings-backup-note">
               Backup controls are local commands. They do not change Firebase setup or write remote data.
             </p>
+            <p className="settings-backup-note">
+              Import replaces local tables, records, rules, and Build views after you choose a file.
+            </p>
           </div>
           <div className="settings-backup-actions" aria-describedby="settings-backup-note">
             <button type="button" className="primary" disabled={!canExportBackup} onClick={onExportBackup}>
@@ -455,13 +460,24 @@ export function SettingsScreen({
               onChange={handleImportBackupChange}
               type="file"
             />
-            <label
-              aria-disabled={!canImportBackup}
-              className={`settings-backup-import-label ${!canImportBackup ? 'disabled' : ''}`}
-              htmlFor={importBackupInputId}
-            >
-              Import backup
-            </label>
+            {backupImportArmed ? (
+              <label
+                aria-disabled={!canImportBackup}
+                className={`settings-backup-import-label ${!canImportBackup ? 'disabled' : ''}`}
+                htmlFor={importBackupInputId}
+              >
+                Choose backup file
+              </label>
+            ) : (
+              <button
+                className="settings-backup-import-label"
+                disabled={!canImportBackup}
+                type="button"
+                onClick={() => setBackupImportArmed(true)}
+              >
+                Prepare import
+              </button>
+            )}
           </div>
         </div>
         {(!canExportBackup || !canImportBackup) && (
