@@ -4,7 +4,7 @@ Status: shared web app direction approved. Implementation in progress.
 
 Sundesk is a Vite React app. The near-term path is a real hosted web app for Josh and Lindsay.
 
-No deploy in this step. No Firebase writes. No remote data changes.
+No deploy has run in this step. No Firebase writes. No remote data changes.
 
 ## Recommended Path
 
@@ -23,7 +23,7 @@ The deploy path, after explicit approval:
 
 ```bash
 npm run build
-firebase deploy --only hosting
+firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 
 Use one Firebase project. Keep billing off. Do not enable Cloud Functions, Cloud Storage, App Hosting, Extensions, imports, or file upload.
@@ -69,7 +69,7 @@ For daily use, Firestore must become the source of truth before Lindsay relies o
 
 Firebase files exist.
 
-Current deploy readiness should treat Firebase as hosting plus an approved Auth and Firestore path.
+Current deploy readiness should treat Firebase as Hosting, Google Auth, Firestore rules, and one approved workspace path.
 
 Do not turn on Firestore writes without a separate deploy/setup approval and review. The shared workspace helpers keep writes behind an explicit gate.
 
@@ -79,6 +79,17 @@ The intended shared workspace path is:
 
 - `workspaces/lindsay-sundesk`
 - `workspaces/lindsay-sundesk/state/current`
+- subcollections under `workspaces/lindsay-sundesk`
+
+Firestore rules allow:
+
+- `allowedUsers/{email}`: signed-in users can read only their own allowlist document.
+- `allowedUsers/{email}`: no client writes.
+- `workspaces/lindsay-sundesk`: signed-in allowlisted users can read and write.
+- `workspaces/lindsay-sundesk/{document=**}`: signed-in allowlisted users can read and write subcollection documents.
+- every other document: denied.
+
+Add Josh and Lindsay manually in Firebase Console by creating `allowedUsers` documents whose document IDs are their approved Google email addresses. Do not commit those addresses, `.env.local`, exported Firestore data, service account keys, or setup screenshots containing private values.
 
 The quiet user-facing disclaimer belongs in Settings, not in the first-run path.
 
@@ -88,7 +99,6 @@ This readiness path does not include:
 
 - Firebase deployment.
 - Firebase write activation in production.
-- Firestore security-rule hardening.
 - Runtime Auth wiring.
 - Runtime Firestore hydration and save.
 - Boss or broader team account management.

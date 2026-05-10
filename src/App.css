@@ -54,6 +54,91 @@
   background: var(--background);
 }
 
+.auth-gate {
+  display: grid;
+  min-height: 100vh;
+  padding: 28px;
+  place-items: center;
+  background: var(--background);
+}
+
+.auth-gate-panel {
+  width: min(100%, 520px);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--brand-shadow);
+}
+
+.auth-gate-panel .panel-lede {
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.auth-account {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.auth-account img,
+.auth-account-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.auth-account img {
+  display: block;
+  object-fit: cover;
+}
+
+.auth-account-avatar {
+  display: grid;
+  place-items: center;
+  background: var(--night);
+  color: var(--primary-fg);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.auth-account strong,
+.auth-account span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-account strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.auth-account span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
 .onboarding-callout,
 .hero,
 .screen-panel,

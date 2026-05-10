@@ -43,3 +43,15 @@ export async function getFirebaseServices() {
     db: getFirestore(firebaseApp),
   }
 }
+
+export async function getFirebaseAuth() {
+  const firebaseApp = await getFirebaseApp()
+
+  if (!firebaseApp) {
+    return null
+  }
+
+  const { getAuth } = await import('firebase/auth')
+
+  return getAuth(firebaseApp)
+}
