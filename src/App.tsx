@@ -44,6 +44,7 @@ import {
   createFirestoreWorkspaceClient,
   createFirestoreWorkspaceSdkDocumentStore,
 } from './data/firestoreWorkspaceClient'
+import { getFirebaseSetupState } from './data/firebaseSetup'
 import {
   getAllowedEmailsFromEnv,
   isSessionAllowed,
@@ -640,6 +641,7 @@ function App() {
     initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
   ].filter(Boolean)
   const firestoreWriteGateState = getFirestoreWriteGateState()
+  const firebaseSetupState = getFirebaseSetupState()
   const firestoreWritesEnabled = firestoreWriteGateState.enabled
   const authAllowed = authRequired ? isSessionAllowed(authSession, allowedAuthEmails) : true
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
@@ -3810,6 +3812,7 @@ function App() {
             authAllowed={authAllowed}
             authRequired={authRequired}
             authUserEmail={authSession?.email}
+            firebaseSetupState={firebaseSetupState}
             firestoreReadShadowComparison={firestoreReadShadowComparison}
             firestoreReadShadowState={firestoreReadShadowState}
             firestoreWriteGateState={firestoreWriteGateState}

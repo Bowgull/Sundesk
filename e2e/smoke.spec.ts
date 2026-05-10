@@ -693,6 +693,7 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByRole('heading', { name: 'Local workspace.' })).toBeVisible()
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
   await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
+  await expect(page.getByText('Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Graphite' }).click()

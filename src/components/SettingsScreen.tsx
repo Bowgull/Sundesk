@@ -4,6 +4,7 @@ import type {
   FirestoreReadShadowState,
   FirestoreWriteGateState,
 } from '../data/firestoreReadShadow'
+import type { FirebaseSetupState } from '../data/firebaseSetup'
 import type { LocalRule } from '../data/rules'
 
 type ThemeSwatch = {
@@ -36,6 +37,7 @@ export type SettingsScreenProps = {
   authAllowed: boolean
   authRequired: boolean
   authUserEmail?: string | null
+  firebaseSetupState: FirebaseSetupState
   firestoreReadShadowComparison: readonly FirestoreReadShadowComparison[]
   firestoreReadShadowState: FirestoreReadShadowState
   firestoreWriteGateState: FirestoreWriteGateState
@@ -55,6 +57,7 @@ export function SettingsScreen({
   authAllowed,
   authRequired,
   authUserEmail,
+  firebaseSetupState,
   firestoreReadShadowComparison,
   firestoreReadShadowState,
   firestoreWriteGateState,
@@ -155,6 +158,7 @@ export function SettingsScreen({
         <div className="settings-list">
           <p><strong>Access.</strong> {accessLine}</p>
           <p><strong>Workspace.</strong> {workspaceLine}</p>
+          <p><strong>Firebase setup.</strong> {firebaseSetupState.statusLabel}. {firebaseSetupState.configComplete ? 'Config present.' : `${firebaseSetupState.missingConfigKeys.length} config fields missing.`} {firebaseSetupState.allowlistCount} approved accounts in local config.</p>
           <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore when the write gate is enabled.</p>
           <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
           <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>

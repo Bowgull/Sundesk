@@ -289,6 +289,7 @@ Current resolved alignment:
 - The fourteenth block wired the Auth gate into `App`, added Firebase Auth subscription, hydrated the shared Firestore workspace after approved sign-in, saved snapshots behind the explicit write gate, and removed the private email from `.env.example`.
 - The fifteenth parallel block added auth-gated E2E coverage, a Lindsay launch checklist, Auth gate copy polish, and mobile-safe Auth gate spacing.
 - The sixteenth block surfaced shared-workspace access and hydration status inside Settings, kept the local fallback visible, and clarified the empty-workspace first-save path.
+- The seventeenth block added Firebase setup state detection with tests and surfaced local, partial, sign-in-ready, and write-ready states in Settings.
 
 Remaining gaps:
 
