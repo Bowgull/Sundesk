@@ -2,6 +2,7 @@ import './App.css'
 import './styles/themes.css'
 import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { mainScreens, themes, type AppScreen, type TimelineView } from './appConfig'
+import { BuildGrid } from './components/BuildGrid'
 import { BuildPasteHelper } from './components/BuildPasteHelper'
 import { BuildRulesPanel } from './components/BuildRulesPanel'
 import { BuildToolbar } from './components/BuildToolbar'
@@ -4342,63 +4343,24 @@ function App() {
                 <strong>{migrationMessages.join(' ')}</strong>
               </div>
             )}
-            {groupedRecords.map((group) => (
-              <section className="record-grid-group" key={group.label || 'all-records'}>
-                {groupField && (
-                  <div className="group-header">
-                    <strong>{group.label}</strong>
-                    <span>{group.records.length} records</span>
-                  </div>
-                )}
-                <div className="record-table-wrap" data-testid="record-table-wrap" onPaste={handleBuildGridPaste}>
-                  <table className={`record-table density-${gridDensity}`}>
-                    <thead>
-                      <tr>
-                        {visibleFieldsForGrid.map((field) => (
-                          <th key={field.id} style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}>
-                            {renderGridHeader(field, `${group.label || 'all'}:${field.id}`)}
-                          </th>
-                        ))}
-                        <th className="add-field-column">
-                          <button aria-label="Add field from grid" type="button" onClick={() => setBuildModal('field')}>+ Add field</button>
-                        </th>
-                        <th className="row-action-column">Saved</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.records.map((record) => (
-                        <tr
-                          className={`${record.id === selectedBuildRecord?.id ? 'selected-row' : ''} ${getGridRowColorClass(record)}`.trim()}
-                          key={record.id}
-                          onClick={() => setSelectedBuildRecordId(record.id)}
-                          onDoubleClick={() => openEditRecordModal(record.id)}
-                        >
-                          {visibleFieldsForGrid.map((field) => (
-                            <td
-                              className={isSameGridCell(selectedGridCell, { recordId: record.id, fieldId: field.id }) ? 'selected-grid-cell' : ''}
-                              key={field.id}
-                              style={{ width: columnWidths[field.id] || 180, minWidth: columnWidths[field.id] || 180 }}
-                            >
-                              {renderEditableGridCell(record, field)}
-                            </td>
-                          ))}
-                          <td className="add-field-cell" />
-                          <td className="row-action-cell">
-                            <button data-testid={`edit-record-${record.id}`} type="button" onClick={() => openEditRecordModal(record.id)}>Edit</button>
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="add-record-row">
-                        <td colSpan={visibleFieldsForGrid.length + 2}>
-                          <button data-testid="build-add-record" type="button" onClick={openCreateRecordModal}>+ Add record</button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            ))}
-            {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match. Clear the filter or add a record.</p>}
+            <BuildGrid
+              columnWidths={columnWidths}
+              getGridRowColorClass={getGridRowColorClass}
+              groupField={groupField}
+              groupedRecords={groupedRecords}
+              gridDensity={gridDensity}
+              isGridCellSelected={(cell) => isSameGridCell(selectedGridCell, cell)}
+              onAddField={() => setBuildModal('field')}
+              onCreateRecord={openCreateRecordModal}
+              onEditRecord={openEditRecordModal}
+              onPaste={handleBuildGridPaste}
+              onSelectRecord={setSelectedBuildRecordId}
+              renderEditableGridCell={renderEditableGridCell}
+              renderGridHeader={renderGridHeader}
+              selectedRecordId={selectedBuildRecord?.id}
+              sortedAndFilteredRecordCount={sortedAndFilteredRecords.length}
+              visibleFieldsForGrid={visibleFieldsForGrid}
+            />
           </article>
 
           <BuildViewsPanel
