@@ -4,7 +4,7 @@ V1 uses Firebase Spark only.
 
 Do not enable billing. Do not use Cloud Functions.
 
-No deploy has run from this task. No Firebase writes should run without explicit approval.
+No deploy has run from this task. Deploy approval and write approval are separate. No Firebase writes should run without explicit write approval.
 
 Use [Sundesk Lindsay Launch Checklist](./SUNDESK_LINDSAY_LAUNCH_CHECKLIST.md) as the final setup order.
 
@@ -76,11 +76,28 @@ All other Firestore documents are denied.
 
 ## Deploy Later
 
-After explicit approval:
+Before any approved deploy, run the expected hosted preflight:
 
 ```bash
-npm run build
+npm run preflight
+```
+
+After explicit deploy approval:
+
+```bash
+npm run preflight
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 
-Only deploy after security rules are reviewed. Keep billing off. Keep Cloud Functions off.
+Hosted smoke test order:
+
+1. Open the hosted URL.
+2. Sign in with an approved Google account.
+3. Confirm an unapproved Google account is blocked.
+4. Confirm Today opens first.
+5. Confirm Build is visible in the sidebar.
+6. Open Settings and confirm the quiet data-boundary note.
+7. Use fake data only. Create a fake record only after write approval.
+8. Refresh and confirm the state matches the approved write mode.
+
+Only deploy after security rules are reviewed. Deploy approval is not Firestore write approval. Keep billing off. Keep Cloud Functions off. Keep private emails, real records, SALTXC data, permit contents, COI contents, and contract text out of docs and screenshots.

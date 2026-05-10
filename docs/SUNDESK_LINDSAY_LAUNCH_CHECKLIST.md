@@ -1,6 +1,6 @@
 # Sundesk Lindsay Launch Checklist
 
-Status: local-only. No deploy has run. Firestore writes require explicit approval.
+Status: local-only. No deploy has run. Firestore writes require separate explicit approval.
 
 This checklist is the remaining path from local build to Lindsay-ready hosted web app. Do not paste private emails, secrets, screenshots with private values, real records, SALTXC data, permit contents, COI files, or contract text into this repo.
 
@@ -101,15 +101,15 @@ Rules:
 
 ## 6. Local Verification
 
-Run:
+Hosted preflight:
 
 ```bash
-npm run lint
-npm run build
-npm run preview
+npm run preflight
 ```
 
-Then test the preview URL with fake data only:
+Preflight is the expected release gate before deploy.
+
+Then test the preview URL with fake data only. No private emails, real records, SALTXC data, permit contents, COI contents, contract text, or setup screenshots with private values.
 
 1. Confirm Today opens as home.
 2. Confirm Build is visible in the sidebar.
@@ -127,10 +127,10 @@ If write approval has not been given, stop here. No remote write test should run
 
 ## 7. Deploy
 
-Deploy only after explicit approval.
+Deploy only after explicit deploy approval.
 
 ```bash
-npm run build
+npm run preflight
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 
@@ -142,9 +142,11 @@ After deploy:
 4. Confirm Today remains home.
 5. Confirm Build remains visible in the sidebar.
 6. Confirm Settings contains the quiet data-boundary note.
-7. Confirm no real Lindsay or SALTXC data is present.
+7. Create one fake table or fake record only if write approval has been given.
+8. Refresh and confirm the fake data state matches the approved write mode.
+9. Confirm no real Lindsay or SALTXC data is present.
 
-Firestore writes still require explicit approval. Deploying Hosting and rules is not write approval.
+Firestore writes require separate explicit write approval. Deploy approval is not write approval. Deploying Hosting and rules is not write approval.
 
 ## 8. Mobile Install Check
 

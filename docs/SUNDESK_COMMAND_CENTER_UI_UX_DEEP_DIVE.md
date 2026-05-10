@@ -291,6 +291,7 @@ Current resolved alignment:
 - The sixteenth block surfaced shared-workspace access and hydration status inside Settings, kept the local fallback visible, and clarified the empty-workspace first-save path.
 - The seventeenth block added Firebase setup state detection with tests and surfaced local, partial, sign-in-ready, and write-ready states in Settings.
 - The eighteenth block added next setup-step guidance, removed the hardcoded summary recipient email from Settings, and verified the launch-safe Settings copy.
+- The nineteenth parallel block added `npm run preflight`, launch-preflight docs, stronger auth-gate E2E coverage for protected Settings routes, and removed the hardcoded digest bridge recipient.
 
 Remaining gaps:
 
@@ -302,7 +303,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: first-run shared workspace creation flow, Firebase setup QA, hosted preview smoke test after explicit approval, and production auth/write gate smoke tests with fake data.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: actual Firebase Console setup after approval, hosted preview smoke test after deploy approval, and production auth/write gate smoke tests with fake data after write approval.
 
 ## UI/UX Audit Checklist
 

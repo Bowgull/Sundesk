@@ -19,6 +19,11 @@ function sendDailyDigest() {
     return;
   }
 
+  if (!settings.recipient) {
+    writeLog(logSheet, '', 0, 'skipped', 'Digest recipient missing.');
+    return;
+  }
+
   const rows = readQueue(queueSheet);
   const pendingRows = rows.filter((row) => row.sent !== 'TRUE');
 
@@ -49,7 +54,7 @@ function readSettings(sheet) {
   });
 
   return {
-    recipient: settings.recipient || 'lindsaybelldesign@gmail.com',
+    recipient: settings.recipient || '',
     enabled: settings.enabled || 'TRUE',
   };
 }

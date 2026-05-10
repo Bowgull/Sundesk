@@ -6,6 +6,8 @@ Sundesk is a Vite React app. The near-term path is a real hosted web app for Jos
 
 No deploy has run in this step. No Firebase writes. No remote data changes.
 
+Deploy approval and Firestore write approval are separate. A hosted app can be approved before shared writes are approved.
+
 Use [Sundesk Lindsay Launch Checklist](./SUNDESK_LINDSAY_LAUNCH_CHECKLIST.md) for the remaining setup path.
 
 ## Recommended Path
@@ -21,12 +23,14 @@ Reason:
 - Firestore gives the shared cross-device workspace Lindsay needs.
 - No server runtime is needed for the first hosted app.
 
-The deploy path, after explicit approval:
+The deploy path, after explicit deploy approval:
 
 ```bash
-npm run build
+npm run preflight
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
+
+Preflight is the release gate before deploy.
 
 Use one Firebase project. Keep billing off. Do not enable Cloud Functions, Cloud Storage, App Hosting, Extensions, imports, or file upload.
 
@@ -125,13 +129,12 @@ This readiness path does not include:
 Run before any approved deploy:
 
 ```bash
-npm run lint
-npm run test
-npm run build
-npm run preview
+npm run preflight
 ```
 
-Then smoke test the preview URL:
+Then run the preview smoke test.
+
+Then smoke test the preview URL with fake data only:
 
 - Open Today.
 - Open Build from the sidebar.
@@ -144,6 +147,18 @@ Then smoke test the preview URL:
 - Open Settings.
 - Confirm the data boundary note is present.
 - Confirm the app icon appears for browser bookmark and Add to Home Screen.
+
+Hosted smoke test order after deploy approval:
+
+1. Open the hosted URL.
+2. Sign in with an approved Google account.
+3. Confirm an unapproved Google account is blocked.
+4. Confirm Today opens first.
+5. Confirm Build is visible in the sidebar.
+6. Open Settings and confirm the quiet data-boundary note.
+7. Use fake data only. Create a fake record only after write approval.
+8. Refresh and confirm state matches the approved write mode.
+9. Confirm no real Lindsay data, SALTXC data, permit contents, COI contents, contract text, private contacts, or setup screenshots with private values are present.
 
 If E2E is expected for the release check:
 
@@ -160,7 +175,7 @@ npm run test:e2e
 - Build remains visible in the sidebar.
 - Today remains home.
 - No real Lindsay or SALTXC data is committed.
-- No Firebase writes are enabled before deploy approval.
+- No Firebase writes are enabled before explicit write approval.
 - No Firebase deploy has run without explicit approval.
 - Google login is wired with browser session persistence.
 - Firestore workspace save and hydrate are wired.

@@ -18,13 +18,13 @@ Create these tabs:
 
 | sendDate | recipient | priority | title | community | reason | status | dueDate | recordId | sent |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-05-12 | lindsaybelldesign@gmail.com | Fire | Confirm COI status | Halifax | COI blocks venue readiness | Blocked | 2026-05-12 | task-coi-halifax | FALSE |
+| 2026-05-12 | configured-recipient@example.invalid | Fire | Confirm COI status | Halifax | COI blocks venue readiness | Blocked | 2026-05-12 | task-coi-halifax | FALSE |
 
 ## DigestSettings Columns
 
 | key | value |
 | --- | --- |
-| recipient | lindsaybelldesign@gmail.com |
+| recipient | configured-recipient@example.invalid |
 | enabled | TRUE |
 | sendTime | 07:30 |
 | timezone | America/Toronto |
