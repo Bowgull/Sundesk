@@ -3,8 +3,11 @@ import './styles/themes.css'
 import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { mainScreens, themes, type AppScreen, type TimelineView } from './appConfig'
 import { BuildPasteHelper } from './components/BuildPasteHelper'
+import { BuildRulesPanel } from './components/BuildRulesPanel'
 import { BuildToolbar } from './components/BuildToolbar'
+import { BuildViewsPanel } from './components/BuildViewsPanel'
 import { CommunitiesScreen } from './components/CommunitiesScreen'
+import { MeetingsScreen } from './components/MeetingsScreen'
 import { TimelineScreen } from './components/TimelineScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WaitingOnScreen } from './components/WaitingOnScreen'
@@ -57,9 +60,6 @@ import {
   getRulePreview as getRulePreviewForBase,
   getRuleValidationMessages as getRuleValidationMessagesForBase,
   getStringValue,
-  isDateField,
-  ruleActionOptions,
-  ruleDestinationOptions,
   ruleOperatorOptions,
   ruleOperatorNeedsValue,
   sortRecordsByDate,
@@ -1455,6 +1455,10 @@ function App() {
       activeGridViewId: activeGridViewId === viewId ? '' : activeGridViewId,
     })
     showToast('View deleted.')
+  }
+
+  function updateViewRenameDraft(viewId: string, value: string) {
+    setViewRenameDrafts((current) => ({ ...current, [viewId]: value }))
   }
 
   function createLocalRule() {
@@ -4139,45 +4143,18 @@ function App() {
         )}
 
         {activeScreen === 'meetings' && (
-          <section className="screen-grid meetings-screen" id="meetings">
-            <article className="screen-panel meeting-brief">
-              <span className="eyebrow">Meetings</span>
-              <strong>Meetings generate the weekly notes.</strong>
-              <p>Sundesk fills the operational fields from linked rows so the user edits the notes, not the memory.</p>
-              <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
-                Open next meeting
-              </button>
-            </article>
-
-            <article className="screen-panel wide">
-              <div className="panel-title">
-                <div>
-                  <span className="eyebrow">Meeting records</span>
-                  <h2>Weekly prep.</h2>
-                </div>
-                <div className="drawer-actions">
-                  <span className="metric-pill">{meetingRecords.length} records</span>
-                  <button className="primary" type="button" onClick={() => openCreateRecordForTable('meetings')}>New meeting</button>
-                </div>
-              </div>
-              <div className="record-card-grid">
-                {meetingRecords.map((record) => (
-                  <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <span>{getRecordContext(record)}</span>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{meetingTasksField ? getFieldDisplayValue(record, meetingTasksField) : 'No work linked'}</small>
-                  </button>
-                ))}
-              </div>
-              {nextMeetingRecord && (
-                <div className="local-state-strip">
-                  <span>Next prep</span>
-                  <strong>{getRecordTitle(base, nextMeetingRecord)} reads {nextMeetingLinkedTasks.length} linked work items.</strong>
-                </div>
-              )}
-              {nextMeetingPrep && renderMeetingPrep(nextMeetingPrep)}
-            </article>
-          </section>
+          <MeetingsScreen
+            base={base}
+            getFieldDisplayValue={getFieldDisplayValue}
+            meetingRecords={meetingRecords}
+            meetingTasksField={meetingTasksField}
+            nextMeetingLinkedTasks={nextMeetingLinkedTasks}
+            nextMeetingPrep={nextMeetingPrep}
+            nextMeetingRecord={nextMeetingRecord}
+            onCreateMeeting={() => openCreateRecordForTable('meetings')}
+            onOpenRecord={openDailyRecord}
+            renderMeetingPrep={renderMeetingPrep}
+          />
         )}
 
         <section className={`record-drawer ${isRecordDrawerOpen ? 'active-record-drawer' : ''} ${activeScreen !== 'build' && isRecordDrawerOpen ? 'floating-record-drawer' : ''}`} data-testid="record-drawer" id="record">
@@ -4664,219 +4641,40 @@ function App() {
             {sortedAndFilteredRecords.length === 0 && <p className="empty-note">No records match. Clear the filter or add a record.</p>}
           </article>
 
-          <article className="automation-panel build-sidecar" data-testid="build-views-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Views</span>
-                <h2>Saved ways to work.</h2>
-              </div>
-              <span className="metric-pill">{pinnedGridViews.length} pinned</span>
-            </div>
-            <p className="panel-copy">Saved views keep table context and can be pinned to the sidebar.</p>
-            {localGridViews.length > 0 && (
-              <div className="view-list">
-                {localGridViews.map((view) => (
-                  <article className={`local-view-row ${view.id === activeGridViewId ? 'active-row' : ''}`} data-testid="local-view-row" key={view.id}>
-                    <div className="view-row-top">
-                      <span>{base.tables.find((table) => table.id === view.tableId)?.label || view.tableId}</span>
-                      {view.pinned ? (
-                        <strong>Pinned</strong>
-                      ) : view.id === activeGridViewId && (
-                        <strong>{activeGridViewChanged ? 'Changed' : 'Active'}</strong>
-                      )}
-                    </div>
-                    <label>
-                      <span>View name</span>
-                      <input
-                        value={viewRenameDrafts[view.id] ?? view.name}
-                        onChange={(event) => setViewRenameDrafts((current) => ({ ...current, [view.id]: event.target.value }))}
-                      />
-                    </label>
-                    <p>
-                      Filter: {view.filter || 'none'}. Sort: {view.sortFieldId || 'manual'} {view.sortDirection || 'asc'}. Group: {view.groupFieldId || 'none'}.
-                    </p>
-                    <div className="view-actions">
-                      <button type="button" onClick={() => applyGridView(view)}>Apply</button>
-                      <button type="button" onClick={() => updateGridView(view.id)}>Update</button>
-                      <button type="button" onClick={() => duplicateGridView(view)}>Copy</button>
-                      <button type="button" onClick={() => togglePinnedGridView(view.id)}>{view.pinned ? 'Unpin' : 'Pin'}</button>
-                      {view.id === activeGridViewId && activeGridViewChanged && (
-                        <button type="button" onClick={resetActiveGridView}>Reset</button>
-                      )}
-                      <button type="button" onClick={() => renameGridView(view.id)}>Rename</button>
-                      <button className="danger" type="button" onClick={() => deleteGridView(view.id)}>Delete</button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-            <div className="view-list">
-              {savedViews.map((view) => (
-                <article key={view.id}>
-                  <span>{view.type}</span>
-                  <strong>{view.name}</strong>
-                  <p>{view.rule}</p>
-                </article>
-              ))}
-            </div>
-          </article>
+          <BuildViewsPanel
+            activeGridViewChanged={activeGridViewChanged}
+            activeGridViewId={activeGridViewId}
+            localGridViews={localGridViews}
+            pinnedGridViewCount={pinnedGridViews.length}
+            savedViews={savedViews}
+            tables={base.tables}
+            viewRenameDrafts={viewRenameDrafts}
+            onApplyGridView={applyGridView}
+            onDeleteGridView={deleteGridView}
+            onDuplicateGridView={duplicateGridView}
+            onRenameDraftChange={updateViewRenameDraft}
+            onRenameGridView={renameGridView}
+            onResetActiveGridView={resetActiveGridView}
+            onTogglePinnedGridView={togglePinnedGridView}
+            onUpdateGridView={updateGridView}
+          />
 
-          <article className="automation-panel build-sidecar" data-testid="rules-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Rules</span>
-                <h2>When this happens, do this.</h2>
-              </div>
-              <button className="primary" type="button" onClick={createLocalRule}>New rule</button>
-            </div>
-            <div className="rules editable-rules">
-              {localRules.map((rule) => {
-                const isExpanded = expandedRuleId === rule.id
-                const matchedRecords = getRuleMatchedRecords(rule)
-
-                return (
-                  <article className={isExpanded ? 'expanded-rule-row' : 'compact-rule-row'} data-testid="local-rule-row" key={rule.id}>
-                    <div className="rule-row-summary">
-                      <div>
-                        <strong>{getCommandReason(rule)}</strong>
-                        <small>{getRulePreview(rule)}</small>
-                      </div>
-                      <span className="rule-match-count">{getRuleMatchCount(rule)} matches</span>
-                      <button type="button" onClick={() => setExpandedRuleId(isExpanded ? '' : rule.id)}>
-                        {isExpanded ? 'Collapse' : 'Edit'}
-                      </button>
-                    </div>
-                    {isExpanded && (
-                      <>
-                        <label>
-                          <span>Table</span>
-                          <select
-                            value={rule.tableId}
-                            onChange={(event) => {
-                              const tableId = event.target.value
-                              const nextFieldId = base.fields.find((field) => field.tableId === tableId)?.id || ''
-
-                              updateLocalRuleField(rule.id, tableId, nextFieldId)
-                            }}
-                          >
-                            {base.tables.map((table) => (
-                              <option key={table.id} value={table.id}>
-                                {table.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          <span>Field</span>
-                          <select
-                            value={rule.fieldId}
-                            onChange={(event) => updateLocalRuleField(rule.id, rule.tableId, event.target.value)}
-                          >
-                            {base.fields
-                              .filter((field) => field.tableId === rule.tableId)
-                              .map((field) => (
-                                <option key={field.id} value={field.id}>
-                                  {field.label}
-                                </option>
-                              ))}
-                          </select>
-                        </label>
-                        <label>
-                          <span>Operator</span>
-                          <select
-                            value={rule.operator}
-                            onChange={(event) => {
-                              const operator = event.target.value as LocalRule['operator']
-
-                              updateLocalRule(rule.id, {
-                                operator,
-                                value: ruleOperatorNeedsValue(operator) ? rule.value : '',
-                              })
-                            }}
-                          >
-                            {getRuleOperatorOptionsForField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId))
-                              .map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                          </select>
-                        </label>
-                        <label>
-                          <span>Value</span>
-                          {base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.type === 'linkedRecord' && ruleOperatorNeedsValue(rule.operator) ? (
-                            <select value={rule.value} onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}>
-                              <option value="">Choose record</option>
-                              {getRecordsForTable(
-                                base,
-                                base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)?.linkedTableId || '',
-                              ).map((record) => (
-                                <option key={record.id} value={record.id}>
-                                  {getRecordTitle(base, record)}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              disabled={!ruleOperatorNeedsValue(rule.operator)}
-                              type={isDateField(base.fields.find((field) => field.tableId === rule.tableId && field.id === rule.fieldId)) && ruleOperatorNeedsValue(rule.operator) ? 'date' : 'text'}
-                              value={rule.value}
-                              onChange={(event) => updateLocalRule(rule.id, { value: event.target.value })}
-                              placeholder={ruleOperatorNeedsValue(rule.operator) ? 'Value to match' : 'Computed from today'}
-                            />
-                          )}
-                        </label>
-                        <label>
-                          <span>Action</span>
-                          <select
-                            value={rule.action}
-                            onChange={(event) => updateLocalRule(rule.id, { action: event.target.value as LocalRule['action'] })}
-                          >
-                            {ruleActionOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          <span>Destination</span>
-                          <select
-                            value={rule.destination}
-                            onChange={(event) => updateLocalRule(rule.id, { destination: event.target.value as LocalRule['destination'] })}
-                          >
-                            {ruleDestinationOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        {getRuleValidationMessages(rule).length > 0 && (
-                          <div className="rule-validation-list">
-                            {getRuleValidationMessages(rule).map((message) => (
-                              <span key={message}>{message}</span>
-                            ))}
-                          </div>
-                        )}
-                        {matchedRecords.length > 0 && (
-                          <div className="rule-match-list">
-                            {matchedRecords.slice(0, 3).map((record) => (
-                              <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                                <strong>{getRecordTitle(base, record)}</strong>
-                                <small>{base.tables.find((table) => table.id === record.tableId)?.label || record.tableId}</small>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <button className="danger" type="button" onClick={() => deleteLocalRule(rule.id)}>Delete</button>
-                      </>
-                    )}
-                  </article>
-                )
-              })}
-            </div>
-          </article>
+          <BuildRulesPanel
+            base={base}
+            localRules={localRules}
+            expandedRuleId={expandedRuleId}
+            createLocalRule={createLocalRule}
+            setExpandedRuleId={setExpandedRuleId}
+            updateLocalRule={updateLocalRule}
+            updateLocalRuleField={updateLocalRuleField}
+            deleteLocalRule={deleteLocalRule}
+            getCommandReason={getCommandReason}
+            getRulePreview={getRulePreview}
+            getRuleMatchCount={getRuleMatchCount}
+            getRuleValidationMessages={getRuleValidationMessages}
+            getRuleMatchedRecords={getRuleMatchedRecords}
+            openBuildRecord={openBuildRecord}
+          />
 
           {buildModal === 'table' && (
             <div className="modal-backdrop" role="presentation">
