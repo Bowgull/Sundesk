@@ -719,6 +719,76 @@ Remaining QA:
 - Keep Today first and Build reachable on every local and hosted smoke pass.
 - Do not use real Lindsay, SALTXC, permit, COI, contract, contact, or company data for QA.
 
+## Onboarding, Lab, And Help
+
+Onboarding teaches the spine once:
+
+`Table -> record -> field -> linked record -> view -> Today -> meeting PDF`
+
+It must feel human, warm, and clear. It should sound like Josh built Lindsay a useful system and left notes inside it.
+
+Use natural language. Avoid stiff documentation voice. Do not overuse hard full-stop fragments inside guided onboarding copy.
+
+Onboarding must teach tables because tables are the core function of Sundesk. It must not deep dive every table function.
+
+Sundesk Lab owns the deep dive.
+
+Sundesk Lab is a sandbox with fake GTA-style sample data, guided modules, progress, Continue, Start over, and Reset sample data.
+
+Help is separate from Sundesk Lab. Help is searchable, local, task-based, and issue-oriented.
+
+No AI is used for Help, onboarding, Sundesk Lab, or issue surfacing.
+
+Meeting notes export as PDF. Do not expose Markdown.
+
+The meeting PDF onboarding copy includes:
+
+`Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+
+## RuPaul Mode
+
+RuPaul Mode is a system-wide copy mode.
+
+It is not onboarding-only.
+
+It applies to navigation, headings, empty states, onboarding, Sundesk Lab, Help, Settings, Today, Build, records, meetings, backup, warnings, toasts, and buttons where safe.
+
+Build it through a copy map.
+
+Each string needs:
+
+- plain copy.
+- what the user must understand.
+- next action.
+- RuPaul Mode copy.
+- safety level.
+
+Safety levels:
+
+- `free-camp`: headings, empty states, module intros.
+- `guided-camp`: onboarding, Help, non-destructive instructions.
+- `literal-action`: delete, import, export, reset, write settings, destructive confirmations.
+
+Critical actions stay understandable.
+
+Desktop hover after 500ms shows the plain copy.
+
+Mobile long press after roughly 500ms shows the plain copy.
+
+The reveal tooltip shows only the plain copy. Do not prefix it with `Original:`.
+
+Settings row:
+
+- title: `RuPaul Mode`.
+- subtext: `Long hover shows plain version.`
+- same toggle shape as Settings.
+- subtle pink/gold/gloss accent when on.
+- no extra label chip.
+
+Plain mode is warm, human, and useful.
+
+RuPaul Mode is funny, camp, specific, and still useful. It should not be random drag words pasted onto app labels.
+
 ## Accessibility
 
 Required before polish is done:

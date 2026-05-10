@@ -155,9 +155,13 @@ Sundesk needs 7 engines to function like real software.
 - Tasks screen.
 - Follow-ups screen.
 - Meetings screen.
+- Meeting note PDF export.
 - Timeline screen.
 - Meeting prep.
 - Build screen.
+- Guided onboarding.
+- Sundesk Lab.
+- Help search.
 - Settings screen.
 - Record modal.
 - Open loops.
@@ -170,7 +174,7 @@ Sundesk needs 7 engines to function like real software.
 - Routes records into Today.
 - Marks risk.
 - Surfaces overdue, blocked, waiting, and upcoming work.
-- Later: notifications, email drafts, LLM summaries.
+- Later: notifications and email drafts only if they can stay non-AI or explicitly approved.
 
 ## Full Editability Rule
 
@@ -419,9 +423,9 @@ This keeps power available without making the daily app feel crowded.
 
 ## Meeting Prep
 
-Meeting prep should be generated from structured records first.
+Meeting prep should be generated from structured records.
 
-No LLM is required for the core.
+No AI is required or planned for the Lindsay-ready build.
 
 For this build, meeting prep is computed-only.
 
@@ -438,14 +442,9 @@ Inputs:
 - Community status.
 - Next steps.
 
-LLM hook can come later for:
+No AI prose generation is part of the Lindsay-ready build.
 
-- Turning bullets into meeting language.
-- Summarizing recent movement.
-- Drafting follow-up emails.
-- Finding missing context.
-
-The app must know what matters before prose generation.
+The app must know what matters through structured records, links, fields, rules, and views.
 
 ## Rules
 
@@ -511,21 +510,40 @@ Final polish is done when Lindsay can open Today, understand the day, and open t
 
 Final polish is also done when she can open Build, edit the structure, and see exactly how it changes Today.
 
-## Onboarding
+## Onboarding And Sundesk Lab
 
-Start with sample tables based on the work.
+Full plan: `docs/ONBOARDING_SUNDESK_LAB_PLAN.md`.
 
-Do not start blank.
+Onboarding teaches the spine.
 
-Teach by doing:
+Sundesk Lab teaches the machine.
 
-1. Create a community.
-2. Add a task.
-3. Link the task.
-4. Mark a follow-up waiting.
-5. See it land in Today.
+The spine is:
 
-Onboarding should make Build understandable without turning it into a tutorial wall.
+`Table -> record -> field -> linked record -> view -> Today -> meeting PDF`
+
+Tables must be taught once in first-run onboarding because tables are the core product logic. The tour should keep this surface level.
+
+First-run onboarding gives Lindsay a choice:
+
+- `Walk me through it`
+- `I'll poke around`
+
+If she chooses onboarding, the app uses a soft dimmed overlay and annotated real surfaces. It teaches Today, Build, table, record, field, linked record, view, meeting PDF export, and Sundesk Lab.
+
+The Start Here checklist is action-based and can be restarted from Settings. Restarting onboarding never deletes data.
+
+Sundesk Lab is the deeper sandbox with fake GTA-style sample data. It has guided modules, progress, Continue, Start over, and Reset sample data. It must stay separate from Lindsay's real workspace.
+
+Onboarding, Sundesk Lab progress, sample state, Help state, and RuPaul Mode preference must sync across desktop and mobile in the final Lindsay-ready app once Firestore writes are approved.
+
+No AI is used. Help search is local text matching over articles, tags, synonyms, troubleshooting cards, and module links.
+
+Meeting notes export as PDF, not Markdown. Onboarding must include this line:
+
+`Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+
+RuPaul Mode is a system-wide copy mode, not an onboarding-only joke. It uses a copy map, a Settings toggle named `RuPaul Mode`, 500ms plain-copy reveal on hover or long press, and synced preference once shared settings are active.
 
 ## Build Sequence
 
@@ -589,14 +607,24 @@ The remaining path should be checked against the UI/UX spec as it is built:
 6. Deterministic meeting prep.
    - Meeting prep comes from structured records first.
    - Inputs are open tasks, blocked items, overdue follow-ups, unresolved approvals, risks, community status, and next steps.
-   - LLM support can come later.
+   - Meeting notes can export to a local PDF for review and template tuning.
+   - No AI support is part of the build path.
 
 7. Firestore persistence.
    - Add Firestore after the local data shape and interaction model are stable.
-   - Persist tables, fields, records, dependencies, Rules, and Build views.
+   - Persist tables, fields, records, dependencies, Rules, Build views, onboarding state, Sundesk Lab progress, sample workspace state, Help state, and RuPaul Mode preference.
    - No Firebase writes during local-only build work unless explicitly approved.
 
-8. Final whole-product polish.
+8. Onboarding, Sundesk Lab, Help, and copy modes.
+   - Implement meeting note PDF export first.
+   - Add first-run guided onboarding.
+   - Add Start Here checklist.
+   - Add Sundesk Lab sandbox and modules.
+   - Add local Help search and issue surfacing.
+   - Add RuPaul Mode as a system-wide copy map with plain-copy reveal.
+   - Add iPhone PWA pass across onboarding, Lab, Help, meeting PDF export, and RuPaul Mode.
+
+9. Final whole-product polish.
    - Theme system is built before the final pass, not saved for the final pass.
    - Each theme owns colour, app shell, panel surfaces, chips, focus rings, shadow, display typography, and selected states.
    - Build grid keeps stable readable typography across themes.
@@ -609,7 +637,7 @@ The remaining path should be checked against the UI/UX spec as it is built:
    - Mobile pass.
    - Accessibility pass.
 
-9. Activity history later.
+10. Activity history later.
 
 ## Stance
 

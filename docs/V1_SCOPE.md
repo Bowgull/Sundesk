@@ -43,11 +43,21 @@
 - Daily email digest through Apps Script.
 - Google Sheet digest bridge.
 - Export current view.
+- Export meeting note PDF.
 - Theme settings.
 - Daily digest settings.
 - Run setup again.
+- First-run guided onboarding.
+- Start Here checklist.
+- Sundesk Lab with fake sample data.
+- Sundesk Lab progress.
+- Restart onboarding.
+- Local Help search and troubleshooting cards.
 - Privacy onboarding.
 - Fake demo data.
+- RuPaul Mode system-wide copy toggle.
+- Plain-copy reveal on 500ms hover or long press.
+- iPhone PWA onboarding and Lab pass.
 
 ## Out
 
@@ -55,7 +65,7 @@
 - Cloud Functions.
 - Scheduled Firebase functions.
 - Paid email services.
-- Import.
+- Markdown meeting note export.
 - File upload.
 - Google Drive sync.
 - Gmail scraping.
@@ -65,6 +75,9 @@
 - Team permissions beyond initial allowlist.
 - Obsidian sync.
 - Bridgefour visibility work.
+- AI help chat.
+- OpenAI API calls.
+- Model-generated onboarding or help.
 
 ## Build Memory
 

@@ -16,6 +16,34 @@ The Today summary control is local-only in this build.
 
 External send requires private deploy setup, explicit send-channel configuration, and separate approval. Do not treat the local preview as a send path.
 
+## Onboarding, Sundesk Lab, And Copy Modes
+
+Sundesk must include a Lindsay-ready education path before handoff.
+
+Required:
+
+- First-run choice: `Walk me through it` and `I'll poke around`.
+- A soft guided tour that teaches Today, Build, table, record, field, linked record, view, meeting PDF export, and Sundesk Lab.
+- Start Here checklist with action-based completion.
+- Settings action to restart onboarding without deleting data.
+- Sundesk Lab sandbox with fake GTA-style data.
+- Sundesk Lab module progress with Continue and Start over.
+- Sample workspace reset that does not touch Lindsay's real workspace.
+- Local Help search and troubleshooting cards.
+- Meeting note export as PDF only.
+- No Markdown surfaced to Lindsay.
+- No AI calls.
+- RuPaul Mode as a system-wide copy toggle in Settings.
+- RuPaul Mode preference synced across desktop and mobile once shared settings are active.
+- Plain-copy reveal after 500ms hover on desktop or long press on mobile.
+- iPhone PWA pass for onboarding, Sundesk Lab, Help, RuPaul Mode, and meeting PDF export.
+
+Meeting PDF onboarding copy must include:
+
+`Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+
+All of this must sync across desktop and mobile for the final app. Local-only state is acceptable during local build only.
+
 ## 1. Firebase Console
 
 Create or confirm one Firebase project for Sundesk.
@@ -147,6 +175,19 @@ Then test the preview URL with fake data only. No private emails, real records, 
 22. Use Export CSV only as a local browser download for that current visible table or view.
 23. Confirm the CSV has headers and at least one visible row from the selected table.
 24. Confirm this export does not change Firebase setup, does not sync remotely, and does not write remote data.
+25. Run first-run onboarding with fake data.
+26. Confirm onboarding teaches tables once at a surface level.
+27. Confirm Restart onboarding does not erase workspace data.
+28. Open Sundesk Lab.
+29. Confirm Lab progress can Continue and Start over.
+30. Confirm sample data is separate from real workspace data.
+31. Export a meeting note PDF.
+32. Confirm no Markdown is exposed.
+33. Turn on RuPaul Mode.
+34. Confirm core app copy changes system-wide.
+35. Confirm 500ms hover or long press reveals plain copy.
+36. Confirm critical actions stay understandable.
+37. Confirm onboarding, Lab progress, and RuPaul Mode sync across desktop and mobile only after Firestore writes have been explicitly approved.
 
 If write approval has not been given, stop here. No remote write test should run.
 
