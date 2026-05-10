@@ -21,7 +21,11 @@ Obsidian is build memory only. Do not write Lindsay data, SALTXC data, real reco
 
 Use this location:
 
-`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/snapshots`
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/snapshots`
+
+Canonical project bridge:
+
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/10_Projects/Sundesk/Sundesk.md`
 
 Use this filename pattern:
 
@@ -45,7 +49,9 @@ tags:
 
 After writing a Sundesk handoff note:
 
-- Link it in `/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/Sundesk Build History.md`.
+- Link it in `/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/Sundesk Build History.md`.
+- Keep the Sundesk build history connected through `/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/10_Projects/Sundesk/Sundesk.md`.
 - Do not link it from the CereBro session history.
 - Do not use shared tags like `build-memory` or `session-handoff`.
 - Do not leave Sundesk notes in the CereBro folder.
+- Do not recreate `/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History`.

@@ -24,11 +24,15 @@ Obsidian note:
 
 Obsidian handoffs:
 
-`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/snapshots`
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/snapshots`
 
 Current index:
 
-`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/Sundesk/Build History/Sundesk Build History.md`
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/90_Archive/Sundesk Build History/Sundesk Build History.md`
+
+Project bridge:
+
+`/Users/lindsaybell/Library/CloudStorage/GoogleDrive-bocas.joshua@gmail.com/My Drive/CereBro-Vault/07_Knowledge/obsidian-vault/10_Projects/Sundesk/Sundesk.md`
 
 SHA-256:
 
