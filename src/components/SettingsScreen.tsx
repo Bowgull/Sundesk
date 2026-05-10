@@ -1,4 +1,5 @@
 import type { AppScreen, ThemeId } from '../appConfig'
+import type { ChangeEvent } from 'react'
 import type {
   FirestoreReadShadowComparison,
   FirestoreReadShadowState,
@@ -45,7 +46,7 @@ export type SettingsScreenProps = {
   localRules: readonly LocalRule[]
   migrationMessages: readonly string[]
   onExportBackup?: () => void
-  onImportBackup?: () => void
+  onImportBackup?: (file: File) => void
   onThemeChange: (theme: ThemeId) => void
   openScreen: (screen: AppScreen) => void
   ruleDestinationStats: readonly SettingsRuleDestinationStat[]
@@ -86,6 +87,17 @@ export function SettingsScreen({
   const workspaceLine = workspaceStatus || (authRequired ? 'Shared workspace status is pending.' : 'Local workspace active.')
   const canExportBackup = Boolean(onExportBackup)
   const canImportBackup = Boolean(onImportBackup)
+  const importBackupInputId = 'settings-import-backup-input'
+
+  function handleImportBackupChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+
+    if (file) {
+      onImportBackup?.(file)
+    }
+
+    event.currentTarget.value = ''
+  }
 
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
@@ -233,9 +245,22 @@ export function SettingsScreen({
             <button type="button" className="primary" disabled={!canExportBackup} onClick={onExportBackup}>
               Export backup
             </button>
-            <button type="button" disabled={!canImportBackup} onClick={onImportBackup}>
+            <input
+              accept="application/json,.json"
+              aria-label="Import Sundesk backup JSON file"
+              className="settings-backup-file-input"
+              disabled={!canImportBackup}
+              id={importBackupInputId}
+              onChange={handleImportBackupChange}
+              type="file"
+            />
+            <label
+              aria-disabled={!canImportBackup}
+              className={`settings-backup-import-label ${!canImportBackup ? 'disabled' : ''}`}
+              htmlFor={importBackupInputId}
+            >
               Import backup
-            </button>
+            </label>
           </div>
         </div>
         {(!canExportBackup || !canImportBackup) && (

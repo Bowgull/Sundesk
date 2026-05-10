@@ -846,21 +846,6 @@ function App() {
     })()
   }
 
-  function importLocalBackup() {
-    const input = document.createElement('input')
-
-    input.type = 'file'
-    input.accept = 'application/json,.json'
-    input.addEventListener('change', () => {
-      const file = input.files?.[0]
-
-      if (file) {
-        applyLocalBackupFile(file)
-      }
-    }, { once: true })
-    input.click()
-  }
-
   function closeBuildModal() {
     setBuildModal('')
     setPendingDeleteTableId('')
@@ -3884,7 +3869,7 @@ function App() {
             localRules={localRules}
             migrationMessages={migrationMessages}
             onExportBackup={exportLocalBackup}
-            onImportBackup={importLocalBackup}
+            onImportBackup={applyLocalBackupFile}
             openScreen={openScreen}
             ruleDestinationStats={ruleDestinationStats}
             selectedTheme={selectedTheme}

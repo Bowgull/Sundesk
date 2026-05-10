@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 
 test.beforeEach(async ({ page }) => {
   const consoleErrors: string[] = []
@@ -719,7 +720,8 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByRole('heading', { name: 'Local copy.' })).toBeVisible()
   await expect(page.getByText('Backup controls are local commands. They do not change Firebase setup or write remote data.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Export backup' })).toBeEnabled()
-  await expect(page.getByRole('button', { name: 'Import backup' })).toBeEnabled()
+  await expect(page.getByText('Import backup', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Import Sundesk backup JSON file')).toBeEnabled()
   await expect(page.getByText('Backup handlers are not connected in this build.')).toHaveCount(0)
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
   await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
@@ -741,6 +743,93 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+})
+
+test('Settings exports and imports a local backup without changing Firebase write UI', async ({ page }, testInfo) => {
+  const originalTitle = 'Backup restore seed'
+  const changedTitle = 'Backup restore changed'
+  const fakeRecordId = 'tasks_backup_restore_seed'
+  const firebaseSetupText = 'Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.'
+  const writeGateText = 'Write gate. Disabled. No Firestore writes can run in this build.'
+  const backupNoteText = 'Backup controls are local commands. They do not change Firebase setup or write remote data.'
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await modal.getByLabel('Title').fill(originalTitle)
+  await modal.getByLabel('Status').selectOption('Waiting')
+  await modal.getByLabel('Due date').fill('2026-05-21')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
+
+  await page.goto('/#settings')
+  await expect(page.getByText(backupNoteText)).toBeVisible()
+  await expect(page.getByText(firebaseSetupText)).toBeVisible()
+  await expect(page.getByText(writeGateText)).toBeVisible()
+
+  const downloadPromise = page.waitForEvent('download')
+
+  await page.getByRole('button', { name: 'Export backup' }).click()
+
+  const download = await downloadPromise
+  const backupPath = testInfo.outputPath('sundesk-local-backup.json')
+
+  await download.saveAs(backupPath)
+
+  const backup = JSON.parse(await readFile(backupPath, 'utf8')) as {
+    appName?: unknown
+    version?: unknown
+    workbase?: {
+      records?: Array<{
+        id?: unknown
+        values?: Record<string, unknown>
+      }>
+    }
+  }
+  const exportedRecord = backup.workbase?.records?.find((record) => record.id === fakeRecordId)
+
+  expect(download.suggestedFilename()).toMatch(/^sundesk-local-backup-\d{4}-\d{2}-\d{2}\.json$/)
+  expect(backup.appName).toBe('Sundesk')
+  expect(backup.version).toBe(1)
+  expect(exportedRecord?.values?.title).toBe(originalTitle)
+  expect(exportedRecord?.values?.status).toBe('Waiting')
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const titleCell = page.getByTestId(`grid-cell-${fakeRecordId}-title`)
+
+  await titleCell.click()
+  await titleCell.press('Enter')
+  await page.getByLabel('Title editor').fill(changedTitle)
+  await page.getByLabel('Title editor').press('Tab')
+  await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeHidden()
+
+  await page.goto('/#settings')
+  await expect(page.getByText(firebaseSetupText)).toBeVisible()
+  await expect(page.getByText(writeGateText)).toBeVisible()
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+
+  await page.getByText('Import backup', { exact: true }).click()
+
+  const fileChooser = await fileChooserPromise
+
+  await fileChooser.setFiles(backupPath)
+  await expect(page.getByRole('status')).toContainText('Local backup imported.')
+  await expect(page.getByText(backupNoteText)).toBeVisible()
+  await expect(page.getByText(firebaseSetupText)).toBeVisible()
+  await expect(page.getByText(writeGateText)).toBeVisible()
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeHidden()
 })
 
 test('Mobile keeps navigation and touch targets usable', async ({ page }) => {

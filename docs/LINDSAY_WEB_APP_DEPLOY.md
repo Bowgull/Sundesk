@@ -47,7 +47,7 @@ For Josh and Lindsay use, the first deploy should stay simple:
 
 Before any public URL is shared, confirm the app has no real SALTXC records, document contents, private contact data, permit contents, COI contents, or contract text baked into source, demo data, screenshots, or local export files.
 
-Before any Firestore write approval is requested, run a local fake-data backup/import rehearsal.
+Before any Firestore write approval is requested, run a local fake-data backup/import rehearsal from Settings.
 
 Scope:
 
@@ -63,7 +63,7 @@ Scope:
 - No deploy.
 - No Firebase writes.
 
-The rehearsal proves the local backup and restore path before the shared workspace can receive writes. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank. Use the local preview or browser build. Create a tiny fake dataset, use Settings to export a backup JSON file, import that backup locally, and confirm Today, Build, Settings, and the data boundary still read correctly.
+The rehearsal proves the local backup and restore path before the shared workspace can receive writes. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank. Use the local preview or browser build. Create a tiny fake dataset. Open Settings. Use the actual Export backup control to write a backup JSON file. Clear or isolate local browser state only if needed. Use the actual Import backup control to restore that JSON locally. Confirm the restored fake dataset matches the exported fake dataset. Confirm Today, Build, Settings, and the data boundary still read correctly.
 
 This rehearsal is not migration. It does not move Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 
@@ -168,8 +168,9 @@ Then smoke test the preview URL with fake data only:
 - Confirm the theme remains.
 - Open Settings.
 - Confirm the data boundary note is present.
+- Confirm Settings shows the actual Export backup and Import backup controls.
 - Confirm the app icon appears for browser bookmark and Add to Home Screen.
-- Run the local fake-data backup/import rehearsal.
+- Run the local fake-data backup/import rehearsal from Settings.
 - Confirm Firestore writes remain disabled.
 
 Hosted smoke test order after deploy approval:
@@ -200,6 +201,7 @@ npm run test:e2e
 - Today remains home.
 - No real Lindsay or SALTXC data is committed.
 - Local fake-data backup/import rehearsal is complete before write approval is requested.
+- Settings Export backup and Import backup round-trip a tiny fake dataset locally.
 - No Firebase writes are enabled before explicit write approval.
 - No Firebase deploy has run without explicit approval.
 - Google login is wired with browser session persistence.

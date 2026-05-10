@@ -184,8 +184,62 @@
   justify-content: flex-end;
 }
 
-.settings-backup-actions button {
+.settings-backup-actions button,
+.settings-backup-import-label {
   min-width: 132px;
+}
+
+.settings-backup-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.settings-backup-import-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--chrome);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.settings-backup-import-label:hover {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--surface-raised) 90%, var(--sky-1));
+}
+
+.settings-backup-import-label:active {
+  transform: translateY(1px);
+}
+
+.settings-backup-file-input:focus-visible + .settings-backup-import-label {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus-ring, var(--accent)) 18%, transparent);
+}
+
+.settings-backup-import-label.disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
 }
 
 .settings-backup-disabled {
@@ -369,7 +423,8 @@
     grid-template-columns: 1fr;
   }
 
-  .settings-backup-actions button {
+  .settings-backup-actions button,
+  .settings-backup-import-label {
     flex: 1 1 160px;
   }
 }

@@ -121,7 +121,8 @@ Then test the preview URL with fake data only. No private emails, real records, 
 8. Confirm local state remains usable.
 9. Open Settings.
 10. Confirm the quiet data-boundary note is there.
-11. Confirm Firestore writes are shown as disabled unless approval has been given.
+11. Confirm Settings shows the actual Export backup and Import backup controls.
+12. Confirm Firestore writes are shown as disabled unless approval has been given.
 
 If write approval has not been given, stop here. No remote write test should run.
 
@@ -149,13 +150,16 @@ Steps:
 2. Use the local preview or local browser build only.
 3. Create a tiny fake dataset that proves tables, fields, tags, links, and views still behave.
 4. Open Settings.
-5. Use Export backup to preserve that fake local state as JSON.
-6. Clear or isolate the local browser state only if needed for the rehearsal.
-7. Use Import backup to restore the fake local state back into the local app.
-8. Confirm Today remains home.
-9. Confirm Build remains visible in the sidebar.
-10. Confirm the restored data is fake.
-11. Confirm Settings still shows Firestore writes as disabled.
+5. Confirm Settings contains the actual Export backup and Import backup controls.
+6. Use Export backup to preserve that fake local state as JSON.
+7. Clear or isolate the local browser state only if needed for the rehearsal.
+8. Use Import backup to restore the exported JSON back into the local app.
+9. Confirm the restored fake dataset matches the exported fake dataset.
+10. Confirm tables, fields, tags, links, and views survived the local round trip.
+11. Confirm Today remains home.
+12. Confirm Build remains visible in the sidebar.
+13. Confirm the restored data is fake.
+14. Confirm Settings still shows Firestore writes as disabled.
 
 Stop after the local rehearsal. This step does not approve Firestore writes. This step does not approve deploy. This step does not move any real Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 
@@ -225,6 +229,7 @@ Before enabling Firestore writes:
 
 - Keep the local browser build as the fallback.
 - Complete the local fake-data backup/import rehearsal.
+- Use Settings Export backup and Import backup to round-trip a tiny fake dataset locally.
 - Export or preserve local fake verification data only if needed for testing.
 - Do not migrate real records until the hosted path is approved.
 - Treat Firestore as empty until a deliberate first write is approved.
