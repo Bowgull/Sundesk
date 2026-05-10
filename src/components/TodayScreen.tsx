@@ -1,6 +1,7 @@
 import type { LocalRule } from '../data/rules'
 import type { BaseRecord } from '../data/workbase'
 import type { RuleMatch } from '../data/views'
+import { getCopyModeText } from '../data/copyMode'
 
 type TodayLane = {
   id: string
@@ -38,6 +39,7 @@ type TodayScreenProps = {
   onOpenDailyRecord: (record: BaseRecord) => void
   onOpenWorkflowTagRoute: (record: BaseRecord, tag: string) => void
   onToggleCommandSendPreview: () => void
+  rupaulMode: boolean
   screenStats: readonly ScreenStat[]
   todayChangedRecord: BaseRecord | undefined
   todayChangedRecords: readonly BaseRecord[]
@@ -68,6 +70,7 @@ export function TodayScreen({
   onOpenDailyRecord,
   onOpenWorkflowTagRoute,
   onToggleCommandSendPreview,
+  rupaulMode,
   screenStats,
   todayChangedRecord,
   todayChangedRecords,
@@ -109,10 +112,13 @@ export function TodayScreen({
           <button
             aria-controls="today-command-send-preview"
             aria-expanded={isCommandSendPreviewOpen}
+            aria-label="Preview summary"
+            data-copy-plain="Preview summary"
+            title="Preview summary"
             type="button"
             onClick={onToggleCommandSendPreview}
           >
-            Preview summary
+            {getCopyModeText('button.previewSummary', rupaulMode)}
           </button>
           {isCommandSendPreviewOpen && (
             <div className="command-send-preview" data-testid="today-command-send-preview" id="today-command-send-preview">

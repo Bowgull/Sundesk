@@ -487,7 +487,9 @@ export function resetSundeskLabModuleProgress(
   educationState: SundeskEducationState,
   moduleId: string,
 ): SundeskEducationState {
-  const { [moduleId]: _removedModule, ...remainingModules } = educationState.lab.modules
+  const remainingModules = { ...educationState.lab.modules }
+
+  delete remainingModules[moduleId]
 
   return {
     ...educationState,

@@ -1,4 +1,5 @@
 import type { ClipboardEvent, ReactNode } from 'react'
+import { getCopyModeText } from '../data/copyMode'
 import type { BaseRecord, FieldDefinition } from '../data/workbase'
 
 type GridCell = {
@@ -25,6 +26,7 @@ type BuildGridProps = {
   onSelectRecord: (recordId: string) => void
   renderEditableGridCell: (record: BaseRecord, field: FieldDefinition) => ReactNode
   renderGridHeader: (field: FieldDefinition, menuKey: string) => ReactNode
+  rupaulMode: boolean
   selectedRecordId: string | undefined
   sortedAndFilteredRecordCount: number
   visibleFieldsForGrid: FieldDefinition[]
@@ -44,6 +46,7 @@ export function BuildGrid({
   onSelectRecord,
   renderEditableGridCell,
   renderGridHeader,
+  rupaulMode,
   selectedRecordId,
   sortedAndFilteredRecordCount,
   visibleFieldsForGrid,
@@ -68,7 +71,16 @@ export function BuildGrid({
                     </th>
                   ))}
                   <th className="add-field-column">
-                    <button aria-label="Add field from grid" data-onboarding-target="build-add-field" type="button" onClick={onAddField}>+ Add field</button>
+                    <button
+                      aria-label="Add field"
+                      data-copy-plain="Add field"
+                      data-onboarding-target="build-add-field"
+                      title="Add field"
+                      type="button"
+                      onClick={onAddField}
+                    >
+                      {getCopyModeText('button.addField', rupaulMode)}
+                    </button>
                   </th>
                   <th className="row-action-column">Saved</th>
                 </tr>
@@ -99,7 +111,16 @@ export function BuildGrid({
                 ))}
                 <tr className="add-record-row">
                   <td colSpan={visibleFieldsForGrid.length + 2}>
-                    <button data-testid="build-add-record" type="button" onClick={onCreateRecord}>+ Add record</button>
+                    <button
+                      aria-label="Add record"
+                      data-copy-plain="Add record"
+                      data-testid="build-add-record"
+                      title="Add record"
+                      type="button"
+                      onClick={onCreateRecord}
+                    >
+                      {getCopyModeText('button.addRecord', rupaulMode)}
+                    </button>
                   </td>
                 </tr>
               </tbody>

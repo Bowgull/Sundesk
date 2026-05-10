@@ -36,9 +36,10 @@ export function OnboardingTour({
 
   useEffect(() => {
     if (status !== 'inProgress' || !step) {
-      setTargetRect(null)
       return
     }
+
+    let frameId = 0
 
     function updateTargetRect() {
       const target = document.querySelector<HTMLElement>(targetSelector)
@@ -58,11 +59,12 @@ export function OnboardingTour({
       })
     }
 
-    updateTargetRect()
+    frameId = window.requestAnimationFrame(updateTargetRect)
     window.addEventListener('resize', updateTargetRect)
     window.addEventListener('scroll', updateTargetRect, true)
 
     return () => {
+      window.cancelAnimationFrame(frameId)
       window.removeEventListener('resize', updateTargetRect)
       window.removeEventListener('scroll', updateTargetRect, true)
     }

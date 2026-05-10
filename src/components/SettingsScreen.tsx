@@ -426,7 +426,15 @@ export function SettingsScreen({
             <span className="eyebrow">Setup</span>
             <h2>Run setup again.</h2>
           </div>
-          <button type="button" onClick={onRestartTour || (() => openScreen('today'))}>Restart onboarding</button>
+          <button
+            aria-label="Restart onboarding"
+            data-copy-plain="Restart onboarding"
+            title="Restart onboarding"
+            type="button"
+            onClick={onRestartTour || (() => openScreen('today'))}
+          >
+            {getCopyModeText('button.restartOnboarding', rupaulMode)}
+          </button>
         </div>
         <div className="settings-list">
           <p><strong>Review privacy.</strong> Show the warning again.</p>

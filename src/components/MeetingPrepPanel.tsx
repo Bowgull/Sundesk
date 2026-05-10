@@ -204,14 +204,33 @@ export function MeetingPrepPanel({
               <span className="metric-pill">{prep.agenda.length}</span>
             </div>
             <div className="agenda-actions" aria-label="Computed agenda actions">
-              <button type="button" onClick={() => void onCopyMeetingAgenda(prep)}>Copy agenda</button>
-              <button type="button" onClick={() => onExportMeetingAgenda(prep)}>Export agenda PDF</button>
               <button
+                aria-label="Copy agenda"
+                data-copy-plain="Copy agenda"
+                title="Copy agenda"
+                type="button"
+                onClick={() => void onCopyMeetingAgenda(prep)}
+              >
+                {getCopyModeText('button.copyAgenda', rupaulMode)}
+              </button>
+              <button
+                aria-label="Export agenda PDF"
+                data-copy-plain="Export agenda PDF"
+                title="Export agenda PDF"
+                type="button"
+                onClick={() => onExportMeetingAgenda(prep)}
+              >
+                {getCopyModeText('button.exportAgendaPdf', rupaulMode)}
+              </button>
+              <button
+                aria-label="Preview summary"
                 aria-expanded={activeDigestPreviewMeetingId === prep.meeting.id}
+                data-copy-plain="Preview summary"
+                title="Preview summary"
                 type="button"
                 onClick={() => onSetActiveDigestPreviewMeetingId((current) => current === prep.meeting.id ? '' : prep.meeting.id)}
               >
-                Preview summary
+                {getCopyModeText('button.previewSummary', rupaulMode)}
               </button>
             </div>
           </div>

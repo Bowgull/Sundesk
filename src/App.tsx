@@ -3697,6 +3697,7 @@ function App() {
             onOpenDailyRecord={openDailyRecord}
             onOpenWorkflowTagRoute={openWorkflowTagRoute}
             onToggleCommandSendPreview={() => setIsTodayCommandPreviewOpen((isOpen) => !isOpen)}
+            rupaulMode={rupaulMode}
             screenStats={screenStats}
             todayCommandPreview={todayCommandPreview}
             todayChangedRecord={todayChangedRecord}
@@ -3916,6 +3917,7 @@ function App() {
             onContinueModule={continueLabModule}
             onResetLabProgress={resetLabProgress}
             onStartModuleOver={startLabModuleOver}
+            rupaulMode={rupaulMode}
           />
         )}
 
@@ -3935,9 +3937,36 @@ function App() {
                     {activeGridViewChanged ? 'View changed' : 'View active'}: {activeGridView.name}
                   </span>
                 )}
-                <button data-onboarding-target="build-add-table" type="button" onClick={() => setBuildModal('table')}>Add table</button>
-                <button data-onboarding-target="build-add-field" type="button" onClick={() => setBuildModal('field')}>Add field</button>
-                <button data-onboarding-target="build-save-view" type="button" onClick={saveGridView}>Save view</button>
+                <button
+                  aria-label="Add table"
+                  data-copy-plain="Add table"
+                  data-onboarding-target="build-add-table"
+                  title="Add table"
+                  type="button"
+                  onClick={() => setBuildModal('table')}
+                >
+                  {getCopy('button.addTable')}
+                </button>
+                <button
+                  aria-label="Add field"
+                  data-copy-plain="Add field"
+                  data-onboarding-target="build-add-field"
+                  title="Add field"
+                  type="button"
+                  onClick={() => setBuildModal('field')}
+                >
+                  {getCopy('button.addField')}
+                </button>
+                <button
+                  aria-label="Save view"
+                  data-copy-plain="Save view"
+                  data-onboarding-target="build-save-view"
+                  title="Save view"
+                  type="button"
+                  onClick={saveGridView}
+                >
+                  {getCopy('button.saveView')}
+                </button>
                 <details className="build-options-menu">
                   <summary>Table options</summary>
                   <div>
@@ -4036,6 +4065,7 @@ function App() {
               onSelectRecord={setSelectedBuildRecordId}
               renderEditableGridCell={renderEditableGridCell}
               renderGridHeader={renderGridHeader}
+              rupaulMode={rupaulMode}
               selectedRecordId={selectedBuildRecord?.id}
               sortedAndFilteredRecordCount={sortedAndFilteredRecords.length}
               visibleFieldsForGrid={visibleFieldsForGrid}

@@ -138,9 +138,13 @@ function buildMeetingAgendaText(base: Workbase, prep: MeetingPrep) {
 }
 
 function normalizePdfText(value: string) {
-  return value
-    .normalize('NFKD')
-    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '')
+  return Array.from(value.normalize('NFKD'))
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+
+      return code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 126)
+    })
+    .join('')
 }
 
 function escapePdfText(value: string) {

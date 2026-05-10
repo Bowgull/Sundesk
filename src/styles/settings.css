@@ -785,6 +785,10 @@
     grid-template-columns: 1fr;
   }
 
+  .settings-help-panel {
+    grid-column: auto;
+  }
+
   .data-access-panel {
     grid-column: auto;
   }

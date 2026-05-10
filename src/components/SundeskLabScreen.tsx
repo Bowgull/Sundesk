@@ -1,4 +1,5 @@
 import type { SundeskEducationState } from '../data/educationState'
+import { getCopyModeText } from '../data/copyMode'
 import { getSundeskLabCurrentStep, type SundeskLabModule } from '../data/sundeskLab'
 
 type SundeskLabScreenProps = {
@@ -8,6 +9,7 @@ type SundeskLabScreenProps = {
   onContinueModule: (moduleId: string) => void
   onResetLabProgress: () => void
   onStartModuleOver: (moduleId: string) => void
+  rupaulMode: boolean
 }
 
 const progressLabels = {
@@ -23,6 +25,7 @@ export function SundeskLabScreen({
   onContinueModule,
   onResetLabProgress,
   onStartModuleOver,
+  rupaulMode,
 }: SundeskLabScreenProps) {
   const activeModule = modules.find((module) => module.id === educationState.lab.activeModuleId)
   const activeProgress = activeModule ? educationState.lab.modules[activeModule.id] : null
@@ -39,7 +42,15 @@ export function SundeskLabScreen({
             <h1>Sundesk Lab</h1>
             <p className="panel-lede">Fake GTA chaos. Real Sundesk moves. Your workspace stays untouched.</p>
           </div>
-          <button type="button" onClick={onResetLabProgress}>Reset sample data</button>
+          <button
+            aria-label="Reset sample data"
+            data-copy-plain="Reset sample data"
+            title="Reset sample data"
+            type="button"
+            onClick={onResetLabProgress}
+          >
+            {getCopyModeText('button.resetLab', rupaulMode)}
+          </button>
         </div>
         <div className="lab-sandbox-strip">
           <span>Sample workspace</span>

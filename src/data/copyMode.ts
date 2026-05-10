@@ -6,6 +6,15 @@ export type CopyEntryId =
   | 'nav.lab'
   | 'button.copyNote'
   | 'button.exportPdf'
+  | 'button.copyAgenda'
+  | 'button.exportAgendaPdf'
+  | 'button.previewSummary'
+  | 'button.addTable'
+  | 'button.addField'
+  | 'button.saveView'
+  | 'button.addRecord'
+  | 'button.resetLab'
+  | 'button.restartOnboarding'
   | 'settings.disclaimer'
   | 'help.noResults'
 
@@ -64,6 +73,69 @@ export const copyEntries: readonly CopyEntry[] = [
     id: 'button.exportPdf',
     plain: 'Export PDF',
     rupaul: 'Export the PDF, darling',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.copyAgenda',
+    plain: 'Copy agenda',
+    rupaul: 'Copy the agenda before somebody freestyles',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.exportAgendaPdf',
+    plain: 'Export agenda PDF',
+    rupaul: 'Export the agenda PDF. Receipts for the room',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.previewSummary',
+    plain: 'Preview summary',
+    rupaul: 'Preview the morning read',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.addTable',
+    plain: 'Add table',
+    rupaul: 'Add another bucket',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.addField',
+    plain: 'Add field',
+    rupaul: 'Add a new little rule',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.saveView',
+    plain: 'Save view',
+    rupaul: 'Save this angle',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.addRecord',
+    plain: 'Add record',
+    rupaul: 'Add the next problem',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.resetLab',
+    plain: 'Reset sample data',
+    rupaul: 'Reset the fake chaos',
+    scope: 'button',
+    revealPlain: true,
+  },
+  {
+    id: 'button.restartOnboarding',
+    plain: 'Restart onboarding',
+    rupaul: 'Run the tour again',
     scope: 'button',
     revealPlain: true,
   },

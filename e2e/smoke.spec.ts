@@ -509,7 +509,7 @@ test('Build paste shows post-paste helpers', async ({ page }) => {
   await page.getByRole('button', { name: 'Use Status' }).click()
   await expect(page.getByRole('status')).toContainText('Status behavior applied.')
 
-  await page.getByRole('button', { name: 'Add field', exact: true }).click()
+  await page.locator('.build-workbench .drawer-actions').getByRole('button', { name: 'Add field', exact: true }).click()
   const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
   await addFieldModal.getByLabel('Field name').fill('Imported tags')
   await addFieldModal.getByRole('button', { name: 'Add field' }).click()
@@ -599,7 +599,7 @@ test('Build toolbar exposes ordered view controls and persists density', async (
 
   await expect(page.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByLabel('View')).toBeVisible()
+  await expect(page.locator('.build-toolbar select').first()).toBeVisible()
   await expect(page.getByLabel('Filter')).toBeVisible()
   await expect(page.getByText('Shape grid')).toBeVisible()
   await page.getByText('Shape grid').click()
@@ -942,7 +942,7 @@ test('Build pinned views persist across reloads', async ({ page }) => {
 test('Build field create, edit, and delete persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByRole('button', { name: 'Add field', exact: true }).click()
+  await page.locator('.build-workbench .drawer-actions').getByRole('button', { name: 'Add field', exact: true }).click()
 
   const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
 
@@ -1243,6 +1243,19 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('title', 'Build')
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('data-copy-plain', 'Build')
 
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByRole('button', { name: 'Add table' })).toContainText('Add another bucket')
+  await expect(page.getByRole('button', { name: 'Add table' })).toHaveAttribute('data-copy-plain', 'Add table')
+  await expect(page.getByRole('button', { name: 'Add field', exact: true }).first()).toContainText('Add a new little rule')
+  await expect(page.getByRole('button', { name: 'Save view' })).toContainText('Save this angle')
+  await expect(page.getByTestId('build-add-record')).toContainText('Add the next problem')
+
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' }).click()
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toContainText('Copy the agenda before somebody freestyles')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toHaveAttribute('data-copy-plain', 'Copy agenda')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export agenda PDF' }).first()).toContainText('Export the agenda PDF. Receipts for the room')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview summary' }).first()).toContainText('Preview the morning read')
+
   const storedCopyMode = await page.evaluate(() => {
     const rawState = window.localStorage.getItem('sundesk-education-state-v1')
 
@@ -1252,6 +1265,7 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   expect(storedCopyMode.rupaulMode).toBe(true)
 
   await page.reload()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' }).click()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Sundesk Lab' })).toContainText('Sundesk Lab. Practice the drama safely')
   await page.getByLabel('Search Help').fill('unknown')
@@ -1400,6 +1414,50 @@ test('Mobile keeps navigation and touch targets usable', async ({ page }) => {
   await expect(page.getByTestId('build-screen')).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('Mobile Build keeps dense controls, drawer, and onboarding inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#build')
+  await expect(page.getByTestId('build-screen')).toBeVisible()
+
+  const assertInViewport = async (selector: string) => {
+    const box = await page.locator(selector).first().boundingBox()
+
+    expect(box?.x).toBeGreaterThanOrEqual(0)
+    expect(box ? box.x + box.width : 0).toBeLessThanOrEqual(390)
+  }
+
+  await assertInViewport('.build-workbench')
+  await assertInViewport('.table-tabs')
+  await assertInViewport('.grid-toolbar.build-toolbar')
+  await assertInViewport('.record-table-wrap')
+  await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 390)
+
+  await page.getByTestId('edit-record-risk_venue_halifax').click()
+  await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await assertInViewport('.record-drawer.active-record-drawer')
+  await expect(page.getByTestId('record-drawer').getByRole('heading', { name: 'Venue readiness may slip.' })).toBeVisible()
+
+  await page.evaluate(() => {
+    const existing = JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}')
+
+    window.localStorage.setItem('sundesk-education-state-v1', JSON.stringify({
+      ...existing,
+      onboarding: {
+        status: 'inProgress',
+        currentStepId: 'build-nav',
+        completedStepIds: ['welcome', 'today'],
+        completedActionIds: ['start-tour', 'view-today'],
+        startedAt: '2026-05-10T12:00:00.000Z',
+        completedAt: null,
+        lastSeenAt: '2026-05-10T12:00:00.000Z',
+      },
+    }))
+  })
+  await page.reload()
+  await expect(page.getByTestId('onboarding-tour')).toBeVisible()
+  await assertInViewport('.onboarding-annotation-card')
 })
 
 test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page }) => {
