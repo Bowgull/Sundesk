@@ -1230,6 +1230,51 @@ test('Daily support actions open real local surfaces', async ({ page }) => {
   await expect(page.getByTestId('record-drawer').getByTestId('meeting-prep')).toBeVisible()
 })
 
+test('Meetings export note and agenda PDFs locally', async ({ page }, testInfo) => {
+  const firebaseWriteRequests = auditFirebaseWrites(page)
+
+  await page.goto('/#meetings')
+
+  const noteDownloadPromise = page.waitForEvent('download')
+
+  await page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first().click()
+  const noteDownload = await noteDownloadPromise
+  const notePath = testInfo.outputPath(noteDownload.suggestedFilename())
+
+  await noteDownload.saveAs(notePath)
+  await expect(page.getByRole('status')).toContainText('Meeting note PDF exported.')
+
+  const noteBytes = await readFile(notePath)
+
+  expect(noteDownload.suggestedFilename()).toMatch(/^sundesk-meeting-note-.+\.pdf$/)
+  expect(noteBytes.length).toBeGreaterThan(100)
+  expect(noteBytes.subarray(0, 4).toString()).toBe('%PDF')
+
+  const noteState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(noteState.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
+
+  const agendaDownloadPromise = page.waitForEvent('download')
+
+  await page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export agenda PDF' }).first().click()
+  const agendaDownload = await agendaDownloadPromise
+  const agendaPath = testInfo.outputPath(agendaDownload.suggestedFilename())
+
+  await agendaDownload.saveAs(agendaPath)
+  await expect(page.getByRole('status')).toContainText('Agenda PDF exported.')
+
+  const agendaBytes = await readFile(agendaPath)
+
+  expect(agendaDownload.suggestedFilename()).toMatch(/^sundesk-meeting-agenda-.+\.pdf$/)
+  expect(agendaBytes.length).toBeGreaterThan(100)
+  expect(agendaBytes.subarray(0, 4).toString()).toBe('%PDF')
+
+  const agendaState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(agendaState.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
+  expect(firebaseWriteRequests).toEqual([])
+})
+
 test('Settings keeps data status visible and engine details manual', async ({ page }) => {
   await page.goto('/#settings')
 
@@ -1381,6 +1426,33 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Sundesk Lab' })).toContainText('Sundesk Lab. Practice the drama safely')
   await page.getByLabel('Search Help').fill('unknown')
   await expect(page.getByLabel('Help results')).toContainText('No help found for that. Try a messier word')
+})
+
+test('Settings Help actions open the exact Lab module and onboarding tour', async ({ page }) => {
+  await page.goto('/#settings')
+
+  await page.getByLabel('Search Help').fill('tags Steph')
+  await page.getByRole('button', { name: 'Open Lab tags' }).click()
+  await expect(page).toHaveURL(/#lab$/)
+  await expect(page.getByTestId('lab-active-module')).toContainText('Tags')
+
+  const labState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(labState.lab.activeModuleId).toBe('tags')
+  expect(labState.lab.modules.tags.status).toBe('inProgress')
+
+  await page.goto('/#settings')
+  await page.getByLabel('Search Help').fill('start over tutorial')
+  await page.getByLabel('Help results').getByRole('button', { name: 'Restart onboarding' }).click()
+  await expect(page).toHaveURL(/#today$/)
+  await expect(page.getByTestId('onboarding-tour')).toBeVisible()
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Today')
+
+  const onboardingState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(onboardingState.onboarding.status).toBe('inProgress')
+  expect(onboardingState.onboarding.currentStepId).toBe('today')
+  expect(onboardingState.lab.activeModuleId).toBe('tags')
 })
 
 test('Settings exports and imports a local backup without changing Firebase write UI', async ({ page }, testInfo) => {

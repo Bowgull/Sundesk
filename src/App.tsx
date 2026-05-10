@@ -876,6 +876,13 @@ function App() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+    updateEducationState((current) => ({
+      ...current,
+      meetingPdf: {
+        ...current.meetingPdf,
+        lastExportedMeetingId: prep.meeting.id,
+      },
+    }))
     showToast('Agenda PDF exported.')
   }
 
@@ -904,6 +911,13 @@ function App() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+    updateEducationState((current) => ({
+      ...current,
+      meetingPdf: {
+        ...current.meetingPdf,
+        lastExportedMeetingId: prep.meeting.id,
+      },
+    }))
     showToast('Meeting note PDF exported.')
   }
 
@@ -4161,6 +4175,7 @@ function App() {
             migrationMessages={migrationMessages}
             onExportBackup={exportLocalBackup}
             onImportBackup={applyLocalBackupFile}
+            onOpenLabModule={continueLabModule}
             onRestartTour={restartOnboardingTour}
             onRupaulModeChange={updateRupaulMode}
             openScreen={openScreen}

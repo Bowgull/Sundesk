@@ -7,7 +7,7 @@ import type {
   FirestoreWriteGateState,
 } from '../data/firestoreReadShadow'
 import type { FirebaseSetupState } from '../data/firebaseSetup'
-import { searchHelpArticles, type HelpRouteLabel } from '../data/help'
+import { searchHelpArticles, type HelpArticle, type HelpRouteLabel } from '../data/help'
 import type { LocalRule } from '../data/rules'
 
 type ThemeSwatch = {
@@ -56,6 +56,7 @@ export type SettingsScreenProps = {
   migrationMessages: readonly string[]
   onExportBackup?: () => void
   onImportBackup?: (file: File) => void
+  onOpenLabModule?: (moduleId: string) => void
   onRestartTour?: () => void
   onRupaulModeChange: (enabled: boolean) => void
   onThemeChange: (theme: ThemeId) => void
@@ -82,6 +83,7 @@ export function SettingsScreen({
   migrationMessages,
   onExportBackup,
   onImportBackup,
+  onOpenLabModule,
   onRestartTour,
   onRupaulModeChange,
   onThemeChange,
@@ -130,6 +132,39 @@ export function SettingsScreen({
     return 'settings'
   }
 
+  function getHelpLabModuleId(routeLabel: HelpRouteLabel) {
+    if (routeLabel === 'Lab fields') return 'fields'
+    if (routeLabel === 'Lab tags') return 'tags'
+    if (routeLabel === 'Lab links') return 'links'
+    if (routeLabel === 'Lab views') return 'views'
+
+    return null
+  }
+
+  function getHelpActionLabel(article: HelpArticle) {
+    if (article.id === 'restart-onboarding') return 'Restart onboarding'
+    if (getHelpLabModuleId(article.routeLabel)) return `Open ${article.routeLabel}`
+
+    return `Open ${article.routeLabel}`
+  }
+
+  function openHelpArticle(article: HelpArticle) {
+    if (article.id === 'restart-onboarding' && onRestartTour) {
+      onRestartTour()
+      return
+    }
+
+    const labModuleId = getHelpLabModuleId(article.routeLabel)
+
+    if (labModuleId && onOpenLabModule) {
+      onOpenLabModule(labModuleId)
+      openScreen('lab')
+      return
+    }
+
+    openScreen(getHelpRouteScreen(article.routeLabel))
+  }
+
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
       <article className="settings-panel settings-help-panel">
@@ -156,8 +191,8 @@ export function SettingsScreen({
               <span>{article.routeLabel}</span>
               <strong>{article.title}</strong>
               <p>{article.body}</p>
-              <button type="button" onClick={() => openScreen(getHelpRouteScreen(article.routeLabel))}>
-                Open {article.routeLabel}
+              <button type="button" onClick={() => openHelpArticle(article)}>
+                {getHelpActionLabel(article)}
               </button>
             </article>
           )) : (
