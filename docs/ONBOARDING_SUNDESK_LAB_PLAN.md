@@ -4,6 +4,8 @@ Status: planned. No AI integration. No deploy. No Firebase writes until approved
 
 This plan turns the onboarding, Sundesk Lab, meeting PDF, RuPaul Mode, and iPhone PWA decisions into the build path.
 
+Exact build spec: `docs/SUNDESK_BUILD_READY_IMPLEMENTATION_SPEC.md`.
+
 The goal is not to make Lindsay read a manual. The goal is to help her understand the spine of Sundesk once, then give her a safe place to practice everything else.
 
 ## Product Rule
@@ -141,7 +143,7 @@ Restart onboarding restarts the same annotated flow. It does not erase workspace
 9. Meeting PDF.
    - Meeting notes can export as a PDF.
    - Use this exact onboarding line:
-     `Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+     `Export your meeting note PDF, and remember to send Josh your template to fine tune this better for you my pookie`
 
 10. Sundesk Lab.
     - Sundesk Lab is the sandbox.

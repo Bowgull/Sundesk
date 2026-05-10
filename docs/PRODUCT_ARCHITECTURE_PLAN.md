@@ -518,6 +518,8 @@ Final polish is also done when she can open Build, edit the structure, and see e
 
 Full plan: `docs/ONBOARDING_SUNDESK_LAB_PLAN.md`.
 
+Exact build spec: `docs/SUNDESK_BUILD_READY_IMPLEMENTATION_SPEC.md`.
+
 Onboarding teaches the spine.
 
 Sundesk Lab teaches the machine.
@@ -551,7 +553,7 @@ No AI is used. Help search is local text matching over articles, tags, synonyms,
 
 Meeting notes export as PDF, not Markdown. Onboarding must include this line:
 
-`Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+`Export your meeting note PDF, and remember to send Josh your template to fine tune this better for you my pookie`
 
 RuPaul Mode is a system-wide copy mode, not an onboarding-only joke. It uses a copy map, a Settings toggle named `RuPaul Mode`, 500ms plain-copy reveal on hover or long press, and synced preference once shared settings are active.
 

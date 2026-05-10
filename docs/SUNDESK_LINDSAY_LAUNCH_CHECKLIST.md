@@ -44,9 +44,11 @@ Required:
 - Plain-copy reveal after 500ms hover on desktop or long press on mobile.
 - iPhone PWA pass for onboarding, Sundesk Lab, Help, RuPaul Mode, and meeting PDF export.
 
+Exact implementation spec: `docs/SUNDESK_BUILD_READY_IMPLEMENTATION_SPEC.md`.
+
 Meeting PDF onboarding copy must include:
 
-`Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+`Export your meeting note PDF, and remember to send Josh your template to fine tune this better for you my pookie`
 
 All of this must sync across desktop and mobile for the final app. Local-only state is acceptable during local build only.
 
