@@ -1,5 +1,22 @@
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+
+const firebaseWriteMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+const firebaseWriteHostPattern = /(?:^|\.)firestore\.googleapis\.com$|(?:^|\.)firebaseio\.com$|(?:^|\.)firebase\.google\.com$/
+
+const auditFirebaseWrites = (page: Page) => {
+  const firebaseWriteRequests: string[] = []
+
+  page.on('request', (request) => {
+    const requestUrl = new URL(request.url())
+
+    if (firebaseWriteMethods.has(request.method()) && firebaseWriteHostPattern.test(requestUrl.hostname)) {
+      firebaseWriteRequests.push(`${request.method()} ${request.url()}`)
+    }
+  })
+
+  return firebaseWriteRequests
+}
 
 test.beforeEach(async ({ page }) => {
   const consoleErrors: string[] = []
@@ -124,6 +141,9 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
 })
 
 test('Today command-send preview is local-only and keeps Today as home', async ({ page }) => {
+  const firebaseWriteRequests = auditFirebaseWrites(page)
+
+  await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
 
@@ -140,6 +160,7 @@ test('Today command-send preview is local-only and keeps Today as home', async (
   await expect(preview).toContainText(/Waiting/i)
   await expect(preview).toContainText(/Next/i)
   await expect(preview).toContainText(/meeting prep/i)
+  expect(firebaseWriteRequests).toEqual([])
 })
 
 test('Deck-first shell keeps Today home and simplified surfaces reachable', async ({ page }) => {
@@ -917,6 +938,7 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
 })
 
 test('Settings exports and imports a local backup without changing Firebase write UI', async ({ page }, testInfo) => {
+  const firebaseWriteRequests = auditFirebaseWrites(page)
   const originalTitle = 'Backup restore seed'
   const changedTitle = 'Backup restore changed'
   const fakeRecordId = 'tasks_backup_restore_seed'
@@ -1007,6 +1029,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+  expect(firebaseWriteRequests).toEqual([])
 })
 
 test('Mobile keeps navigation and touch targets usable', async ({ page }) => {

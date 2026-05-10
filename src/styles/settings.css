@@ -340,20 +340,43 @@
 
 .settings-web-app-copy {
   display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.settings-web-app-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.settings-web-app-copy p {
+.settings-web-app-steps p,
+.settings-web-app-readiness,
+.settings-web-app-note {
   margin: 0;
-  padding: 9px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   color: var(--ink-2);
   font-size: 13px;
   line-height: 1.45;
 }
 
-.settings-web-app-copy p:last-child {
-  border-bottom: 0;
+.settings-web-app-steps p {
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-glass);
+}
+
+.settings-web-app-readiness {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+
+.settings-web-app-note {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .settings-web-app-copy strong {
@@ -648,6 +671,14 @@
 
   .settings-web-app-layout {
     grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .settings-web-app-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-web-app-steps p {
+    min-height: auto;
   }
 
   .settings-web-app-icon {

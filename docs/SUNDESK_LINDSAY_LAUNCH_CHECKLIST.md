@@ -196,7 +196,7 @@ Steps:
 13. Confirm Build remains visible in the sidebar.
 14. Confirm the restored data is fake.
 15. Confirm Settings still shows Firestore writes as disabled.
-16. If Build Export CSV is wired, export the current visible fake table or view as CSV and confirm the downloaded file has headers and visible fake rows only.
+16. Use Build Export CSV on the current visible fake table or view and confirm the downloaded file has headers and visible fake rows only.
 17. Treat Build Export CSV as local browser output only. It is not a backup, not remote sync, and not Firebase write approval.
 
 Stop after the local rehearsal. This step does not approve Firestore writes. This step does not approve deploy. This step does not move any real Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.

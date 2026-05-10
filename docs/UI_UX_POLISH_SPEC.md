@@ -479,13 +479,16 @@ Not:
 Build toolbar order:
 
 1. View.
-2. Fields.
-3. Filter.
-4. Sort.
-5. Group.
-6. Colour.
-7. Density.
-8. Export later.
+2. Filter.
+3. Shape grid.
+4. Table options.
+5. Export CSV.
+
+`Shape grid` owns field visibility, sorting, grouping, colour, and density controls.
+
+`Table options` owns table admin actions.
+
+Export CSV is local browser output for the current visible table or saved view. It is not a backup, not remote sync, and not Firebase write approval.
 
 Today does not use this toolbar.
 
@@ -695,13 +698,24 @@ Mobile must stay usable, but it does not need to expose every Build power first.
 
 Mobile rules:
 
-- Sidebar becomes a bottom or drawer nav.
+- Primary navigation becomes a mobile nav surface.
 - Today becomes one column.
 - Lanes stack.
 - Build grid scrolls horizontally.
 - Record drawer becomes full screen.
-- Toolbar actions collapse into a `View` menu.
+- Toolbar actions collapse behind the first-read Build controls.
 - Touch targets are at least 44px.
+
+Current local pass:
+
+- Today remains home.
+- Build remains visible.
+- Shell and sidebar have mobile and pinned-view density work in place.
+
+Remaining QA:
+
+- Verify active, hover, focus, and pinned-view density across the real surfaces with fake data.
+- Verify mobile navigation keeps Today first and Build reachable.
 
 ## Accessibility
 

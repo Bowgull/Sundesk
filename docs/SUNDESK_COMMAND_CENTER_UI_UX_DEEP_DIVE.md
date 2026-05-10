@@ -224,9 +224,9 @@ Tags do workflow work:
 
 Links connect rows to community profiles. Backlinks appear automatically.
 
-## Current App Gap Inventory
+## Current App Alignment Inventory
 
-The current React app has real engine work, but the front end is not yet at the deck.
+The current React app is aligned to the simplified deck for the local build path. It remains local-only until Firebase Console setup, deploy, and write approval are given.
 
 Current resolved alignment:
 
@@ -308,17 +308,27 @@ Current resolved alignment:
 - The twenty-fifth command-send preview block wires the Today summary preview as local-only. Preview summary opens a no-send command preview with Now, Waiting, Next, focus, why, and meeting prep context.
 - The twenty-sixth Build CSV export block wires a local CSV download for the current visible Build table or saved view. The E2E confirms headers, a visible row, Today as home, and Build in the sidebar.
 
-Remaining gaps:
+Current local state:
 
-- Build post-paste apply controls now set field behavior and migrate simple text values into dates, numbers, and tags.
-- Today, Timeline, Meetings, and Communities now all have deck-first routes back into Build.
+- Today is home and has the stricter first read, touch-first focus band, quieter count summary, and local-only command-send preview.
+- Build is visible in the sidebar and keeps the grid as the structural workshop.
+- The app shell and sidebar have the deck-aligned navigation pass, including mobile nav and pinned-view density work.
+- Build post-paste apply controls set field behavior and migrate simple text values into dates, numbers, and tags.
+- Build CSV export is a local browser download for the current visible table or saved view. It is not a backup, not remote sync, and not Firebase write approval.
+- Today, Timeline, Meetings, and Communities all route deck-first records back into Build.
 - Communities can create, add, remove, quick-edit, and set richer table-aware fields on linked rows.
-- Meetings source records now route with table-aware section decisions and visible route reasons.
-- Kanban, Calendar, Timeline, and Graph now have mode receipts and first-pass interaction polish.
-- Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
-- App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
-- The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: actual Firebase Console setup after approval, hosted preview smoke test after deploy approval, and production auth/write gate smoke tests with fake data after write approval.
+- Meetings source records route with table-aware section decisions and visible route reasons.
+- Kanban, Calendar, Timeline, and Graph have mode receipts and first-pass interaction polish.
+- PWA shell, manifest, icon links, service worker shell, install copy, Today as home, and Build in the sidebar are verified for the local build path.
+
+Remaining work:
+
+- Run deeper hierarchy QA with fake data before Lindsay-facing smoke work. No real Lindsay, SALTXC, permit, COI, contract, contact, or company data.
+- Continue whole-product visual QA for active, hover, mobile, pinned-view density, and individual surface polish.
+- Actual Firebase Console setup requires explicit approval and must happen outside this local-only doc pass.
+- Hosted preview smoke work requires deploy approval.
+- Production auth and write-gate smoke work requires separate Firestore write approval and fake data only.
+- No deploy has run. No Firebase write path is enabled by this document.
 
 ## UI/UX Audit Checklist
 

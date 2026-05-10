@@ -290,10 +290,17 @@ export function SettingsScreen({
             <img src="/brand/sundesk-icon.png" alt="" />
           </div>
           <div className="settings-web-app-copy">
-            <p><strong>Hosted URL.</strong> Open Sundesk from the hosted web address Lindsay uses for daily work.</p>
-            <p><strong>Mobile.</strong> Add the hosted URL to the home screen so Sundesk opens from its own icon.</p>
-            <p><strong>Desktop.</strong> Bookmark the hosted URL in the work browser. Keep Today as the first stop.</p>
-            <p><strong>Icon.</strong> Use the Sundesk icon to confirm the saved app or bookmark is the right one.</p>
+            <div className="settings-web-app-steps">
+              <p><strong>Hosted URL.</strong> Open Sundesk from the hosted web address used for daily work.</p>
+              <p><strong>Mobile.</strong> Add to Home Screen. Use the Sundesk icon to confirm the saved app.</p>
+              <p><strong>Desktop.</strong> Bookmark the hosted URL in the work browser. Today stays home.</p>
+            </div>
+            <p className="settings-web-app-readiness">
+              <strong>Before hosted use.</strong> Check Launch readiness for Firebase config, deploy approval, write approval, and no Firebase writes.
+            </p>
+            <p className="settings-web-app-note">
+              This install surface is manual. It does not deploy, change Firebase setup, or write remote data.
+            </p>
           </div>
         </div>
       </article>
