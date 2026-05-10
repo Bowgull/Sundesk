@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "verify": "npm run preflight && npm run lint && npm run test && npm run build"
+    "test:launch": "playwright test e2e/smoke.spec.ts e2e/auth.spec.ts e2e/pwa-prod.spec.ts",
+    "verify": "npm run preflight && npm run lint && npm run test && npm run build",
+    "verify:launch": "npm run verify && npm run test:launch"
   },
   "dependencies": {
     "firebase": "^12.13.0",

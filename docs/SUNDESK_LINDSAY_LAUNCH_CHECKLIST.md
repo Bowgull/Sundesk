@@ -153,10 +153,10 @@ Rules:
 Hosted preflight:
 
 ```bash
-npm run preflight
+npm run verify:launch
 ```
 
-Preflight is the expected release gate before deploy.
+`npm run preflight` is the fast static check. `npm run verify:launch` is the release gate before deploy.
 
 Then test the preview URL with fake data only. No private emails, real records, SALTXC data, permit contents, COI contents, contract text, or setup screenshots with private values.
 
@@ -263,7 +263,7 @@ Stop after the local rehearsal. This step does not approve Firestore writes. Thi
 Deploy only after explicit deploy approval.
 
 ```bash
-npm run preflight
+npm run verify:launch
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 

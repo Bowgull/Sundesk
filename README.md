@@ -22,6 +22,14 @@ npm install
 npm run dev
 ```
 
+## Launch Verification
+
+```bash
+npm run verify:launch
+```
+
+This runs preflight, lint, unit tests, production build, full smoke, auth gate, and production PWA checks.
+
 ## Docs
 
 - [Blueprint](docs/BLUEPRINT.md)

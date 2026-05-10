@@ -76,16 +76,16 @@ All other Firestore documents are denied.
 
 ## Deploy Later
 
-Before any approved deploy, run the expected hosted preflight:
+Before any approved deploy, run the expected launch verification:
 
 ```bash
-npm run preflight
+npm run verify:launch
 ```
 
 After explicit deploy approval:
 
 ```bash
-npm run preflight
+npm run verify:launch
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 

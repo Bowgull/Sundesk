@@ -39,11 +39,11 @@ Reason:
 The deploy path, after explicit deploy approval:
 
 ```bash
-npm run preflight
+npm run verify:launch
 firebase deploy --only hosting,firestore:rules,firestore:indexes
 ```
 
-Preflight is the release gate before deploy.
+`npm run preflight` is the fast static check. `npm run verify:launch` is the release gate before deploy.
 
 Use one Firebase project. Keep billing off. Do not enable Cloud Functions, Cloud Storage, App Hosting, Extensions, imports, or file upload.
 
@@ -193,10 +193,10 @@ This readiness path does not include:
 Run before any approved deploy:
 
 ```bash
-npm run preflight
+npm run verify:launch
 ```
 
-Then run the preview smoke test.
+This includes preflight, lint, unit tests, production build, auth smoke, full app smoke, and production PWA smoke.
 
 Then smoke test the preview URL with fake data only:
 
