@@ -8,6 +8,9 @@ describe('local Help search', () => {
       'meetings',
       'lab',
       'iphone',
+      'shared-access',
+      'install-bookmark',
+      'restart-onboarding',
       'privacy',
       'rupaul',
       'backup',
@@ -17,10 +20,13 @@ describe('local Help search', () => {
   it('searches title, body, synonyms, and route labels without chat framing', () => {
     expect(searchHelpArticles('Steph label')[0]?.id).toBe('tags')
     expect(searchHelpArticles('PDF boss')[0]?.id).toBe('meetings')
-    expect(searchHelpArticles('home screen')[0]?.id).toBe('iphone')
+    expect(searchHelpArticles('iPhone home screen')[0]?.id).toBe('iphone')
     expect(searchHelpArticles('plain version')[0]?.id).toBe('rupaul')
     expect(searchHelpArticles('Settings disclaimer')[0]?.id).toBe('privacy')
     expect(searchHelpArticles('Sundesk Lab')[0]?.id).toBe('lab')
+    expect(searchHelpArticles('login shared data')[0]?.id).toBe('shared-access')
+    expect(searchHelpArticles('desktop bookmark icon')[0]?.id).toBe('install-bookmark')
+    expect(searchHelpArticles('start over tutorial')[0]?.id).toBe('restart-onboarding')
   })
 
   it('returns suggested defaults for an empty query and no results for unmatched local search', () => {

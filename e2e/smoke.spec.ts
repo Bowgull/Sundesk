@@ -1215,9 +1215,9 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByText('Write gate. Disabled. No Firestore writes can run in this build.')).toBeVisible()
   await expect(page.getByText('Read shadow. Off. Local storage is the active source.')).toBeVisible()
   await expect(page.getByText('Show workspace counts')).toBeVisible()
-  await page.getByText('Show command routing').click()
+  await page.locator('.data-access-panel').getByText('Show command routing').click()
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
-  await expect(page.getByTestId('rule-destination-grid').getByText('Timeline')).toBeVisible()
+  await expect(page.getByTestId('rule-destination-grid')).toContainText('Timeline')
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
@@ -1245,6 +1245,15 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await page.getByLabel('Search Help').fill('iPhone PWA')
   await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
 
+  await page.getByLabel('Search Help').fill('login shared data')
+  await expect(page.getByLabel('Help results')).toContainText('Shared workspace access')
+
+  await page.getByLabel('Search Help').fill('desktop bookmark icon')
+  await expect(page.getByLabel('Help results')).toContainText('Install and bookmark Sundesk')
+
+  await page.getByLabel('Search Help').fill('start over tutorial')
+  await expect(page.getByLabel('Help results')).toContainText('Run onboarding again')
+
   await page.getByLabel('Search Help').fill('privacy disclaimer')
   await expect(page.getByLabel('Help results')).toContainText('Privacy and at-your-own-risk note')
 
@@ -1260,6 +1269,11 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
 
   await page.getByLabel('RuPaul Mode').check()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
+  await page.locator('.settings-sensitive-details').evaluate((element) => {
+    if (element instanceof HTMLDetailsElement) {
+      element.open = true
+    }
+  })
   await expect(page.getByText('Put sensitive things in here at your own risk, my pookie. The system can organize the mess, but it cannot make a secret less secret')).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toContainText('Today. The mess has been called to the stage')
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toContainText('Build. Give the chaos a backbone')

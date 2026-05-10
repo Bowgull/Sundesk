@@ -91,6 +91,27 @@ export const helpArticles: readonly HelpArticle[] = [
     synonyms: ['mobile', 'home screen', 'PWA', 'install'],
   },
   {
+    id: 'shared-access',
+    title: 'Shared workspace access',
+    body: 'Use the approved hosted address for shared daily work. Google sign-in gates shared data for approved accounts.',
+    routeLabel: 'Settings',
+    synonyms: ['login', 'sign in', 'Google', 'shared', 'sync', 'desktop', 'mobile', 'another device'],
+  },
+  {
+    id: 'install-bookmark',
+    title: 'Install and bookmark Sundesk',
+    body: 'On iPhone, open the approved address in Safari and Add to Home Screen. On desktop, bookmark the approved address. Today still opens first.',
+    routeLabel: 'Settings',
+    synonyms: ['bookmark', 'desktop bookmark', 'icon', 'Safari', 'approved address', 'home screen'],
+  },
+  {
+    id: 'restart-onboarding',
+    title: 'Run onboarding again',
+    body: 'Settings has Restart onboarding. It starts the guided tour again without deleting tables, records, Lab progress, or workspace data.',
+    routeLabel: 'Settings',
+    synonyms: ['start over', 'tour', 'tutorial', 'guided', 'onboarding', 'restart'],
+  },
+  {
     id: 'privacy',
     title: 'Privacy and at-your-own-risk note',
     body: 'Use Sundesk for sensitive information at your own risk. You choose what belongs in the app.',
