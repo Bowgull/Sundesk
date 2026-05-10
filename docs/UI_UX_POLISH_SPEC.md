@@ -731,9 +731,15 @@ Use natural language. Avoid stiff documentation voice. Do not overuse hard full-
 
 Onboarding must teach tables because tables are the core function of Sundesk. It must not deep dive every table function.
 
+Onboarding is one annotated flow. It includes explanation and action. There is no separate Start Here checklist.
+
+Action steps advance only on exact highlighted target clicks or exact expected actions. Stable `data-onboarding-target` hooks are required.
+
 Sundesk Lab owns the deep dive.
 
 Sundesk Lab is a sandbox with fake GTA-style sample data, guided modules, progress, Continue, Start over, and Reset sample data.
+
+Sundesk Lab must include modules for tables, records, field types, custom tags, linked records, views, Today, meetings, Timeline, exports, safety, and iPhone use.
 
 Help is separate from Sundesk Lab. Help is searchable, local, task-based, and issue-oriented.
 
@@ -744,6 +750,32 @@ Meeting notes export as PDF. Do not expose Markdown.
 The meeting PDF onboarding copy includes:
 
 `Export your meeting note PDF, then send Josh your template to fine tune this better for you my pookie.`
+
+## Tags And Checkbox Polish
+
+Tags are multi-value field data, not decoration.
+
+Requirements:
+
+- custom tags can be created by typing.
+- multiple tags can live on one record.
+- tag options persist on the field where they were created.
+- no global tag system in V1.
+- tags appear in Build grid cells, record drawer, relevant meeting prep, Timeline filters, saved views, and rules.
+- useful tags can surface on Today as route chips.
+- clicking a Today tag route opens Build filtered to that tag.
+- backups, CSV, and Firestore preserve tag values and custom tag options.
+
+Checkbox colour UI uses swatches, not colour names.
+
+Requirements:
+
+- no user-facing colour names for checkbox colours.
+- check, star, heart, thumb, and flag render distinctly.
+- flag icon is specifically tested.
+- selected icon and swatch state are obvious.
+- palette feels designed, not generic.
+- swatches work in every theme and on mobile.
 
 ## RuPaul Mode
 

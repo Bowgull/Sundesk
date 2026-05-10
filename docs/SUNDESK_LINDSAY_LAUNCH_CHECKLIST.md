@@ -24,7 +24,8 @@ Required:
 
 - First-run choice: `Walk me through it` and `I'll poke around`.
 - A soft guided tour that teaches Today, Build, table, record, field, linked record, view, meeting PDF export, and Sundesk Lab.
-- Start Here checklist with action-based completion.
+- One guided onboarding flow with explanation steps and action steps.
+- Exact target-click advancement for highlighted onboarding targets.
 - Settings action to restart onboarding without deleting data.
 - Sundesk Lab sandbox with fake GTA-style data.
 - Sundesk Lab module progress with Continue and Start over.
@@ -33,6 +34,11 @@ Required:
 - Meeting note export as PDF only.
 - No Markdown surfaced to Lindsay.
 - No AI calls.
+- Field type surface explanation inside onboarding.
+- Custom multi-tag creation and reuse.
+- Tags surfaced in Today as route chips where useful.
+- Checkbox swatches with no colour names in the UI.
+- Checkbox flag icon render QA.
 - RuPaul Mode as a system-wide copy toggle in Settings.
 - RuPaul Mode preference synced across desktop and mobile once shared settings are active.
 - Plain-copy reveal after 500ms hover on desktop or long press on mobile.
@@ -177,17 +183,21 @@ Then test the preview URL with fake data only. No private emails, real records, 
 24. Confirm this export does not change Firebase setup, does not sync remotely, and does not write remote data.
 25. Run first-run onboarding with fake data.
 26. Confirm onboarding teaches tables once at a surface level.
-27. Confirm Restart onboarding does not erase workspace data.
-28. Open Sundesk Lab.
-29. Confirm Lab progress can Continue and Start over.
-30. Confirm sample data is separate from real workspace data.
-31. Export a meeting note PDF.
-32. Confirm no Markdown is exposed.
-33. Turn on RuPaul Mode.
-34. Confirm core app copy changes system-wide.
-35. Confirm 500ms hover or long press reveals plain copy.
-36. Confirm critical actions stay understandable.
-37. Confirm onboarding, Lab progress, and RuPaul Mode sync across desktop and mobile only after Firestore writes have been explicitly approved.
+27. Confirm onboarding advances only from exact highlighted target clicks or exact expected actions.
+28. Confirm Restart onboarding does not erase workspace data.
+29. Create multiple custom tags on one fake record.
+30. Confirm a useful tag appears as a Today route chip and opens Build filtered to that tag.
+31. Confirm checkbox flag icon and swatches render correctly without colour names in the UI.
+32. Open Sundesk Lab.
+33. Confirm Lab progress can Continue and Start over.
+34. Confirm sample data is separate from real workspace data.
+35. Export a meeting note PDF.
+36. Confirm no Markdown is exposed.
+37. Turn on RuPaul Mode.
+38. Confirm core app copy changes system-wide.
+39. Confirm 500ms hover or long press reveals plain copy.
+40. Confirm critical actions stay understandable.
+41. Confirm onboarding, Lab progress, custom tag options, and RuPaul Mode sync across desktop and mobile only after Firestore writes have been explicitly approved.
 
 If write approval has not been given, stop here. No remote write test should run.
 

@@ -338,6 +338,10 @@ Tags field settings:
 - Options.
 - Option colours.
 - Reorder options later.
+- Type-to-create custom tags in grid, drawer, and modal.
+- Multiple tag values per record.
+- Tags can be used in filters, saved views, rules, Timeline filters, meeting prep, and Today route chips.
+- Clicking a Today tag route opens Build filtered to that tag.
 
 Linked-record field settings:
 
@@ -531,11 +535,17 @@ First-run onboarding gives Lindsay a choice:
 
 If she chooses onboarding, the app uses a soft dimmed overlay and annotated real surfaces. It teaches Today, Build, table, record, field, linked record, view, meeting PDF export, and Sundesk Lab.
 
-The Start Here checklist is action-based and can be restarted from Settings. Restarting onboarding never deletes data.
+Onboarding is one flow. It includes explanation steps and action steps. There is no separate Start Here checklist.
+
+Action steps advance only when Lindsay clicks the exact highlighted target or completes the exact expected action. Stable onboarding targets are required. Route steps wait until the correct screen is open. Random clicks do not advance the flow.
+
+Settings has `Restart onboarding`. Restarting onboarding never deletes data.
 
 Sundesk Lab is the deeper sandbox with fake GTA-style sample data. It has guided modules, progress, Continue, Start over, and Reset sample data. It must stay separate from Lindsay's real workspace.
 
-Onboarding, Sundesk Lab progress, sample state, Help state, and RuPaul Mode preference must sync across desktop and mobile in the final Lindsay-ready app once Firestore writes are approved.
+Sundesk Lab includes modules for tables, records, fields, custom tags, linked records, views, Today, meetings, Timeline, exports, safety, and iPhone use.
+
+Onboarding, Sundesk Lab progress, sample state, Help state, custom tag options, and RuPaul Mode preference must sync across desktop and mobile in the final Lindsay-ready app once Firestore writes are approved.
 
 No AI is used. Help search is local text matching over articles, tags, synonyms, troubleshooting cards, and module links.
 
@@ -618,7 +628,10 @@ The remaining path should be checked against the UI/UX spec as it is built:
 8. Onboarding, Sundesk Lab, Help, and copy modes.
    - Implement meeting note PDF export first.
    - Add first-run guided onboarding.
-   - Add Start Here checklist.
+   - Add exact target-click advancement and action verification inside the onboarding flow.
+   - Add field type surface explanation inside onboarding.
+   - Add custom tag creation and tag routing.
+   - Add checkbox flag icon and swatch QA.
    - Add Sundesk Lab sandbox and modules.
    - Add local Help search and issue surfacing.
    - Add RuPaul Mode as a system-wide copy map with plain-copy reveal.

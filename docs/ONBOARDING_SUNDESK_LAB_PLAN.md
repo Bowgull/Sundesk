@@ -41,11 +41,13 @@ Local storage can be used while building locally, but the final version must per
 - onboarding status.
 - current onboarding step.
 - dismissed onboarding choice.
+- onboarding action completions.
 - Sundesk Lab module progress.
 - current Sundesk Lab module step.
 - completed Sundesk Lab modules.
 - module start-over events.
 - sample workspace state.
+- custom tag field options and tag values.
 - Help/Sundesk Lab search preferences if useful.
 - RuPaul Mode preference.
 - meeting PDF template preference if later editable.
@@ -78,6 +80,27 @@ Copy style should feel like Josh built Lindsay a useful system and left clear no
 
 Use natural language. Do not overuse hard full-stop fragments. Keep UI labels clear. Use `my pookie`, `pookarella`, and `Meep` rarely, only where the moment benefits from being personal.
 
+Onboarding is one flow. There is no separate Start Here checklist.
+
+The same dimmed, annotated flow includes explanation steps and action steps.
+
+Action steps advance only when Lindsay completes the exact intended action. They do not advance on random clicks.
+
+Accuracy requirements:
+
+- every target has a stable `data-onboarding-target`.
+- every step has an action type.
+- target click steps advance only when the exact highlighted target is clicked.
+- route steps wait until the correct screen is open before advancing.
+- record steps wait until the correct drawer/modal/grid state is visible.
+- export steps wait until the export action is triggered.
+- if Lindsay clicks outside the target, the flow stays on the same step.
+- if she exits halfway, the flow resumes where she left off.
+
+Settings has one control: `Restart onboarding`.
+
+Restart onboarding restarts the same annotated flow. It does not erase workspace data.
+
 ### Required First Tour Steps
 
 1. Welcome.
@@ -102,7 +125,10 @@ Use natural language. Do not overuse hard full-stop fragments. Keep UI labels cl
    - One community, one task, one meeting, one person.
 
 6. Field.
-   - A field is a column that tells Sundesk what kind of information lives there.
+   - A field tells Sundesk how to treat one piece of information.
+   - Date can land work in Today.
+   - Link can connect a task to a community.
+   - Tags can help the same record show up in more than one useful place.
 
 7. Linked record.
    - Links connect records across tables.
@@ -123,24 +149,41 @@ Use natural language. Do not overuse hard full-stop fragments. Keep UI labels cl
 
 The first tour should not deep dive every field type, rule operator, timeline mode, or backup path.
 
-## Start Here Checklist
+### Field Type Surface Explanation
 
-The Start Here checklist is action-based. It checks off when Lindsay actually does the action.
+Onboarding should explain field types by job, not by database vocabulary.
 
-Checklist:
+- `Text`: short entries like titles, names, and quick answers.
+- `Long text`: longer notes, context, instructions, and meeting details.
+- `Status`: one current state, like Waiting, Blocked, or Done.
+- `Tags`: multiple custom markers on the same record so work can be filtered, routed, and resurfaced from more than one angle.
+- `Date`: due dates, event dates, reminders, and anything time-based.
+- `Checkbox`: a yes/no marker with an icon.
+- `Number`: counts, quantities, scores, and plain numeric values.
+- `Currency`: money.
+- `Percent`: readiness, progress, or completion.
+- `Phone`: contact number only if she is allowed to store it.
+- `URL`: links.
+- `Linked record`: connects this record to another table.
+- `Lookup`: shows a value from something linked.
+- `Count`: counts linked records.
+- `Rollup`: summarizes linked records.
 
-- Open Today.
-- Open Build.
-- Open one record.
-- Find the table tabs.
-- Link one fake record.
-- Save or inspect one view.
-- Export one meeting note PDF.
-- Open Sundesk Lab.
+Sundesk Lab teaches these more deeply.
 
-The checklist can be restarted from Settings.
+### Onboarding Action Spine
 
-Restarting onboarding does not erase data.
+The first flow should include these action steps:
+
+- open Today.
+- open Build.
+- open one record.
+- find the table tabs.
+- link one fake record.
+- add or inspect one tag.
+- save or inspect one view.
+- export one meeting note PDF.
+- open Sundesk Lab.
 
 ## Sundesk Lab
 
@@ -200,6 +243,8 @@ Reset sample data resets the sample workspace only.
 - Build a table.
 - Add fields.
 - Pick field types.
+- Use checkbox swatches and icons.
+- Add custom tags.
 - Add records.
 - Link records.
 - Open the record drawer.
@@ -217,6 +262,7 @@ Reset sample data resets the sample workspace only.
 - Use rules.
 - Export CSV.
 - Export meeting note PDF.
+- Route a tag from Today back to Build.
 
 #### 4. Meetings
 
@@ -235,6 +281,69 @@ Reset sample data resets the sample workspace only.
 - Export backup.
 - Import backup.
 - When to ask Josh before changing the structure.
+
+#### 6. Tags And Routing
+
+- Add multiple custom tags to one record.
+- Create a new tag by typing it.
+- Reuse that tag on another record.
+- Filter Build by tag.
+- Surface a useful tag in Today.
+- Click the tag from Today to open Build filtered to that tag.
+- Use a tag in a saved view.
+- Use a tag in a rule.
+
+## Tags System
+
+Tags are a real product system, not decoration.
+
+A tag field is a multi-value field. A record can have several tags at once.
+
+Example tags:
+
+- `waiting on Steph`
+- `ask Josh`
+- `venue issue`
+- `invoice`
+- `sponsor weirdness`
+- `call back`
+
+Implementation rules:
+
+- tags live inside the table field they belong to.
+- no global tag system for V1.
+- type-to-create adds a new option to that tag field.
+- tag options persist on the field.
+- record tag values persist as string arrays.
+- grid, drawer, modal, backup, CSV, and Firestore preserve tag options and values.
+- tag filters support contains-tag logic.
+- rules support contains-tag logic.
+- saved views can filter by tag.
+- Timeline can filter by tag.
+- Meetings can show tags on linked work when tags explain why the row matters.
+- Today can surface useful tags as route chips.
+- clicking a tag chip in Today opens Build filtered to that tag.
+
+Custom tags are how Lindsay marks work in her own language without redesigning the table.
+
+## Checkbox Icon And Swatch QA
+
+Checkbox fields support icons and colours.
+
+The UI should show swatches, not colour names.
+
+Requirements:
+
+- internal colour ids are okay.
+- user-facing colour labels are not needed.
+- check, star, heart, thumb, and flag render distinctly.
+- flag icon must be specifically tested.
+- selected icon state is obvious.
+- selected swatch state is obvious.
+- swatches use a polished palette, not generic defaults.
+- swatches have enough contrast in every theme.
+- grid, field modal, record drawer, and mobile views render checkbox icons consistently.
+- mobile tap targets stay at least 44px.
 
 ## Help And Issue Surfacing
 
@@ -391,16 +500,19 @@ Recommended order:
 1. Meeting note PDF export.
 2. Onboarding data model and synced progress shape.
 3. First-run guided onboarding overlay.
-4. Start Here checklist.
-5. Sundesk Lab data model and sample workspace separation.
-6. First Sundesk Lab modules: table, record, linked record, view.
-7. Lab progress sync and Start over.
-8. Help search and issue cards.
-9. RuPaul Mode copy system and Settings toggle.
-10. RuPaul copy map for onboarding and Lab.
-11. RuPaul copy map for the rest of the app.
-12. iPhone PWA pass.
-13. Firebase-backed sync smoke with fake data after write approval.
+4. Exact target-click advancement and action verification.
+5. Field type surface explanation inside onboarding.
+6. Custom tag creation and tag routing.
+7. Checkbox flag icon and swatch QA.
+8. Sundesk Lab data model and sample workspace separation.
+9. First Sundesk Lab modules: table, record, field, tag, linked record, view.
+10. Lab progress sync and Start over.
+11. Help search and issue cards.
+12. RuPaul Mode copy system and Settings toggle.
+13. RuPaul copy map for onboarding and Lab.
+14. RuPaul copy map for the rest of the app.
+15. iPhone PWA pass.
+16. Firebase-backed sync smoke with fake data after write approval.
 
 ## Build-Ready Checklist
 
@@ -408,10 +520,13 @@ Before implementation starts:
 
 - Decide whether Sundesk Lab appears in the sidebar or inside Help. Recommended: sidebar.
 - Decide whether sample workspace is read-only by default or editable in Lab. Recommended: editable in Lab, resettable, separate from real workspace.
-- Define the first 4 Lab modules.
+- Define the first 6 Lab modules.
 - Define the first-run onboarding copy in plain mode.
+- Define exact onboarding targets and action events.
 - Define meeting PDF template fields.
-- Define shared settings shape for onboarding, Lab, Help, and RuPaul Mode.
+- Define shared settings shape for onboarding, Lab, Help, RuPaul Mode, and sample workspace state.
+- Define custom tag option persistence and Today tag route behaviour.
+- Verify checkbox flag icon and swatch rendering.
 - Add E2E coverage for desktop and iPhone-sized viewport.
 - Add tests that prove no AI calls exist.
 - Add tests that prove no Firebase writes occur until the write gate is enabled.

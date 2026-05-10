@@ -35,6 +35,10 @@
 - Field settings modal.
 - Editable checkbox icons and colours.
 - Editable select and tag options.
+- Type-to-create custom tags.
+- Multiple tags per record.
+- Today tag route chips.
+- Tag filters in Build, Timeline, views, and rules.
 - Editable linked-record one-vs-many behavior.
 - Template builder.
 - Custom automation templates.
@@ -48,7 +52,8 @@
 - Daily digest settings.
 - Run setup again.
 - First-run guided onboarding.
-- Start Here checklist.
+- Action-tracked onboarding steps.
+- Exact target-click onboarding advancement.
 - Sundesk Lab with fake sample data.
 - Sundesk Lab progress.
 - Restart onboarding.
