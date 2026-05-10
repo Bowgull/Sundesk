@@ -43,7 +43,15 @@ Before any public URL is shared, confirm the app has no real SALTXC records, doc
 
 ## Persistence Caveats
 
-Current runtime persistence is local browser storage until the Firestore bridge is wired into `App`.
+Current runtime persistence is local browser storage when Firebase is not configured.
+
+When Firebase config and approved Google access are present, `App` now:
+
+- Shows the Google auth gate.
+- Subscribes to Firebase Auth.
+- Loads `workspaces/lindsay-sundesk/state/current` after an approved sign-in.
+- Applies the shared workspace to the local app state.
+- Saves shared workspace snapshots only when `VITE_SUNDESK_FIRESTORE_WRITES=enabled`.
 
 Observed local keys include:
 
@@ -63,7 +71,7 @@ It has limits:
 - There is no team backup.
 - A hosted static app does not make local state portable by itself.
 
-For daily use, Firestore must become the source of truth before Lindsay relies on Sundesk across browser, mobile, and another device.
+For daily use, the Firebase project, allowlist, and deploy still need to be set up before Lindsay relies on Sundesk across browser, mobile, and another device.
 
 ## Firebase Boundary
 
@@ -73,7 +81,7 @@ Current deploy readiness should treat Firebase as Hosting, Google Auth, Firestor
 
 Do not turn on Firestore writes without a separate deploy/setup approval and review. The shared workspace helpers keep writes behind an explicit gate.
 
-Firestore workspace snapshot helpers are local code only until the Firebase client is wired into runtime.
+Firestore workspace snapshot helpers are wired into runtime, but writes remain disabled unless the explicit environment gate is enabled.
 
 The intended shared workspace path is:
 
@@ -99,8 +107,6 @@ This readiness path does not include:
 
 - Firebase deployment.
 - Firebase write activation in production.
-- Runtime Auth wiring.
-- Runtime Firestore hydration and save.
 - Boss or broader team account management.
 - File uploads.
 - Document imports.

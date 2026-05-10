@@ -11,8 +11,12 @@ const firebaseConfig = {
 
 let app: FirebaseApp | null = null
 
+export function hasFirebaseConfig() {
+  return Boolean(firebaseConfig.projectId)
+}
+
 export async function getFirebaseApp() {
-  if (!firebaseConfig.projectId) {
+  if (!hasFirebaseConfig()) {
     return null
   }
 

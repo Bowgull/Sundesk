@@ -1,7 +1,8 @@
 import './App.css'
 import './styles/themes.css'
-import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { mainScreens, themes, type AppScreen, type ThemeId, type TimelineView } from './appConfig'
+import { AuthGate } from './components/AuthGate'
 import { BuildGrid } from './components/BuildGrid'
 import { BuildGridCell } from './components/BuildGridCell'
 import { BuildGridHeader } from './components/BuildGridHeader'
@@ -40,6 +41,18 @@ import {
   type FirestoreReadShadowState,
 } from './data/firestoreReadShadow'
 import {
+  createFirestoreWorkspaceClient,
+  createFirestoreWorkspaceSdkDocumentStore,
+} from './data/firestoreWorkspaceClient'
+import {
+  getAllowedEmailsFromEnv,
+  isSessionAllowed,
+  signInWithGooglePopup,
+  signOutOfFirebaseAuth,
+  subscribeToFirebaseAuthState,
+  type FirebaseAuthSession,
+} from './data/firebaseAuth'
+import {
   type LocalGridView,
   type StoredBuildViewState,
   type StoredMigrationReport,
@@ -58,7 +71,7 @@ import {
   storedMigrationReport,
   workbaseStorageKey,
 } from './data/localStorage'
-import { getFirebaseServices } from './lib/firebase'
+import { getFirebaseServices, hasFirebaseConfig } from './lib/firebase'
 import {
   type LocalRule,
   getFieldDisplayValue as getRecordFieldDisplayValue,
@@ -309,6 +322,8 @@ function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
 }
 
 function App() {
+  const allowedAuthEmails = useMemo(() => getAllowedEmailsFromEnv(), [])
+  const authRequired = useMemo(() => hasFirebaseConfig() || allowedAuthEmails.length > 0, [allowedAuthEmails.length])
   const [initialBuildViewState] = useState(() => readStoredBuildViewState())
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>(
     () => {
@@ -410,6 +425,11 @@ function App() {
   const [dependencySearch, setDependencySearch] = useState('')
   const [activeDigestPreviewMeetingId, setActiveDigestPreviewMeetingId] = useState('')
   const [firestoreReadShadowState, setFirestoreReadShadowState] = useState<FirestoreReadShadowState>(() => getFirestoreReadShadowState())
+  const [authSession, setAuthSession] = useState<FirebaseAuthSession | null>(null)
+  const [authLoading, setAuthLoading] = useState(authRequired)
+  const [workspaceHydrated, setWorkspaceHydrated] = useState(!authRequired)
+  const [workspaceStatus, setWorkspaceStatus] = useState(authRequired ? 'Sign in to load the shared workspace.' : 'Local workspace active.')
+  const workspaceHydrationRef = useRef(!authRequired)
   const selectedTask = getRecord(base, 'task_coi_halifax')
   const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
   const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
@@ -620,6 +640,8 @@ function App() {
     initialMigrationReport.buildViewReset ? 'Build view state was repaired.' : '',
   ].filter(Boolean)
   const firestoreWriteGateState = getFirestoreWriteGateState()
+  const firestoreWritesEnabled = firestoreWriteGateState.enabled
+  const authAllowed = authRequired ? isSessionAllowed(authSession, allowedAuthEmails) : true
   const localEngineStats = getLocalEngineStats(base, localRules, localGridViews)
   const firestoreReadShadowComparison = compareFirestoreReadShadowCounts(localEngineStats, firestoreReadShadowState.collections)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
@@ -633,8 +655,8 @@ function App() {
     localStorage.setItem(workbaseStorageKey, JSON.stringify(workbaseState))
   }
 
-  function writeBuildViewState(updates: Partial<StoredBuildViewState> = {}) {
-    const buildViewState: StoredBuildViewState = {
+  function getCurrentBuildViewState(updates: Partial<StoredBuildViewState> = {}): StoredBuildViewState {
+    return {
       version: 1,
       selectedBuildTableId,
       visibleFieldIdsByTable,
@@ -650,6 +672,10 @@ function App() {
       columnWidths,
       ...updates,
     }
+  }
+
+  function writeBuildViewState(updates: Partial<StoredBuildViewState> = {}) {
+    const buildViewState = getCurrentBuildViewState(updates)
 
     localStorage.setItem(buildViewStateStorageKey, JSON.stringify(buildViewState))
   }
@@ -660,6 +686,48 @@ function App() {
 
   function showToast(message: string) {
     setToastMessage(message)
+  }
+
+  function applyRemoteBuildViewState(buildViewState: StoredBuildViewState) {
+    setSelectedBuildTableId(buildViewState.selectedBuildTableId || 'risks')
+    setVisibleFieldIdsByTable(buildViewState.visibleFieldIdsByTable || defaultVisibleFieldIdsByTable)
+    setGridFilter(buildViewState.gridFilter || '')
+    setGridSortFieldId(buildViewState.gridSortFieldId || 'title')
+    setGridSortDirection(buildViewState.gridSortDirection || 'asc')
+    setGridGroupFieldId(buildViewState.gridGroupFieldId || 'level')
+    setGridColorFieldId(buildViewState.gridColorFieldId || '')
+    setGridDensity(buildViewState.gridDensity || 'comfortable')
+    setLocalGridViews(buildViewState.localGridViews || [])
+    setViewRenameDrafts(buildViewState.viewRenameDrafts || {})
+    setActiveGridViewId(buildViewState.activeGridViewId || '')
+    setColumnWidths(buildViewState.columnWidths || {})
+  }
+
+  async function signInToSundesk() {
+    try {
+      setAuthLoading(true)
+      await signInWithGooglePopup()
+      showToast('Signed in.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign-in failed.'
+
+      showToast(message)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  async function signOutOfSundesk() {
+    try {
+      await signOutOfFirebaseAuth()
+      setWorkspaceHydrated(false)
+      workspaceHydrationRef.current = false
+      showToast('Signed out.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign-out failed.'
+
+      showToast(message)
+    }
   }
 
   async function copyTextToClipboard(text: string) {
@@ -2881,6 +2949,108 @@ function App() {
   }
 
   useEffect(() => {
+    if (!authRequired) {
+      return
+    }
+
+    let cancelled = false
+    let unsubscribe = () => undefined as void
+
+    void subscribeToFirebaseAuthState((session) => {
+      if (cancelled) {
+        return
+      }
+
+      setAuthSession(session)
+      setAuthLoading(false)
+      if (!session) {
+        setWorkspaceHydrated(false)
+        workspaceHydrationRef.current = false
+        setWorkspaceStatus('Sign in to load the shared workspace.')
+      }
+    }).then((nextUnsubscribe) => {
+      unsubscribe = nextUnsubscribe
+    }).catch((error) => {
+      if (!cancelled) {
+        const message = error instanceof Error ? error.message : 'Auth check failed.'
+
+        setAuthLoading(false)
+        setWorkspaceStatus(message)
+      }
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [authRequired])
+
+  useEffect(() => {
+    if (!authRequired || !authAllowed || !authSession || workspaceHydrationRef.current) {
+      return
+    }
+
+    let cancelled = false
+
+    setWorkspaceStatus('Loading shared workspace.')
+
+    void (async () => {
+      const services = await getFirebaseServices()
+
+      if (!services) {
+        return 'Firebase is not configured. Local workspace remains active.'
+      }
+
+      const client = createFirestoreWorkspaceClient({
+        store: createFirestoreWorkspaceSdkDocumentStore(services.db),
+        writeGate: { enabled: firestoreWritesEnabled },
+      })
+      const result = await client.loadCurrent()
+
+      if (cancelled) {
+        return ''
+      }
+
+      if (result.exists) {
+        setBase(result.state.base)
+        setLocalRules(result.state.rules)
+        setSelectedTheme(result.state.theme)
+        applyRemoteBuildViewState(result.state.buildViewState)
+        writeWorkbaseState(result.state.base)
+        writeRulesState(result.state.rules)
+        localStorage.setItem('sundesk-theme', result.state.theme)
+        localStorage.setItem(buildViewStateStorageKey, JSON.stringify(result.state.buildViewState))
+
+        return result.state.usedFallbacks.base || result.state.usedFallbacks.rules || result.state.usedFallbacks.buildViewState
+          ? 'Shared workspace loaded with repaired defaults.'
+          : 'Shared workspace loaded.'
+      }
+
+      return 'No shared workspace found yet. Local workspace remains active.'
+    })().then((message) => {
+      if (!cancelled) {
+        workspaceHydrationRef.current = true
+        setWorkspaceHydrated(true)
+        if (message) {
+          setWorkspaceStatus(message)
+        }
+      }
+    }).catch((error) => {
+      if (!cancelled) {
+        const message = error instanceof Error ? error.message : 'Shared workspace failed to load.'
+
+        workspaceHydrationRef.current = true
+        setWorkspaceHydrated(true)
+        setWorkspaceStatus(`${message} Local workspace remains active.`)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authAllowed, authRequired, authSession, firestoreWritesEnabled])
+
+  useEffect(() => {
     localStorage.setItem('sundesk-theme', selectedTheme)
   }, [selectedTheme])
 
@@ -2981,6 +3151,92 @@ function App() {
   ])
 
   useEffect(() => {
+    if (!authRequired || !authAllowed || !authSession || !workspaceHydrated || !firestoreWritesEnabled) {
+      return
+    }
+
+    let cancelled = false
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        const services = await getFirebaseServices()
+
+        if (!services) {
+          return 'Firebase is not configured. Shared save skipped.'
+        }
+
+        const client = createFirestoreWorkspaceClient({
+          store: createFirestoreWorkspaceSdkDocumentStore(services.db),
+          writeGate: { enabled: firestoreWritesEnabled },
+        })
+
+        await client.saveCurrent({
+          base,
+          rules: localRules,
+          buildViewState: {
+            version: 1,
+            selectedBuildTableId,
+            visibleFieldIdsByTable,
+            gridFilter,
+            gridSortFieldId,
+            gridSortDirection,
+            gridGroupFieldId,
+            gridColorFieldId,
+            gridDensity,
+            localGridViews,
+            viewRenameDrafts,
+            activeGridViewId,
+            columnWidths,
+          },
+          theme: selectedTheme,
+          metadata: {
+            updatedAt: new Date().toISOString(),
+            updatedByUid: authSession.uid,
+            updatedByEmail: authSession.email || undefined,
+          },
+        })
+
+        return 'Shared workspace saved.'
+      })().then((message) => {
+        if (!cancelled) {
+          setWorkspaceStatus(message)
+        }
+      }).catch((error) => {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'Shared workspace save failed.'
+
+          setWorkspaceStatus(message)
+        }
+      })
+    }, 900)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+    }
+  }, [
+    activeGridViewId,
+    authAllowed,
+    authRequired,
+    authSession,
+    base,
+    columnWidths,
+    firestoreWritesEnabled,
+    gridColorFieldId,
+    gridDensity,
+    gridFilter,
+    gridGroupFieldId,
+    gridSortDirection,
+    gridSortFieldId,
+    localGridViews,
+    localRules,
+    selectedBuildTableId,
+    selectedTheme,
+    viewRenameDrafts,
+    visibleFieldIdsByTable,
+    workspaceHydrated,
+  ])
+
+  useEffect(() => {
     function closeTransientSurfaces(event: globalThis.KeyboardEvent) {
       if (event.key !== 'Escape') {
         return
@@ -3021,6 +3277,28 @@ function App() {
 
     return () => window.removeEventListener('hashchange', syncScreenFromHash)
   }, [])
+
+  if (authRequired && (authLoading || !authAllowed || !workspaceHydrated)) {
+    return (
+      <main className="app" data-theme={selectedTheme}>
+        {toastMessage && (
+          <div className="toast-region" role="status" aria-live="polite">
+            {toastMessage}
+          </div>
+        )}
+        <AuthGate
+          allowed={authAllowed}
+          loading={authLoading || (authAllowed && !workspaceHydrated)}
+          userAvatarUrl={authSession?.photoURL}
+          userEmail={authSession?.email}
+          userName={authSession?.displayName}
+          onContinue={() => setWorkspaceHydrated(true)}
+          onSignIn={signInToSundesk}
+          onSignOut={signOutOfSundesk}
+        />
+      </main>
+    )
+  }
 
   return (
     <main className="app" data-theme={selectedTheme}>
@@ -3086,7 +3364,7 @@ function App() {
             <span>Workspace</span>
             <strong>Fyre Festival GTA</strong>
           </summary>
-          <p>Fake Ontario event data. GTA community shape.</p>
+          <p>{workspaceStatus || 'Fake Ontario event data. GTA community shape.'}</p>
         </details>
 
         <details className="privacy-card rule-card" data-testid="rail-system-read-card">
