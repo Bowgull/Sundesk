@@ -111,6 +111,30 @@ export function getMeetingAgendaText(base: Workbase, prep: MeetingPrep) {
   return lines.join('\n').trim()
 }
 
+export function getMeetingWeeklyNoteText(base: Workbase, prep: MeetingPrep) {
+  const communityNames = prep.communities.map((record) => getRecordTitle(base, record)).join(', ') || 'No communities linked'
+  const nextStepTitles = prep.nextSteps.slice(0, 4).map((record) => `- ${getRecordTitle(base, record)}`)
+  const sourceRecords = getUniqueAgendaSourceRecords(base, prep).map((record) => `- ${getRecordTitle(base, record)}`)
+
+  return [
+    `# ${getRecordTitle(base, prep.meeting)}`,
+    '',
+    `Communities: ${communityNames}`,
+    '',
+    '## Focus',
+    prep.agenda[0]?.detail || 'No agenda items surfaced yet.',
+    '',
+    '## Decisions',
+    '- ',
+    '',
+    '## Next steps',
+    ...(nextStepTitles.length > 0 ? nextStepTitles : ['- No next steps surfaced.']),
+    '',
+    '## Source records',
+    ...(sourceRecords.length > 0 ? sourceRecords : ['- No source records surfaced.']),
+  ].join('\n').trim()
+}
+
 export function getMeetingDigestPreview(base: Workbase, prep: MeetingPrep) {
   const sourceRecords = getUniqueAgendaSourceRecords(base, prep)
 

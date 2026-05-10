@@ -1,0 +1,310 @@
+.community-command-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.community-command-grid .work-record-card i {
+  background: var(--surface-soft);
+  border-radius: 999px;
+  display: block;
+  height: 8px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.community-command-grid .work-record-card i b {
+  background: var(--accent);
+  display: block;
+  height: 100%;
+}
+
+@media (max-width: 980px) {
+  .community-command-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.community-place-detail {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.community-place-head {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.community-place-head h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.community-place-head p {
+  max-width: 560px;
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.community-place-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.7fr) minmax(120px, 0.45fr);
+  gap: 8px;
+}
+
+.community-place-edit label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.community-place-edit span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.community-place-edit input,
+.community-place-edit select {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.community-place-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.community-place-metrics article,
+.community-place-work article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.community-place-metrics span,
+.community-place-work > article > span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.community-place-metrics strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.community-route-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.community-route-strip > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.community-route-strip > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.community-route-strip button {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.community-place-work {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.82fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.community-place-work article {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.community-place-work article > div {
+  display: grid;
+  gap: 8px;
+}
+
+.community-place-work button {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-height: 54px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+}
+
+.community-place-work button strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.community-place-work button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.community-linked-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 0.42fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.community-link-row-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.community-link-row-actions button {
+  justify-self: start;
+}
+
+.community-link-row-actions label,
+.community-linked-row label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.community-link-row-actions label span,
+.community-linked-row label span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.community-link-row-actions select,
+.community-link-row-actions input,
+.community-linked-row select {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.community-link-row-actions button,
+.community-linked-row > .ghost {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
+.community-command-card {
+  min-height: 190px;
+}
+
+.community-command-card.selected-community-card {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent), transparent 84%);
+}
+
+.community-command-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.community-command-card-metrics small {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.community-command-card-metrics b {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.community-command-card em {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+@media (max-width: 1180px) {
+  .community-place-edit,
+  .community-place-metrics,
+  .community-place-work,
+  .community-link-row-actions,
+  .community-linked-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .community-place-edit,
+  .community-place-metrics,
+  .community-place-work,
+  .community-link-row-actions,
+  .community-linked-row {
+    grid-template-columns: 1fr;
+  }
+}

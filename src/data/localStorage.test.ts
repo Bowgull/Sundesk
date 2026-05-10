@@ -52,6 +52,7 @@ describe('local storage helpers', () => {
       status: '',
       dueDate: '',
       priority: '',
+      tags: [],
       community: [],
       approval: [],
       owner: [],

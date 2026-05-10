@@ -21,7 +21,7 @@ export const rulesStorageKey = 'sundesk-local-rules-v1'
 export const computedFieldTypes: FieldType[] = ['lookup', 'rollup', 'count', 'systemFormula', 'createdTime', 'lastUpdatedTime']
 export const defaultVisibleFieldIdsByTable: Record<string, string[]> = {
   communities: ['name', 'status', 'eventDate', 'readiness', 'openTaskCount'],
-  tasks: ['title', 'status', 'dueDate', 'priority', 'community'],
+  tasks: ['title', 'status', 'dueDate', 'priority', 'tags', 'community'],
 }
 
 const fieldTypeValues: FieldType[] = [

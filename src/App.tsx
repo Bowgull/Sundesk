@@ -1,5 +1,12 @@
 import './App.css'
+import './styles/themes.css'
 import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
+import { mainScreens, themes, type AppScreen, type TimelineView } from './appConfig'
+import { BuildPasteHelper } from './components/BuildPasteHelper'
+import { BuildToolbar } from './components/BuildToolbar'
+import { TimelineScreen } from './components/TimelineScreen'
+import { TodayScreen } from './components/TodayScreen'
+import { WaitingOnScreen } from './components/WaitingOnScreen'
 import {
   savedViews,
 } from './data/demoData'
@@ -85,6 +92,7 @@ import {
   getMeetingAgendaText,
   getMeetingDigestPreview,
   getMeetingPrep,
+  getMeetingWeeklyNoteText,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
   getScreenStats,
@@ -94,53 +102,6 @@ import {
   getTodayLanes,
   getWorkRecordGroups,
 } from './data/views'
-
-const themes = [
-  {
-    label: 'Command Center',
-    value: 'command-center',
-    swatch: { background: 'linear-gradient(135deg, #eef7fb, #fff8e8)', panel: '#ffffff', text: '#142838', accent: '#2d83bc', status: '#f8dbd8', primary: '#183346' },
-  },
-  {
-    label: 'Sunset',
-    value: 'sunset',
-    swatch: { background: 'linear-gradient(135deg, #ffe19a, #ff8f6f 46%, #593e68)', panel: '#fff8ec', text: '#2b2330', accent: '#f55a01', status: '#f4a83f', primary: '#593e68' },
-  },
-  {
-    label: 'Coast',
-    value: 'coast',
-    swatch: { background: 'linear-gradient(135deg, #cdeafb, #f6b8c7 52%, #ffe5ad)', panel: '#ffffff', text: '#173247', accent: '#4ba7d0', status: '#f19aa2', primary: '#53639a' },
-  },
-  {
-    label: 'Dusk',
-    value: 'dusk',
-    swatch: { background: 'linear-gradient(135deg, #f1d7e8, #b9c3df 52%, #765d85)', panel: '#fffafd', text: '#26213a', accent: '#84485f', status: '#f05a4e', primary: '#593e68' },
-  },
-  {
-    label: 'Graphite',
-    value: 'graphite',
-    swatch: { background: 'linear-gradient(135deg, #f5f6f7, #dde3e8)', panel: '#ffffff', text: '#1f2933', accent: '#53639a', status: '#df741b', primary: '#263340' },
-  },
-  {
-    label: 'Night Shift',
-    value: 'night-shift',
-    swatch: { background: 'linear-gradient(135deg, #0d1420, #1c2840 58%, #593e68)', panel: '#1f2b3a', text: '#edf4f8', accent: '#fda839', status: '#eb3a3b', primary: '#f3d08d' },
-  },
-]
-
-const mainScreens = [
-  { id: 'today', label: 'Today', shortLabel: 'Today', group: 'Work' },
-  { id: 'communities', label: 'Communities', shortLabel: 'Places', group: 'Work' },
-  { id: 'followups', label: 'Waiting On', shortLabel: 'Waiting', group: 'Work' },
-  { id: 'meetings', label: 'Meetings', shortLabel: 'Meet', group: 'Work' },
-  { id: 'timeline', label: 'Timeline', shortLabel: 'Time', group: 'Work' },
-  { id: 'build', label: 'Build', shortLabel: 'Build', group: 'System' },
-  { id: 'settings', label: 'Settings', shortLabel: 'Set', group: 'System' },
-  { id: 'tasks', label: 'Work', shortLabel: 'Work', group: 'Hidden' },
-] as const
-
-type AppScreen = (typeof mainScreens)[number]['id']
-type TimelineView = 'grid' | 'kanban' | 'calendar' | 'timeline' | 'graph'
 
 const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'Text', value: 'text' },
@@ -203,14 +164,22 @@ type GridCell = {
   recordId: string
   fieldId: string
 }
-
-const timelineViewOptions: { label: string; value: TimelineView }[] = [
-  { label: 'Grid', value: 'grid' },
-  { label: 'Kanban', value: 'kanban' },
-  { label: 'Calendar', value: 'calendar' },
-  { label: 'Timeline', value: 'timeline' },
-  { label: 'Graph', value: 'graph' },
-]
+type BuildPasteSummary = {
+  rows: number
+  cells: number
+  created: number
+  updated: number
+  columns: string[]
+  skippedColumns: string[]
+  suggestions: string[]
+  actions: BuildPasteAction[]
+}
+type BuildPasteAction = {
+  fieldId: string
+  label: string
+  updates: Partial<FieldDefinition>
+  migrateValues?: boolean
+}
 
 function getScreenFromHash(): AppScreen {
   if (typeof window === 'undefined') {
@@ -354,6 +323,9 @@ function App() {
   const [timelineTableId, setTimelineTableId] = useState('all')
   const [timelineStatus, setTimelineStatus] = useState('all')
   const [timelineView, setTimelineView] = useState<TimelineView>('grid')
+  const [timelineCalendarDate, setTimelineCalendarDate] = useState('')
+  const [timelineReadinessCommunityId, setTimelineReadinessCommunityId] = useState('')
+  const [timelineGraphCommunityId, setTimelineGraphCommunityId] = useState('')
   const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
   const [expandedRuleId, setExpandedRuleId] = useState('')
   const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
@@ -382,6 +354,13 @@ function App() {
   })
   const [recordDraft, setRecordDraft] = useState<Record<string, RecordValue>>(() => getEmptyRecordValues(workbase, 'tasks'))
   const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('risk_venue_halifax')
+  const [selectedCommunityDetailId, setSelectedCommunityDetailId] = useState('')
+  const [communityLinkRecordId, setCommunityLinkRecordId] = useState('')
+  const [communityNewLinkTableId, setCommunityNewLinkTableId] = useState('tasks')
+  const [communityNewLinkTitle, setCommunityNewLinkTitle] = useState('')
+  const [communityNewLinkStatus, setCommunityNewLinkStatus] = useState('')
+  const [communityNewLinkDate, setCommunityNewLinkDate] = useState('')
+  const [communityNewLinkExtraValues, setCommunityNewLinkExtraValues] = useState<Record<string, string>>({})
   const [visibleFieldIdsByTable, setVisibleFieldIdsByTable] = useState<Record<string, string[]>>(
     () => initialBuildViewState.visibleFieldIdsByTable || defaultVisibleFieldIdsByTable,
   )
@@ -402,6 +381,7 @@ function App() {
   const [gridEditDraft, setGridEditDraft] = useState<RecordValue>('')
   const [buildPasteReceipt, setBuildPasteReceipt] = useState('')
   const [buildPasteCellCount, setBuildPasteCellCount] = useState(0)
+  const [buildPasteSummary, setBuildPasteSummary] = useState<BuildPasteSummary | null>(null)
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
     () => initialBuildViewState.columnWidths || {},
   )
@@ -448,7 +428,24 @@ function App() {
   const timelineRecords = getTimelineRecords(base, timelineSourceRecords, timelineTableId, timelineStatus, timelineFilter)
   const todayRuleMatches = getRuleMatchesForDestination(base, localRules, 'today', todayDate)
   const timelineRuleMatches = getRuleMatchesForDestination(base, localRules, 'timeline', todayDate)
+  const timelineDatedRecords = timelineRecords.filter((record) => getFirstDateValue(record))
+  const timelineDependencyRecordCount = timelineRecords.filter((record) => getDependencySummary(record.id).length > 0).length
+  const timelineRuleReadCount = timelineRecords.filter((record) => getTimelineRuleMatchesForRecord(record.id).length > 0).length
+  const timelineViewQuestion = {
+    grid: 'Which rows need a clean read.',
+    kanban: 'Where is the work stuck.',
+    calendar: 'Which dates are carrying pressure.',
+    timeline: 'Which places are ready before event day.',
+    graph: 'Why is this place at risk.',
+  }[timelineView]
   const todayLanes = getTodayLanes(base, todayRuleMatches)
+  const todayNowLane = todayLanes.find((lane) => lane.id === 'now')
+  const todayWaitingLane = todayLanes.find((lane) => lane.id === 'waiting')
+  const todayNextLane = todayLanes.find((lane) => lane.id === 'next')
+  const todayChangedRecords = Array.from(new Map(todayRuleMatches.map((match) => [match.record.id, match.record])).values())
+  const todaySlipRecord = todayNowLane?.records[0]
+  const todayChangedRecord = todayChangedRecords[0]
+  const todayFocusRecord = todaySlipRecord || todayWaitingLane?.records[0] || todayNextLane?.records[0] || todayChangedRecord
   const screenStats = getScreenStats(base)
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
@@ -481,6 +478,83 @@ function App() {
     : 'No status'
   const drawerDateText = selectedBuildRecord ? getFirstDateValue(selectedBuildRecord) || 'No date' : 'No date'
   const drawerMeetingPrep = selectedBuildRecord?.tableId === 'meetings' ? getMeetingPrep(base, selectedBuildRecord.id, todayDate) : null
+  const drawerCommunityBacklinkRecords = selectedBuildRecord?.tableId === 'communities'
+    ? drawerBacklinks.flatMap((backlink) => {
+        const record = getRecord(base, backlink.fromRecord.id)
+
+        return record ? [record] : []
+      })
+    : []
+  const drawerCommunityBlockers = drawerCommunityBacklinkRecords.filter((record) =>
+    getStringValue(record, 'status') === 'Blocked' || getStringValue(record, 'level') === 'High',
+  )
+  const drawerCommunityWaiting = drawerCommunityBacklinkRecords.filter((record) =>
+    getStringValue(record, 'status') === 'Waiting' || record.tableId === 'followups',
+  )
+  const drawerCommunityMeetings = drawerCommunityBacklinkRecords.filter((record) => record.tableId === 'meetings')
+  const drawerCommunityNextAction = drawerCommunityBlockers[0] || drawerCommunityWaiting[0] || drawerCommunityBacklinkRecords[0]
+  const selectedCommunityDetailRecord = communityRecords.find((record) => record.id === selectedCommunityDetailId)
+  const communityDetailRecord = selectedCommunityDetailRecord || (selectedBuildRecord?.tableId === 'communities' ? selectedBuildRecord : communityRecords[0])
+  const communityDetailRecords = communityDetailRecord
+    ? timelineSourceRecords.filter((sourceRecord) =>
+        sourceRecord.id !== communityDetailRecord.id && base.fields.some((field) => {
+          const value = sourceRecord.values[field.id]
+
+          return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(communityDetailRecord.id)
+        }),
+      )
+    : []
+  const communityDetailBlockers = communityDetailRecords.filter((record) =>
+    ['Blocked', 'High'].includes(getStringValue(record, 'status') || getStringValue(record, 'level')),
+  )
+  const communityDetailWaiting = communityDetailRecords.filter((record) =>
+    getStringValue(record, 'status') === 'Waiting' || record.tableId === 'followups',
+  )
+  const communityDetailMeetings = communityDetailRecords.filter((record) => record.tableId === 'meetings')
+  const communityDetailNextAction = communityDetailBlockers[0] || communityDetailWaiting[0] || communityDetailRecords[0]
+  const communityLinkableRecords = communityDetailRecord
+    ? timelineSourceRecords.filter((record) =>
+        record.id !== communityDetailRecord.id &&
+        !communityDetailRecords.some((linkedRecord) => linkedRecord.id === record.id) &&
+        base.fields.some((field) => field.tableId === record.tableId && field.type === 'linkedRecord' && field.linkedTableId === 'communities'),
+      )
+    : []
+  const communityNewLinkTable = base.tables.find((table) => table.id === communityNewLinkTableId)
+  const communityNewLinkStatusField = communityNewLinkTable
+    ? base.fields.find((field) =>
+        field.tableId === communityNewLinkTable.id &&
+        ['status', 'level'].includes(field.id) &&
+        Boolean(field.options?.length),
+      )
+    : null
+  const communityNewLinkDateField = communityNewLinkTable
+    ? base.fields.find((field) =>
+        field.tableId === communityNewLinkTable.id &&
+        ['dueDate', 'date', 'eventDate'].includes(field.id) &&
+        (field.type === 'date' || field.type === 'dateTime'),
+      )
+    : null
+  const communityNewLinkCommunityField = communityNewLinkTable
+    ? base.fields.find((field) =>
+        field.tableId === communityNewLinkTable.id &&
+        field.type === 'linkedRecord' &&
+        field.linkedTableId === 'communities',
+      )
+    : null
+  const communityNewLinkExtraFields = communityNewLinkTable
+    ? base.fields
+        .filter((field) =>
+          field.tableId === communityNewLinkTable.id &&
+          field.id !== communityNewLinkTable.primaryFieldId &&
+          field.id !== communityNewLinkCommunityField?.id &&
+          field.id !== communityNewLinkStatusField?.id &&
+          field.id !== communityNewLinkDateField?.id &&
+          !computedFieldTypes.includes(field.type) &&
+          field.type !== 'linkedRecord' &&
+          ['text', 'longText', 'singleSelect', 'multiSelect', 'number', 'currency', 'percent', 'rating', 'checkbox'].includes(field.type),
+        )
+        .slice(0, 3)
+    : []
   const selectedDependencyTargetRecord = dependencyDraft.toRecordId ? getRecord(base, dependencyDraft.toRecordId) : null
   const dependencyPickerRecords = getDependencyPickerRecords(base, selectedBuildRecord?.id || '', dependencySearch)
   const linkedFieldsForSelectedTable = fieldsForSelectedTable.filter((field) => field.type === 'linkedRecord' && field.linkedTableId)
@@ -504,6 +578,28 @@ function App() {
     selectedBuildTable && selectedBuildTable.id !== 'communities' && buildTableRows.length > 1,
   )
   const settingsField = fieldsForSelectedTable.find((field) => field.id === selectedFieldSettingsId)
+  const tagRouteOptions = Array.from(
+    new Set(
+      recordsForSelectedTable.flatMap((record) =>
+        fieldsForSelectedTable.flatMap((field) => {
+          const value = record.values[field.id]
+
+          return field.type === 'multiSelect' && Array.isArray(value) ? value.map(String) : []
+        }),
+      ),
+    ),
+  )
+  const timelineTagRouteOptions = Array.from(
+    timelineRecords.reduce((routes, record) => {
+      getRecordWorkflowTags(record).forEach((tag) => {
+        if (!routes.has(tag)) {
+          routes.set(tag, record)
+        }
+      })
+
+      return routes
+    }, new Map<string, BaseRecord>()),
+  ).slice(0, 8)
   const pendingDeleteField = fieldsForSelectedTable.find((field) => field.id === pendingDeleteFieldId)
   const pendingDeleteTable = base.tables.find((table) => table.id === pendingDeleteTableId)
   const pinnedGridViews = localGridViews.filter((view) => view.pinned)
@@ -595,6 +691,30 @@ function App() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     showToast('Agenda exported.')
+  }
+
+  async function copyMeetingNote(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    try {
+      await copyTextToClipboard(getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep))
+      showToast('Weekly note copied.')
+    } catch {
+      showToast('Copy failed. Use export.')
+    }
+  }
+
+  function exportMeetingNote(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    const fileName = `${toSlug(getRecordTitle(base, prep.meeting))}-weekly-note.md`
+    const blob = new Blob([getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep)], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast('Weekly note exported.')
   }
 
   function closeBuildModal() {
@@ -1029,6 +1149,74 @@ function App() {
 
   function openDailyRecord(record: BaseRecord) {
     openBuildRecord(record.tableId, record.id)
+  }
+
+  function openWorkflowTagRoute(record: BaseRecord, tag: string) {
+    const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
+    const statusField = base.fields.find((field) => field.tableId === record.tableId && field.id === 'status')
+    const nextSortFieldId = table?.primaryFieldId || ''
+    const nextGroupFieldId = statusField?.id || ''
+
+    if (!table) {
+      return
+    }
+
+    setSelectedBuildTableId(record.tableId)
+    setSelectedBuildRecordId(record.id)
+    setGridFilter(tag)
+    setGridSortFieldId(nextSortFieldId)
+    setGridSortDirection('asc')
+    setGridGroupFieldId(nextGroupFieldId)
+    setGridColorFieldId('')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, record.tableId))
+    setIsRecordDrawerOpen(false)
+    writeBuildViewState({
+      selectedBuildTableId: record.tableId,
+      gridFilter: tag,
+      gridSortFieldId: nextSortFieldId,
+      gridSortDirection: 'asc',
+      gridGroupFieldId: nextGroupFieldId,
+      gridColorFieldId: '',
+      activeGridViewId: '',
+    })
+    openScreen('build')
+    showToast(`Tag route opened: ${tag}.`)
+  }
+
+  function openCommunitySourceRoute(communityRecord: BaseRecord, tableId: string, label: string) {
+    const table = base.tables.find((tableItem) => tableItem.id === tableId)
+    const statusField = base.fields.find((field) => field.tableId === tableId && field.id === 'status')
+    const filter = getRecordTitle(base, communityRecord)
+    const nextSortFieldId = table?.primaryFieldId || ''
+    const nextGroupFieldId = statusField?.id || ''
+    const nextRecord = getRecordsForTable(base, tableId)[0]
+
+    if (!table) {
+      return
+    }
+
+    setSelectedBuildTableId(tableId)
+    setSelectedBuildRecordId(nextRecord?.id || '')
+    setGridFilter(filter)
+    setGridSortFieldId(nextSortFieldId)
+    setGridSortDirection('asc')
+    setGridGroupFieldId(nextGroupFieldId)
+    setGridColorFieldId('')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, tableId))
+    setIsRecordDrawerOpen(false)
+    writeBuildViewState({
+      selectedBuildTableId: tableId,
+      gridFilter: filter,
+      gridSortFieldId: nextSortFieldId,
+      gridSortDirection: 'asc',
+      gridGroupFieldId: nextGroupFieldId,
+      gridColorFieldId: '',
+      activeGridViewId: '',
+    })
+    openScreen('build')
+    showToast(`Community route opened: ${label}.`)
   }
 
   function toggleVisibleField(fieldId: string) {
@@ -1514,6 +1702,16 @@ function App() {
     return todayRuleMatches.filter((match) => match.record.id === recordId)
   }
 
+  function getRecordWorkflowTags(record: BaseRecord) {
+    return base.fields
+      .filter((field) => field.tableId === record.tableId && field.type === 'multiSelect')
+      .flatMap((field) => {
+        const value = record.values[field.id]
+
+        return Array.isArray(value) ? value.map(String) : []
+      })
+  }
+
   function getTimelineRuleMatchesForRecord(recordId: string) {
     return timelineRuleMatches.filter((match) => match.record.id === recordId)
   }
@@ -1564,8 +1762,195 @@ function App() {
     return trimmedValue
   }
 
+  function coerceStoredFieldValue(field: FieldDefinition, value: RecordValue): RecordValue {
+    if (value === null) {
+      return value
+    }
+
+    if (field.type === 'multiSelect') {
+      if (Array.isArray(value)) {
+        return value.map(String).filter(Boolean)
+      }
+
+      return String(value)
+        .split(/[,;]/)
+        .map((option) => option.trim())
+        .filter(Boolean)
+    }
+
+    if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
+      if (typeof value === 'number') {
+        return value
+      }
+
+      const numericValue = Number(String(value).replace(/[$,%]/g, ''))
+
+      return Number.isFinite(numericValue) ? numericValue : 0
+    }
+
+    if (field.type === 'checkbox') {
+      if (typeof value === 'boolean') {
+        return value
+      }
+
+      return ['true', 'yes', 'y', '1', 'done', 'received'].includes(String(value).trim().toLowerCase())
+    }
+
+    if (field.type === 'date' || field.type === 'dateTime') {
+      return String(value).trim()
+    }
+
+    return value
+  }
+
+  function getPasteFieldSuggestion(field: FieldDefinition, values: string[]) {
+    const filledValues = values.map((value) => value.trim()).filter(Boolean)
+
+    if (filledValues.length === 0) {
+      return ''
+    }
+
+    if (computedFieldTypes.includes(field.type)) {
+      return `${field.label} is computed. Paste skipped it.`
+    }
+
+    if (field.type === 'singleSelect' || field.type === 'status') {
+      return `${field.label} reads as a select field.`
+    }
+
+    if (field.type === 'multiSelect') {
+      return `${field.label} reads as tags.`
+    }
+
+    if (field.type === 'linkedRecord') {
+      return `${field.label} reads as linked rows.`
+    }
+
+    if (field.type === 'text' && filledValues.every((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))) {
+      return `${field.label} may be a date field.`
+    }
+
+    if (field.type === 'text' && filledValues.every((value) => Number.isFinite(Number(value.replace(/[$,%]/g, ''))))) {
+      return `${field.label} may be a number field.`
+    }
+
+    if (field.type === 'text' && filledValues.some((value) => /[,;]/.test(value))) {
+      return `${field.label} may be tags.`
+    }
+
+    return ''
+  }
+
+  function getPasteFieldAction(field: FieldDefinition, values: string[]): BuildPasteAction | null {
+    const filledValues = values.map((value) => value.trim()).filter(Boolean)
+
+    if (filledValues.length === 0 || computedFieldTypes.includes(field.type)) {
+      return null
+    }
+
+    if (field.type === 'singleSelect' || field.type === 'status') {
+      return {
+        fieldId: field.id,
+        label: field.label,
+        updates: { type: field.type, options: field.options },
+      }
+    }
+
+    if (field.type === 'multiSelect') {
+      return {
+        fieldId: field.id,
+        label: field.label,
+        updates: { type: 'multiSelect', options: field.options },
+      }
+    }
+
+    if (field.type === 'linkedRecord') {
+      return {
+        fieldId: field.id,
+        label: field.label,
+        updates: { type: 'linkedRecord', linkedTableId: field.linkedTableId, allowMultiple: field.allowMultiple },
+      }
+    }
+
+    if (field.type === 'text' && filledValues.every((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))) {
+      return {
+        fieldId: field.id,
+        label: `${field.label} as date`,
+        updates: { type: 'date' },
+        migrateValues: true,
+      }
+    }
+
+    if (field.type === 'text' && filledValues.every((value) => Number.isFinite(Number(value.replace(/[$,%]/g, ''))))) {
+      return {
+        fieldId: field.id,
+        label: `${field.label} as number`,
+        updates: { type: 'number' },
+        migrateValues: true,
+      }
+    }
+
+    if (field.type === 'text' && filledValues.some((value) => /[,;]/.test(value))) {
+      const options = Array.from(new Set(filledValues.flatMap((value) =>
+        value
+          .split(/[,;]/)
+          .map((option) => option.trim())
+          .filter(Boolean),
+      )))
+
+      return {
+        fieldId: field.id,
+        label: `${field.label} as tags`,
+        updates: { type: 'multiSelect', options },
+        migrateValues: true,
+      }
+    }
+
+    return null
+  }
+
+  function applyPasteAction(action: BuildPasteAction) {
+    const field = fieldsForSelectedTable.find((tableField) => tableField.id === action.fieldId)
+
+    if (!field) {
+      return
+    }
+
+    setBase((current) => {
+      const nextField = { ...field, ...action.updates }
+      const nextBase = {
+        ...current,
+        fields: current.fields.map((currentField) =>
+          currentField.tableId === field.tableId && currentField.id === field.id ? nextField : currentField,
+        ),
+        records: current.records.map((record) =>
+          action.migrateValues && record.tableId === field.tableId && Object.prototype.hasOwnProperty.call(record.values, field.id)
+            ? {
+                ...record,
+                values: {
+                  ...record.values,
+                  [field.id]: coerceStoredFieldValue(nextField, record.values[field.id]),
+                },
+              }
+            : record,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    showToast(`${field.label} behavior applied.${action.migrateValues ? ' Values migrated.' : ''}`)
+  }
+
   function handleBuildGridPaste(event: ClipboardEvent<HTMLDivElement>) {
-    if (!selectedBuildTable || visibleFieldsForGrid.length === 0) {
+    if (!selectedBuildTable) {
+      return
+    }
+
+    const pasteFields = visibleFieldsForGrid.length > 0 ? visibleFieldsForGrid : fieldsForSelectedTable
+
+    if (pasteFields.length === 0) {
       return
     }
 
@@ -1586,9 +1971,46 @@ function App() {
       ? Math.max(0, flattenedRecords.findIndex((record) => record.id === selectedGridCell.recordId))
       : 0
     const startFieldIndex = selectedGridCell
-      ? Math.max(0, visibleFieldsForGrid.findIndex((field) => field.id === selectedGridCell.fieldId))
+      ? Math.max(0, pasteFields.findIndex((field) => field.id === selectedGridCell.fieldId))
       : 0
     const newRecords: BaseRecord[] = []
+    const touchedColumnLabels = new Set<string>()
+    const skippedColumnLabels = new Set<string>()
+    const pastedValuesByFieldId = new Map<string, string[]>()
+    const updatedRowCount = rows.filter((_, rowIndex) => Boolean(flattenedRecords[startRecordIndex + rowIndex])).length
+    const createdRowCount = rows.length - updatedRowCount
+
+    rows.forEach((row) => {
+      row.forEach((cell, cellIndex) => {
+        const field = pasteFields[startFieldIndex + cellIndex]
+
+        if (!field) {
+          return
+        }
+
+        if (computedFieldTypes.includes(field.type)) {
+          skippedColumnLabels.add(field.label)
+          return
+        }
+
+        pastedValuesByFieldId.set(field.id, [...(pastedValuesByFieldId.get(field.id) || []), cell])
+        touchedColumnLabels.add(field.label)
+      })
+    })
+    const pasteSuggestions = pasteFields
+      .flatMap((field) => {
+        const values = pastedValuesByFieldId.get(field.id)
+
+        return values ? [getPasteFieldSuggestion(field, values)] : []
+      })
+      .filter(Boolean)
+    const pasteActions = pasteFields
+      .flatMap((field) => {
+        const values = pastedValuesByFieldId.get(field.id)
+        const action = values ? getPasteFieldAction(field, values) : null
+
+        return action ? [action] : []
+      })
 
     setBase((current) => {
       const nextRecords = [...current.records]
@@ -1602,9 +2024,13 @@ function App() {
         const primaryField = current.fields.find((field) => field.tableId === selectedBuildTable.id && field.id === selectedBuildTable.primaryFieldId)
 
         row.forEach((cell, cellIndex) => {
-          const field = visibleFieldsForGrid[startFieldIndex + cellIndex]
+          const field = pasteFields[startFieldIndex + cellIndex]
 
-          if (!field || computedFieldTypes.includes(field.type)) {
+          if (!field) {
+            return
+          }
+
+          if (computedFieldTypes.includes(field.type)) {
             return
           }
 
@@ -1652,6 +2078,16 @@ function App() {
 
     setBuildPasteCellCount(pastedCellCount)
     setBuildPasteReceipt(`${rows.length} rows pasted. ${pastedCellCount} cells changed.`)
+    setBuildPasteSummary({
+      rows: rows.length,
+      cells: pastedCellCount,
+      created: createdRowCount,
+      updated: updatedRowCount,
+      columns: Array.from(touchedColumnLabels),
+      skippedColumns: Array.from(skippedColumnLabels),
+      suggestions: pasteSuggestions,
+      actions: pasteActions,
+    })
     showToast(`${rows.length} rows pasted.`)
   }
 
@@ -1765,6 +2201,155 @@ function App() {
 
       return nextBase
     })
+  }
+
+  function getCommunityLinkField(record: BaseRecord) {
+    return base.fields.find((field) =>
+      field.tableId === record.tableId &&
+      field.type === 'linkedRecord' &&
+      field.linkedTableId === 'communities',
+    )
+  }
+
+  function addCommunityLink() {
+    if (!communityDetailRecord || !communityLinkRecordId) {
+      return
+    }
+
+    const record = getRecord(base, communityLinkRecordId)
+    const field = record ? getCommunityLinkField(record) : null
+
+    if (!record || !field) {
+      return
+    }
+
+    const currentValue = record.values[field.id]
+    const currentIds = Array.isArray(currentValue) ? currentValue.map(String) : []
+    const nextIds = field.allowMultiple === false
+      ? [communityDetailRecord.id]
+      : Array.from(new Set([...currentIds, communityDetailRecord.id]))
+
+    updateRecordField(record.id, field.id, nextIds)
+    setCommunityLinkRecordId('')
+  }
+
+  function removeCommunityLink(record: BaseRecord) {
+    if (!communityDetailRecord) {
+      return
+    }
+
+    const field = getCommunityLinkField(record)
+
+    if (!field) {
+      return
+    }
+
+    const currentValue = record.values[field.id]
+    const currentIds = Array.isArray(currentValue) ? currentValue.map(String) : []
+    const nextIds = currentIds.filter((recordId) => recordId !== communityDetailRecord.id)
+
+    updateRecordField(record.id, field.id, nextIds)
+  }
+
+  function coerceCommunityNewLinkValue(field: FieldDefinition, value: string): RecordValue {
+    const trimmedValue = value.trim()
+
+    if (field.type === 'checkbox') {
+      return ['true', 'yes', 'y', '1', 'done', 'received'].includes(trimmedValue.toLowerCase())
+    }
+
+    if (field.type === 'multiSelect') {
+      return trimmedValue
+        .split(/[,;]/)
+        .map((option) => option.trim())
+        .filter(Boolean)
+    }
+
+    if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
+      const numericValue = Number(trimmedValue.replace(/[$,%]/g, ''))
+
+      return Number.isFinite(numericValue) ? numericValue : 0
+    }
+
+    return trimmedValue
+  }
+
+  function getCommunityLinkedRowExtraSummary(record: BaseRecord) {
+    return base.fields
+      .filter((field) =>
+        field.tableId === record.tableId &&
+        ['priority', 'tags'].includes(field.id) &&
+        !computedFieldTypes.includes(field.type),
+      )
+      .map((field) => getFieldDisplayValue(record, field))
+      .filter(Boolean)
+      .join(' · ')
+  }
+
+  function createCommunityLinkedRecord() {
+    if (!communityDetailRecord || !communityNewLinkTable) {
+      return
+    }
+
+    const title = communityNewLinkTitle.trim()
+
+    if (!title) {
+      return
+    }
+
+    const communityField = base.fields.find((field) =>
+      field.tableId === communityNewLinkTable.id &&
+      field.type === 'linkedRecord' &&
+      field.linkedTableId === 'communities',
+    )
+
+    if (!communityField) {
+      return
+    }
+
+    const values: Record<string, RecordValue> = {
+      ...getEmptyRecordValues(base, communityNewLinkTable.id),
+      [communityNewLinkTable.primaryFieldId]: title,
+      [communityField.id]: [communityDetailRecord.id],
+    }
+
+    if (communityNewLinkStatusField) {
+      values[communityNewLinkStatusField.id] = communityNewLinkStatus || communityNewLinkStatusField.options?.[0] || ''
+    }
+
+    if (communityNewLinkDateField && communityNewLinkDate) {
+      values[communityNewLinkDateField.id] = communityNewLinkDate
+    }
+
+    communityNewLinkExtraFields.forEach((field) => {
+      const value = communityNewLinkExtraValues[field.id]
+
+      if (value) {
+        values[field.id] = coerceCommunityNewLinkValue(field, value)
+      }
+    })
+
+    const record: BaseRecord = {
+      id: getUniqueSlug(`${communityNewLinkTable.id}_${toSlug(title)}`, base.records.map((baseRecord) => baseRecord.id)),
+      tableId: communityNewLinkTable.id,
+      values,
+    }
+
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        records: [...current.records, record],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    setCommunityNewLinkTitle('')
+    setCommunityNewLinkStatus('')
+    setCommunityNewLinkDate('')
+    setCommunityNewLinkExtraValues({})
+    showToast('Linked row added.')
   }
 
   function getGridCellKey(cell: GridCell) {
@@ -2286,7 +2871,93 @@ function App() {
     )
   }
 
+  function getWeeklyNoteSection(note: string, heading: string) {
+    const pattern = new RegExp(`## ${heading}\\n([\\s\\S]*?)(?=\\n## |$)`, 'i')
+    const match = note.match(pattern)
+
+    return match?.[1]?.trim() || ''
+  }
+
+  function updateWeeklyNoteSection(note: string, heading: string, value: string) {
+    const nextSection = `## ${heading}\n${value.trim()}`
+    const pattern = new RegExp(`## ${heading}\\n[\\s\\S]*?(?=\\n## |$)`, 'i')
+
+    if (pattern.test(note)) {
+      return note.replace(pattern, nextSection)
+    }
+
+    return `${note.trim()}\n\n${nextSection}`.trim()
+  }
+
+  function appendWeeklyNoteSectionLine(note: string, heading: string, record: BaseRecord) {
+    const currentSection = getWeeklyNoteSection(note, heading)
+    const recordLine = `- ${getRecordTitle(base, record)}. ${getPickerRecordMeta(record)}.`
+    const nextSection = currentSection ? `${currentSection}\n${recordLine}` : recordLine
+
+    return updateWeeklyNoteSection(note, heading, nextSection)
+  }
+
+  function getWeeklyNoteSectionRoute(record: BaseRecord) {
+    const status = getStringValue(record, 'status')
+    const level = getStringValue(record, 'level')
+    const date = getFirstDateValue(record)
+
+    if (record.tableId === 'risks' || level === 'High') {
+      return {
+        section: 'Risks',
+        reason: level ? `${level} risk belongs in the risk read.` : 'Risk records belong in the risk read.',
+      }
+    }
+
+    if (record.tableId === 'approvals') {
+      return {
+        section: status === 'Missing' || status === 'Requested' ? 'Decisions' : 'Next steps',
+        reason: `${status || 'Approval'} needs an explicit meeting call.`,
+      }
+    }
+
+    if (record.tableId === 'followups') {
+      return {
+        section: 'Next steps',
+        reason: `${status || 'Waiting'} loop needs an owner and next move.`,
+      }
+    }
+
+    if (record.tableId === 'tasks') {
+      return {
+        section: status === 'Blocked' ? 'Risks' : 'Next steps',
+        reason: status === 'Blocked'
+          ? 'Blocked work belongs in the risk read.'
+          : `${status || 'Work'}${date ? ` by ${date}` : ''} belongs in next steps.`,
+      }
+    }
+
+    if (record.tableId === 'communities') {
+      return {
+        section: status === 'At risk' || status === 'Blocked' ? 'Risks' : 'Decisions',
+        reason: `${status || 'Place'} context sets the meeting frame.`,
+      }
+    }
+
+    return {
+      section: 'Decisions',
+      reason: 'Source context belongs in decisions.',
+    }
+  }
+
+  function openMeetingSourceRoute(record: BaseRecord) {
+    openBuildRecord(record.tableId, record.id)
+    showToast(`Meeting source opened: ${getRecordTitle(base, record)}.`)
+  }
+
   function renderMeetingPrep(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
+    const weeklyNoteDraft = getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep)
+    const hasSavedWeeklyNote = Boolean(getStringValue(prep.meeting, 'weeklyNote'))
+    const decisionDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Decisions')
+    const riskDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Risks')
+    const nextStepDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Next steps')
+    const sectionInsertRecords = [...prep.communities, ...prep.linkedTasks, ...prep.overdueFollowups, ...prep.unresolvedApprovals, ...prep.risks].slice(0, 6)
+
     return (
       <div className="meeting-prep" data-testid="meeting-prep">
         <div className="meeting-prep-head">
@@ -2308,12 +2979,98 @@ function App() {
             <div className="meeting-note-title">
               <span>Generated weekly note</span>
               <strong>{getRecordTitle(base, prep.meeting)}</strong>
-              <small>Ready to copy, export, or edit from the meeting record.</small>
+              <small>Edit this note here. It stays local to this screen until copied or exported.</small>
+              <div className="meeting-note-actions" aria-label="Weekly note actions">
+                <button type="button" onClick={() => void copyMeetingNote(prep)}>Copy note</button>
+                <button type="button" onClick={() => exportMeetingNote(prep)}>Export note</button>
+              </div>
             </div>
             <div className="meeting-note-summary">
               <p><strong>Focus.</strong> {prep.agenda[0]?.detail || 'No agenda items surfaced yet.'}</p>
               <p><strong>Next steps.</strong> {prep.nextSteps.length} records need a next move.</p>
             </div>
+            <div className="meeting-note-fields" aria-label="Weekly note fields">
+              <article>
+                <span>Meeting date</span>
+                <strong>{getStringValue(prep.meeting, 'date') || getFirstDateValue(prep.meeting) || 'No date'}</strong>
+              </article>
+              <article>
+                <span>Communities</span>
+                <strong>{prep.communities.length}</strong>
+              </article>
+              <article>
+                <span>Work</span>
+                <strong>{prep.linkedTasks.length}</strong>
+              </article>
+              <article>
+                <span>Waiting</span>
+                <strong>{prep.overdueFollowups.length}</strong>
+              </article>
+              <article>
+                <span>Approvals</span>
+                <strong>{prep.unresolvedApprovals.length}</strong>
+              </article>
+              <article>
+                <span>Risks</span>
+                <strong>{prep.risks.length}</strong>
+              </article>
+              <article>
+                <span>Note state</span>
+                <strong>{hasSavedWeeklyNote ? 'Saved draft' : 'Generated'}</strong>
+              </article>
+            </div>
+            <div className="meeting-note-sections" aria-label="Weekly note sections">
+              {[
+                { heading: 'Decisions', value: decisionDraft },
+                { heading: 'Risks', value: riskDraft },
+                { heading: 'Next steps', value: nextStepDraft },
+              ].map((section) => (
+                <div className="meeting-note-section-card" key={section.heading}>
+                  <label>
+                    <span>{section.heading}</span>
+                    <textarea
+                      value={section.value}
+                      rows={3}
+                      onChange={(event) => updateRecordField(prep.meeting.id, 'weeklyNote', updateWeeklyNoteSection(weeklyNoteDraft, section.heading, event.target.value))}
+                    />
+                  </label>
+                </div>
+              ))}
+              <div className="meeting-note-routed-sources" aria-label="Routed source inserts">
+                <span>Source inserts</span>
+                {sectionInsertRecords.map((record) => {
+                  const route = getWeeklyNoteSectionRoute(record)
+
+                  return (
+                    <div className="meeting-source-row" key={record.id}>
+                      <button
+                        type="button"
+                        onClick={() => updateRecordField(prep.meeting.id, 'weeklyNote', appendWeeklyNoteSectionLine(weeklyNoteDraft, route.section, record))}
+                      >
+                        <strong>{getRecordTitle(base, record)}</strong>
+                        <small>{route.section}</small>
+                        <small className="route-reason">{route.reason}</small>
+                      </button>
+                      <button
+                        aria-label={`Open source record ${getRecordTitle(base, record)}`}
+                        type="button"
+                        onClick={() => openMeetingSourceRoute(record)}
+                      >
+                        Open
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <label className="meeting-note-editor">
+              <span>Weekly note draft</span>
+              <textarea
+                value={weeklyNoteDraft}
+                rows={10}
+                onChange={(event) => updateRecordField(prep.meeting.id, 'weeklyNote', event.target.value)}
+              />
+            </label>
           </div>
         </div>
         <div className="meeting-prep-workspace">
@@ -2653,6 +3410,11 @@ function App() {
   function renderTimelineView() {
     if (timelineView === 'kanban') {
       const groups = ['Blocked', 'Waiting', 'In progress', 'Done']
+      const nextStatusByGroup: Record<string, string> = {
+        Blocked: 'Waiting',
+        Waiting: 'In progress',
+        'In progress': 'Done',
+      }
 
       return (
         <div className="timeline-kanban" data-testid="timeline-kanban">
@@ -2664,18 +3426,42 @@ function App() {
             })
 
             return (
-              <section className="kanban-column" key={status}>
+              <section aria-label={`${status} lane`} className="kanban-column" key={status}>
                 <div>
                   <strong>{status}</strong>
                   <span>{records.length}</span>
                 </div>
-                {records.map((record) => (
-                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{getRecordContext(record)}</small>
-                    <span>{getFirstDateValue(record) || 'No date'}</span>
-                  </button>
-                ))}
+                {records.map((record) => {
+                  const nextStatus = nextStatusByGroup[status]
+                  const statusField = base.fields.find((field) =>
+                    field.tableId === record.tableId &&
+                    field.id === 'status' &&
+                    (field.type === 'status' || field.type === 'singleSelect') &&
+                    field.options?.includes(nextStatus),
+                  )
+
+                  return (
+                    <article className="kanban-card" key={record.id}>
+                      <button type="button" onClick={() => openDailyRecord(record)}>
+                        <strong>{getRecordTitle(base, record)}</strong>
+                        <small>{getRecordContext(record)}</small>
+                        <span>{getFirstDateValue(record) || 'No date'}</span>
+                      </button>
+                      {statusField && nextStatus && (
+                        <button
+                          className="kanban-card-action"
+                          type="button"
+                          onClick={() => {
+                            updateRecordField(record.id, statusField.id, nextStatus)
+                            showToast(`${getRecordTitle(base, record)} moved to ${nextStatus}.`)
+                          }}
+                        >
+                          Move to {nextStatus}
+                        </button>
+                      )}
+                    </article>
+                  )
+                })}
               </section>
             )
           })}
@@ -2685,24 +3471,116 @@ function App() {
 
     if (timelineView === 'calendar') {
       const datedRecords = timelineRecords.filter((record) => getFirstDateValue(record))
+      const dateGroups = Array.from(
+        datedRecords.reduce((groups, record) => {
+          const date = getFirstDateValue(record)
+
+          if (!date) {
+            return groups
+          }
+
+          groups.set(date, [...(groups.get(date) || []), record])
+
+          return groups
+        }, new Map<string, BaseRecord[]>()),
+      ).sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+      const selectedDate = dateGroups.some(([date]) => date === timelineCalendarDate)
+        ? timelineCalendarDate
+        : dateGroups[0]?.[0] || ''
+      const selectedDateRecords = dateGroups.find(([date]) => date === selectedDate)?.[1] || []
 
       return (
-        <div className="calendar-board" data-testid="timeline-calendar">
-          {datedRecords.slice(0, 14).map((record) => (
-            <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-              <span>{getFirstDateValue(record)}</span>
-              <strong>{getRecordTitle(base, record)}</strong>
-              <small>{getRecordContext(record)}</small>
-            </button>
-          ))}
-          {datedRecords.length === 0 && <p className="empty-note">No dated records match. Clear the filters.</p>}
+        <div className="calendar-mode" data-testid="timeline-calendar">
+          <div className="calendar-date-strip" aria-label="Calendar date focus">
+            <span>Date focus</span>
+            <div>
+              {dateGroups.slice(0, 10).map(([date, records]) => (
+                <button
+                  className={date === selectedDate ? 'selected' : ''}
+                  key={date}
+                  type="button"
+                  onClick={() => setTimelineCalendarDate(date)}
+                >
+                  <strong>{date}</strong>
+                  <small>{records.length}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+          {selectedDate && (
+            <section className="calendar-day-detail" aria-label="Calendar day detail">
+              <div>
+                <span>Selected day</span>
+                <strong>{selectedDate}</strong>
+              </div>
+              <div>
+                {selectedDateRecords.map((record) => (
+                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{getRecordContext(record)}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          <div className="calendar-board">
+            {datedRecords.slice(0, 14).map((record) => (
+              <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                <span>{getFirstDateValue(record)}</span>
+                <strong>{getRecordTitle(base, record)}</strong>
+                <small>{getRecordContext(record)}</small>
+              </button>
+            ))}
+            {datedRecords.length === 0 && <p className="empty-note">No dated records match. Clear the filters.</p>}
+          </div>
         </div>
       )
     }
 
     if (timelineView === 'timeline') {
+      const selectedCommunity = communityRecords.find((community) => community.id === timelineReadinessCommunityId) || communityRecords[0]
+      const selectedCommunityRecords = selectedCommunity
+        ? timelineRecords.filter((record) =>
+            base.fields.some((field) => {
+              const value = record.values[field.id]
+
+              return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(selectedCommunity.id)
+            }),
+          )
+        : []
+
       return (
         <div className="readiness-timeline" data-testid="timeline-readiness">
+          {selectedCommunity && (
+            <section className="readiness-focus-panel" aria-label="Readiness place focus">
+              <div>
+                <span>Place focus</span>
+                <strong>{getRecordTitle(base, selectedCommunity)}</strong>
+                <small>{getNumberValue(selectedCommunity, 'readiness')}% ready</small>
+              </div>
+              <div className="readiness-focus-options">
+                {communityRecords.map((community) => (
+                  <button
+                    className={community.id === selectedCommunity.id ? 'selected' : ''}
+                    key={community.id}
+                    type="button"
+                    onClick={() => setTimelineReadinessCommunityId(community.id)}
+                  >
+                    {getRecordTitle(base, community)}
+                  </button>
+                ))}
+              </div>
+              <div className="readiness-focus-records" aria-label="Focused readiness rows">
+                {selectedCommunityRecords.slice(0, 5).map((record) => (
+                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                    <strong>{getRecordTitle(base, record)}</strong>
+                    <small>{getRecordContext(record)}</small>
+                  </button>
+                ))}
+                {selectedCommunityRecords.length === 0 && <p className="empty-note">No linked rows match the current filters.</p>}
+              </div>
+            </section>
+          )}
           {communityRecords.map((community) => {
             const communityTitle = getRecordTitle(base, community)
             const linkedRecords = timelineRecords.filter((record) =>
@@ -2735,7 +3613,7 @@ function App() {
     }
 
     if (timelineView === 'graph') {
-      const selectedCommunity = communityRecords[0]
+      const selectedCommunity = communityRecords.find((community) => community.id === timelineGraphCommunityId) || communityRecords[0]
       const relatedRecords = selectedCommunity
         ? timelineRecords.filter((record) =>
             base.fields.some((field) => {
@@ -2747,20 +3625,38 @@ function App() {
         : []
 
       return (
-        <div className="risk-graph" data-testid="timeline-graph">
+        <div className="risk-graph-shell" data-testid="timeline-graph">
           {selectedCommunity ? (
             <>
-              <button className="graph-node center" type="button" onClick={() => openDailyRecord(selectedCommunity)}>
-                <strong>{getRecordTitle(base, selectedCommunity)}</strong>
-                <span>{getNumberValue(selectedCommunity, 'readiness')}% ready</span>
-              </button>
-              <div className="graph-spokes">
-                {relatedRecords.slice(0, 5).map((record) => (
-                  <button className={`graph-node ${getSemanticChipClass(getRecordContext(record))}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <span>{getRecordContext(record)}</span>
-                  </button>
-                ))}
+              <div className="graph-focus-strip" aria-label="Graph place focus">
+                <span>Place focus</span>
+                <div>
+                  {communityRecords.map((community) => (
+                    <button
+                      className={community.id === selectedCommunity.id ? 'selected' : ''}
+                      key={community.id}
+                      type="button"
+                      onClick={() => setTimelineGraphCommunityId(community.id)}
+                    >
+                      {getRecordTitle(base, community)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="risk-graph">
+                <button className="graph-node center" type="button" onClick={() => openDailyRecord(selectedCommunity)}>
+                  <strong>{getRecordTitle(base, selectedCommunity)}</strong>
+                  <span>{getNumberValue(selectedCommunity, 'readiness')}% ready</span>
+                </button>
+                <div className="graph-spokes">
+                  {relatedRecords.slice(0, 5).map((record) => (
+                    <button className={`graph-node ${getSemanticChipClass(getRecordContext(record))}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                      <strong>{getRecordTitle(base, record)}</strong>
+                      <span>{getRecordContext(record)}</span>
+                    </button>
+                  ))}
+                  {relatedRecords.length === 0 && <p className="empty-note">No linked records match the current filters.</p>}
+                </div>
               </div>
             </>
           ) : (
@@ -3035,7 +3931,7 @@ function App() {
           {toastMessage}
         </div>
       )}
-      <aside className="rail" aria-label="Sundesk navigation">
+      <aside className="rail">
         <div className="brand">
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
           <div>
@@ -3044,7 +3940,7 @@ function App() {
           </div>
         </div>
 
-        <nav className="main-nav">
+        <nav className="main-nav" aria-label="Sundesk navigation">
           <span>Work</span>
           {mainScreens
             .filter((screen) => screen.group === 'Work')
@@ -3087,15 +3983,19 @@ function App() {
           </section>
         )}
 
-        <section className="privacy-card workspace-card">
-          <span>Fyre Festival GTA</span>
-          <strong>Fake Ontario event data.</strong>
-          <p>GTA community shape.</p>
-        </section>
+        <details className="privacy-card workspace-card" data-testid="rail-workspace-card">
+          <summary>
+            <span>Workspace</span>
+            <strong>Fyre Festival GTA</strong>
+          </summary>
+          <p>Fake Ontario event data. GTA community shape.</p>
+        </details>
 
-        <section className="privacy-card rule-card">
-          <span>System read</span>
-          <strong>{activeScreenRuleMatches.length} records surface here.</strong>
+        <details className="privacy-card rule-card" data-testid="rail-system-read-card">
+          <summary>
+            <span>System read</span>
+            <strong>{activeScreenRuleMatches.length} records surface here.</strong>
+          </summary>
           <p>The system shows its work when a record needs attention.</p>
           {activeScreenRuleMatches.length > 0 && (
             <div className="rule-card-list">
@@ -3107,163 +4007,37 @@ function App() {
               ))}
             </div>
           )}
-        </section>
+        </details>
       </aside>
 
       <section className="desk">
         {activeScreen === 'today' && (
-          <>
-        <section className="onboarding-callout" aria-label="Onboarding status">
-          <div>
-            <span className="eyebrow">Command path</span>
-            <strong>Paste rows. Run the work.</strong>
-            <p>Build holds the source tables. Today shows what needs a decision.</p>
-          </div>
-          <button type="button" onClick={() => openScreen('build')}>Open Build</button>
-        </section>
-
-        <header className="hero" id="today">
-          <div>
-            <span className="eyebrow">Today</span>
-            <h1>Start with what can slip.</h1>
-            <p>
-              Dates, blockers, waiting items, and meeting prep collapse into one working view.
-            </p>
-          </div>
-          <article className="digest-card">
-            <span>Command send</span>
-            <strong>7:30 AM</strong>
-            <p>Recipient and timezone stay visible before anything leaves the browser.</p>
-            <button disabled title="Command send bridge is not connected yet." type="button">Preview summary</button>
-          </article>
-        </header>
-
-        <section className="today-command-strip" aria-label="Command summary">
-          <article>
-            <span>Slipping</span>
-            <strong>{todayLanes.find((lane) => lane.id === 'risk')?.records.length || 0}</strong>
-            <small>Blocked or at-risk rows.</small>
-          </article>
-          <article>
-            <span>Waiting</span>
-            <strong>{followupRecords.length}</strong>
-            <small>People who owe the next move.</small>
-          </article>
-          <article>
-            <span>Meeting</span>
-            <strong>{nextMeetingLinkedTasks.length}</strong>
-            <small>Linked rows for the next agenda.</small>
-          </article>
-        </section>
-
-        <section className="today-lane-grid" aria-label="Today lanes" data-testid="today-lanes">
-          {todayLanes.map((lane) => (
-            <article className={`today-lane ${lane.id}`} data-testid={`today-lane-${lane.id}`} key={lane.id}>
-              <div className="lane-head">
-                <span>{lane.label}</span>
-                <strong>{lane.records.length}</strong>
-              </div>
-              <h2>{lane.title}</h2>
-              <ol>
-                {lane.records.map((record) => (
-                  <li key={record.id}>
-                    <button className="lane-record-link" type="button" onClick={() => openDailyRecord(record)}>
-                      <strong>{getRecordTitle(base, record)}</strong>
-                    </button>
-                    <span>{getRecordContext(record)}</span>
-                    {getTodayRuleMatchesForRecord(record.id)[0] && (
-                      <div className="lane-rule-list">
-                        <small>{getCommandReason(getTodayRuleMatchesForRecord(record.id)[0].rule)}</small>
-                        {getTodayRuleMatchesForRecord(record.id).length > 1 && (
-                          <details>
-                            <summary>Why this is here</summary>
-                            {getTodayRuleMatchesForRecord(record.id).slice(1).map((match) => (
-                              <small key={match.rule.id}>{getCommandReason(match.rule)}</small>
-                            ))}
-                          </details>
-                        )}
-                      </div>
-                    )}
-                    {getDependencySummary(record.id).length > 0 && (
-                      <div className="lane-dependency-list">
-                        {getDependencySummary(record.id).slice(0, 2).map((dependency) => (
-                          <small key={dependency.id}>{dependency.label}: {dependency.title}</small>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </article>
-          ))}
-        </section>
-
-        <section className="command-grid">
-          <article className="queue-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">What changed</span>
-                <h2>System read.</h2>
-              </div>
-              <span className="metric-pill">{todayRuleMatches.length} reads</span>
-            </div>
-            <p className="panel-lede">The first read stays plain. Open the receipts only when you need to see why a row landed here.</p>
-
-            <details className="command-details">
-              <summary>Show why items surfaced</summary>
-              <div className="priority-list" data-testid="today-rule-receipts">
-                {todayRuleMatches.slice(0, 4).map((match, index) => (
-                  <article className="priority-card prep" key={`${match.rule.id}-${match.record.id}`}>
-                    <div className="priority-rank">{index + 1}</div>
-                    <div className="priority-main">
-                      <div className="priority-top">
-                        <strong>{getRecordTitle(base, match.record)}</strong>
-                        <span className="pill prep">{getCommandTableLabel(match.record.tableId)}</span>
-                      </div>
-                      <p>{getCommandReason(match.rule)}</p>
-                      <div className="reason-chain">
-                        <span>Rule matched</span>
-                        <span><i aria-hidden="true" />Destination: Today</span>
-                        <span><i aria-hidden="true" />No send happened</span>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => openDailyRecord(match.record)}>Open</button>
-                  </article>
-                ))}
-                {todayRuleMatches.length === 0 && <p className="empty-note">No Today rules match. Open Build to adjust rules.</p>}
-              </div>
-              <button className="ghost" type="button" onClick={openBuildScreen}>Open Build</button>
-            </details>
-          </article>
-
-          <aside className="focus-stack">
-            <article className="insight-card">
-              <span>System read</span>
-              <strong>Toronto moved to blocked.</strong>
-              <p>Fire marshal permit still missing. Event is 7 days out.</p>
-            </article>
-
-            <article className="next-meeting" id="meetings">
-              <span className="eyebrow">Next meeting</span>
-              <strong>Charlottetown. Tomorrow.</strong>
-              <p>Agenda can be generated from 2 work items, 1 risk, and 1 waiting item.</p>
-              <button disabled={!nextMeetingRecord} type="button" onClick={() => nextMeetingRecord && openDailyRecord(nextMeetingRecord)}>
-                Open next meeting
-              </button>
-            </article>
-          </aside>
-        </section>
-
-        <section className="data-summary-grid" aria-label="Workbase status">
-          {screenStats.map((stat) => (
-            <article key={stat.label}>
-              <span>{stat.label}</span>
-              <strong>{stat.value}</strong>
-              <small>{stat.detail}</small>
-            </article>
-          ))}
-        </section>
-          </>
+          <TodayScreen
+            followupRecords={followupRecords}
+            getChipColorClass={getChipColorClass}
+            getCommandReason={getCommandReason}
+            getCommandTableLabel={getCommandTableLabel}
+            getDependencySummary={getDependencySummary}
+            getRecordContext={getRecordContext}
+            getRecordTitle={(record) => getRecordTitle(base, record)}
+            getRecordWorkflowTags={getRecordWorkflowTags}
+            getTodayRuleMatchesForRecord={getTodayRuleMatchesForRecord}
+            nextMeetingLinkedTasks={nextMeetingLinkedTasks}
+            nextMeetingRecord={nextMeetingRecord}
+            onOpenBuild={openBuildScreen}
+            onOpenDailyRecord={openDailyRecord}
+            onOpenWorkflowTagRoute={openWorkflowTagRoute}
+            screenStats={screenStats}
+            todayChangedRecord={todayChangedRecord}
+            todayChangedRecords={todayChangedRecords}
+            todayFocusRecord={todayFocusRecord}
+            todayLanes={todayLanes}
+            todayNextLane={todayNextLane}
+            todayNowLane={todayNowLane}
+            todayRuleMatches={todayRuleMatches}
+            todaySlipRecord={todaySlipRecord}
+            todayWaitingLane={todayWaitingLane}
+          />
         )}
 
         {activeScreen === 'communities' && (
@@ -3300,7 +4074,12 @@ function App() {
                 ) || linkedRecords[0]
 
                 return (
-                <button className="work-record-card community-command-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
+                <button
+                  className={`work-record-card community-command-card ${communityDetailRecord?.id === record.id ? 'selected-community-card' : ''}`}
+                  key={record.id}
+                  type="button"
+                  onClick={() => setSelectedCommunityDetailId(record.id)}
+                >
                   <span>{status || 'No status'} · {getStringValue(record, 'eventDate') || 'No date set'}</span>
                   <strong>{getRecordTitle(base, record)}</strong>
                   <i aria-hidden="true"><b style={{ width: `${Math.max(8, readiness)}%` }} /></i>
@@ -3315,6 +4094,224 @@ function App() {
                 )
               })}
             </div>
+            {communityDetailRecord && (
+              <section className="community-place-detail" data-testid="community-place-detail">
+                <div className="community-place-head">
+                  <div>
+                    <span className="eyebrow">Place detail</span>
+                    <h3>{getRecordTitle(base, communityDetailRecord)}</h3>
+                    <p>{getStringValue(communityDetailRecord, 'status') || 'No status'}. Event date {getStringValue(communityDetailRecord, 'eventDate') || 'not set'}.</p>
+                  </div>
+                  <button type="button" onClick={() => openDailyRecord(communityDetailRecord)}>Open record</button>
+                </div>
+                <div className="community-place-edit" aria-label="Place quick edit">
+                  <label>
+                    <span>Status</span>
+                    <select
+                      value={getStringValue(communityDetailRecord, 'status')}
+                      onChange={(event) => updateRecordField(communityDetailRecord.id, 'status', event.target.value)}
+                    >
+                      <option value="">No status</option>
+                      <option value="On track">On track</option>
+                      <option value="At risk">At risk</option>
+                      <option value="Blocked">Blocked</option>
+                      <option value="Waiting">Waiting</option>
+                      <option value="Prep">Prep</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Event date</span>
+                    <input
+                      type="date"
+                      value={getStringValue(communityDetailRecord, 'eventDate')}
+                      onChange={(event) => updateRecordField(communityDetailRecord.id, 'eventDate', event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Readiness</span>
+                    <input
+                      max="100"
+                      min="0"
+                      type="number"
+                      value={getNumberValue(communityDetailRecord, 'readiness')}
+                      onChange={(event) => updateRecordField(communityDetailRecord.id, 'readiness', Number(event.target.value))}
+                    />
+                  </label>
+                </div>
+                <div className="community-place-metrics">
+                  <article>
+                    <span>Readiness</span>
+                    <strong>{getNumberValue(communityDetailRecord, 'readiness')}%</strong>
+                  </article>
+                  <article>
+                    <span>Blockers</span>
+                    <strong>{communityDetailBlockers.length}</strong>
+                  </article>
+                  <article>
+                    <span>Waiting</span>
+                    <strong>{communityDetailWaiting.length}</strong>
+                  </article>
+                  <article>
+                    <span>Meetings</span>
+                    <strong>{communityDetailMeetings.length}</strong>
+                  </article>
+                </div>
+                <div className="community-route-strip" aria-label="Community routes">
+                  <span>Routes</span>
+                  <div>
+                    <button type="button" onClick={() => openCommunitySourceRoute(communityDetailRecord, 'tasks', 'Work')}>
+                      Work
+                    </button>
+                    <button type="button" onClick={() => openCommunitySourceRoute(communityDetailRecord, 'followups', 'Waiting')}>
+                      Waiting
+                    </button>
+                    <button type="button" onClick={() => openCommunitySourceRoute(communityDetailRecord, 'meetings', 'Meetings')}>
+                      Meetings
+                    </button>
+                  </div>
+                </div>
+                <div className="community-place-work">
+                  <article>
+                    <span>Next action</span>
+                    {communityDetailNextAction ? (
+                      <button type="button" onClick={() => openDailyRecord(communityDetailNextAction)}>
+                        <strong>{getRecordTitle(base, communityDetailNextAction)}</strong>
+                        <small>{getPickerRecordMeta(communityDetailNextAction)}</small>
+                      </button>
+                    ) : (
+                      <p className="empty-line">Add linked work, waiting, risk, or meeting rows.</p>
+                    )}
+                  </article>
+                  <article>
+                    <span>Linked rows</span>
+                    <div className="community-link-row-actions">
+                      <label>
+                        <span>Add linked row</span>
+                        <select value={communityLinkRecordId} onChange={(event) => setCommunityLinkRecordId(event.target.value)}>
+                          <option value="">Choose row</option>
+                          {communityLinkableRecords.map((record) => (
+                            <option key={record.id} value={record.id}>
+                              {getRecordTitle(base, record)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button disabled={!communityLinkRecordId} type="button" onClick={addCommunityLink}>Add</button>
+                    </div>
+                    <div className="community-link-row-actions">
+                      <label>
+                        <span>New linked row</span>
+                        <select
+                          value={communityNewLinkTableId}
+                          onChange={(event) => {
+                            setCommunityNewLinkTableId(event.target.value)
+                            setCommunityNewLinkStatus('')
+                            setCommunityNewLinkDate('')
+                            setCommunityNewLinkExtraValues({})
+                          }}
+                        >
+                          {base.tables
+                            .filter((table) => table.id !== 'communities' && base.fields.some((field) => field.tableId === table.id && field.type === 'linkedRecord' && field.linkedTableId === 'communities'))
+                            .map((table) => (
+                              <option key={table.id} value={table.id}>{table.label}</option>
+                            ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Title</span>
+                        <input
+                          value={communityNewLinkTitle}
+                          onChange={(event) => setCommunityNewLinkTitle(event.target.value)}
+                          placeholder="Name the row"
+                        />
+                      </label>
+                      {communityNewLinkStatusField?.options && (
+                        <label>
+                          <span>{communityNewLinkStatusField.label}</span>
+                          <select value={communityNewLinkStatus} onChange={(event) => setCommunityNewLinkStatus(event.target.value)}>
+                            <option value="">Default</option>
+                            {communityNewLinkStatusField.options.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                      {communityNewLinkDateField && (
+                        <label>
+                          <span>{communityNewLinkDateField.label}</span>
+                          <input type="date" value={communityNewLinkDate} onChange={(event) => setCommunityNewLinkDate(event.target.value)} />
+                        </label>
+                      )}
+                      {communityNewLinkExtraFields.map((field) => (
+                        <label key={field.id}>
+                          <span>{field.label}</span>
+                          {field.type === 'singleSelect' && field.options ? (
+                            <select
+                              value={communityNewLinkExtraValues[field.id] || ''}
+                              onChange={(event) => setCommunityNewLinkExtraValues((current) => ({ ...current, [field.id]: event.target.value }))}
+                            >
+                              <option value="">Default</option>
+                              {field.options.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : 'text'}
+                              value={communityNewLinkExtraValues[field.id] || ''}
+                              onChange={(event) => setCommunityNewLinkExtraValues((current) => ({ ...current, [field.id]: event.target.value }))}
+                              placeholder={field.type === 'multiSelect' ? 'Comma separated' : field.label}
+                            />
+                          )}
+                        </label>
+                      ))}
+                      <button disabled={!communityNewLinkTitle.trim()} type="button" onClick={createCommunityLinkedRecord}>Create</button>
+                    </div>
+                    <div>
+                      {communityDetailRecords.slice(0, 5).map((linkedRecord) => {
+                        const editableStatusField = base.fields.find((field) =>
+                          field.tableId === linkedRecord.tableId &&
+                          ['status', 'level'].includes(field.id) &&
+                          (field.type === 'singleSelect' || field.type === 'status'),
+                        )
+
+                        return (
+                          <div className="community-linked-row" key={linkedRecord.id}>
+                            <button type="button" onClick={() => openDailyRecord(linkedRecord)}>
+                              <strong>{getRecordTitle(base, linkedRecord)}</strong>
+                              <small>{getPickerRecordMeta(linkedRecord)}</small>
+                              {getCommunityLinkedRowExtraSummary(linkedRecord) && (
+                                <small>{getCommunityLinkedRowExtraSummary(linkedRecord)}</small>
+                              )}
+                            </button>
+                            {editableStatusField?.options && (
+                              <label>
+                                <span>{editableStatusField.label}</span>
+                                <select
+                                  value={getStringValue(linkedRecord, editableStatusField.id)}
+                                  onChange={(event) => updateRecordField(linkedRecord.id, editableStatusField.id, event.target.value)}
+                                >
+                                  <option value="">None</option>
+                                  {editableStatusField.options.map((option) => (
+                                    <option key={option} value={option}>{option}</option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+                            {getCommunityLinkField(linkedRecord) && (
+                              <button className="ghost" type="button" onClick={() => removeCommunityLink(linkedRecord)}>
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                      {communityDetailRecords.length === 0 && <p className="empty-line">No linked rows yet.</p>}
+                    </div>
+                  </article>
+                </div>
+              </section>
+            )}
           </article>
 
           <article className="screen-panel">
@@ -3383,50 +4380,15 @@ function App() {
         )}
 
         {activeScreen === 'followups' && (
-          <section className="screen-grid" id="followups">
-            <article className="screen-panel wide">
-              <div className="panel-title">
-                <div>
-                  <span className="eyebrow">Waiting On</span>
-                  <h2>Waiting On is the chase list.</h2>
-                </div>
-                <button className="primary" type="button" onClick={() => openCreateRecordForTable('followups')}>Log next touch</button>
-              </div>
-              <p className="panel-lede">One list. One question: who owes the next move.</p>
-              <div className="waiting-table">
-                <div className="waiting-row waiting-head">
-                  <span>Community</span>
-                  <span>Waiting on</span>
-                  <span>Item</span>
-                  <span>Age</span>
-                  <span>Why it matters</span>
-                </div>
-                {followupRecords.map((record) => (
-                  <button className="waiting-row" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <span>{followupCommunityField ? getFieldDisplayValue(record, followupCommunityField) : 'No community'}</span>
-                    <span>{getStringValue(record, 'owner') || getStringValue(record, 'source') || 'Owner missing'}</span>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <span>{getStringValue(record, 'dueDate') || getFirstDateValue(record) || 'Today'}</span>
-                    <small>{getRecordContext(record)}</small>
-                  </button>
-                ))}
-              </div>
-            </article>
-
-            <article className="screen-panel">
-              <div className="panel-title">
-                <div>
-                  <span className="eyebrow">Tiny helper</span>
-                  <h2>One chase list.</h2>
-                </div>
-                <button type="button" onClick={openBuildScreen}>Adjust rule</button>
-              </div>
-              <div className="rules">
-                <p><span>When</span> a row is waiting. <span>Do</span> show who owes the next move.</p>
-                <p><span>When</span> waiting blocks readiness. <span>Do</span> surface it in Today.</p>
-              </div>
-            </article>
-          </section>
+          <WaitingOnScreen
+            base={base}
+            followupCommunityField={followupCommunityField}
+            followupRecords={followupRecords}
+            getFieldDisplayValue={getFieldDisplayValue}
+            onCreateFollowup={() => openCreateRecordForTable('followups')}
+            onOpenBuild={openBuildScreen}
+            onOpenRecord={openDailyRecord}
+          />
         )}
 
         {activeScreen === 'meetings' && (
@@ -3493,6 +4455,41 @@ function App() {
                 <strong>{drawerDateText}</strong>
                 <small>{drawerLinkedRecords.length} linked. {drawerBacklinks.length} backlinks. {drawerDependencies.length} dependencies.</small>
               </div>
+
+              {selectedBuildRecord.tableId === 'communities' && (
+                <section className="community-detail-command" data-testid="community-detail-command">
+                  <div className="community-detail-readiness">
+                    <span>Readiness</span>
+                    <strong>{getNumberValue(selectedBuildRecord, 'readiness')}%</strong>
+                    <i aria-hidden="true"><b style={{ width: `${Math.max(8, getNumberValue(selectedBuildRecord, 'readiness'))}%` }} /></i>
+                  </div>
+                  <div className="community-detail-metrics">
+                    <article>
+                      <span>Blockers</span>
+                      <strong>{drawerCommunityBlockers.length}</strong>
+                    </article>
+                    <article>
+                      <span>Waiting</span>
+                      <strong>{drawerCommunityWaiting.length}</strong>
+                    </article>
+                    <article>
+                      <span>Meetings</span>
+                      <strong>{drawerCommunityMeetings.length}</strong>
+                    </article>
+                  </div>
+                  <div className="community-detail-next">
+                    <span>Next action</span>
+                    {drawerCommunityNextAction ? (
+                      <button type="button" onClick={() => openBuildRecord(drawerCommunityNextAction.tableId, drawerCommunityNextAction.id)}>
+                        <strong>{getRecordTitle(base, drawerCommunityNextAction)}</strong>
+                        <small>{getPickerRecordMeta(drawerCommunityNextAction)}</small>
+                      </button>
+                    ) : (
+                      <p className="empty-line">Add linked work, waiting, risk, or meeting rows.</p>
+                    )}
+                  </div>
+                </section>
+              )}
 
               <div className="drawer-grid">
                 {drawerKeyFields.map((field) => (
@@ -3738,97 +4735,28 @@ function App() {
         </section>
 
         {activeScreen === 'timeline' && (
-        <section className="screen-grid" data-testid="timeline-screen" id="timeline">
-          <article className="screen-panel wide">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Views · Timeline</span>
-                <h2>Timeline has 5 ways to look.</h2>
-              </div>
-              <span className="metric-pill">{timelineRecords.length} shown</span>
-            </div>
-            <p className="panel-lede">The main header is the view type. Controls like fields, filter, sort, and group sit underneath.</p>
-            <div className="view-mode-tabs" role="tablist" aria-label="Timeline views">
-              {timelineViewOptions.map((option) => (
-                <button
-                  aria-selected={timelineView === option.value}
-                  className={timelineView === option.value ? 'selected' : ''}
-                  key={option.value}
-                  role="tab"
-                  type="button"
-                  onClick={() => setTimelineView(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="grid-toolbar timeline-toolbar">
-              <label>
-                <span>Filter</span>
-                <input
-                  value={timelineFilter}
-                  onChange={(event) => setTimelineFilter(event.target.value)}
-                  placeholder="Find records"
-                />
-              </label>
-              <label>
-                <span>Table</span>
-                <select value={timelineTableId} onChange={(event) => setTimelineTableId(event.target.value)}>
-                  <option value="all">All tables</option>
-                  {base.tables.map((table) => (
-                    <option key={table.id} value={table.id}>
-                      {table.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Status</span>
-                <select value={timelineStatus} onChange={(event) => setTimelineStatus(event.target.value)}>
-                  <option value="all">All statuses</option>
-                  {timelineStatusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {renderTimelineView()}
-          </article>
-
-          <article className="screen-panel">
-            <div className="panel-title compact">
-              <div>
-                <span className="eyebrow">Sub controls</span>
-                <h2>{timelineViewOptions.find((option) => option.value === timelineView)?.label} answers one question.</h2>
-              </div>
-            </div>
-            <div className="view-helper-list">
-              <button type="button" onClick={() => setTimelineView('grid')}><strong>Grid</strong><span>Clean or edit rows.</span></button>
-              <button type="button" onClick={() => setTimelineView('kanban')}><strong>Kanban</strong><span>Move work by state.</span></button>
-              <button type="button" onClick={() => setTimelineView('calendar')}><strong>Calendar</strong><span>See date pressure.</span></button>
-              <button type="button" onClick={() => setTimelineView('timeline')}><strong>Timeline</strong><span>Read readiness before event day.</span></button>
-              <button type="button" onClick={() => setTimelineView('graph')}><strong>Graph</strong><span>Explain why a place is at risk.</span></button>
-            </div>
-
-            <div className="panel-title compact timeline-panel-gap">
-              <div>
-                <span className="eyebrow">Date sample</span>
-                <h2>Next records.</h2>
-              </div>
-            </div>
-            <div className="gantt-preview">
-              {dailyTimelineRecords.slice(0, 5).map((record, index) => (
-                <div key={record.id}>
-                  <span>{getRecordTitle(base, record)}</span>
-                  <i className={`bar ${index % 3 === 0 ? 'firebar' : index % 3 === 1 ? 'waitbar' : 'prepbar'}`} />
-                  <em>{getRecordContext(record)}</em>
-                </div>
-              ))}
-            </div>
-          </article>
-        </section>
+          <TimelineScreen
+            base={base}
+            dailyTimelineRecords={dailyTimelineRecords}
+            getChipColorClass={getChipColorClass}
+            renderTimelineView={renderTimelineView}
+            timelineDatedRecordCount={timelineDatedRecords.length}
+            timelineDependencyRecordCount={timelineDependencyRecordCount}
+            timelineFilter={timelineFilter}
+            timelineRecords={timelineRecords}
+            timelineRuleReadCount={timelineRuleReadCount}
+            timelineStatus={timelineStatus}
+            timelineStatusOptions={timelineStatusOptions}
+            timelineTableId={timelineTableId}
+            timelineTagRouteOptions={timelineTagRouteOptions}
+            timelineView={timelineView}
+            timelineViewQuestion={timelineViewQuestion}
+            onTimelineFilterChange={setTimelineFilter}
+            onTimelineStatusChange={setTimelineStatus}
+            onTimelineTableChange={setTimelineTableId}
+            onTimelineViewChange={setTimelineView}
+            onWorkflowTagRouteOpen={openWorkflowTagRoute}
+          />
         )}
 
         {activeScreen === 'build' && (
@@ -3876,133 +4804,54 @@ function App() {
                 </button>
               ))}
             </div>
-            <div className="grid-toolbar build-toolbar">
-              <label>
-                <span>View</span>
-                <select
-                  value={activeGridViewId}
-                  onChange={(event) => {
-                    const view = localGridViews.find((gridView) => gridView.id === event.target.value)
-
-                    if (view) {
-                      applyGridView(view)
-                    } else {
-                      setActiveGridViewId('')
-                    }
-                  }}
-                >
-                  <option value="">Current view</option>
-                  {localGridViews.map((view) => (
-                    <option key={view.id} value={view.id}>
-                      {view.name}
-                    </option>
+            <BuildToolbar
+              activeGridViewId={activeGridViewId}
+              fieldsForSelectedTable={fieldsForSelectedTable}
+              gridColorFieldId={gridColorFieldId}
+              gridDensity={gridDensity}
+              gridFilter={gridFilter}
+              gridGroupFieldId={gridGroupFieldId}
+              gridSortDirection={gridSortDirection}
+              gridSortFieldId={gridSortFieldId}
+              localGridViews={localGridViews}
+              visibleFieldCount={visibleFieldsForGrid.length}
+              visibleFieldIds={visibleFieldIds}
+              onAddField={() => setBuildModal('field')}
+              onApplyGridView={applyGridView}
+              onClearActiveGridView={() => setActiveGridViewId('')}
+              onGridColorFieldChange={setGridColorFieldId}
+              onGridDensityChange={setGridDensity}
+              onGridFilterChange={setGridFilter}
+              onGridGroupFieldChange={setGridGroupFieldId}
+              onGridSortDirectionChange={setGridSortDirection}
+              onGridSortFieldChange={setGridSortFieldId}
+              onToggleVisibleField={toggleVisibleField}
+            />
+            <BuildPasteHelper
+              applyPasteAction={applyPasteAction}
+              buildPasteCellCount={buildPasteCellCount}
+              buildPasteReceipt={buildPasteReceipt}
+              buildPasteSummary={buildPasteSummary}
+              selectedGridCell={selectedGridCell}
+              visibleFieldsForGrid={visibleFieldsForGrid}
+            />
+            {tagRouteOptions.length > 0 && (
+              <div className="tag-route-strip" aria-label="Tag workflow routes">
+                <span>Tag routes</span>
+                <div>
+                  {tagRouteOptions.map((tag) => (
+                    <button
+                      className={`select-tag ${getChipColorClass(tag)} ${gridFilter === tag ? 'selected' : ''}`}
+                      key={tag}
+                      type="button"
+                      onClick={() => setGridFilter((current) => current === tag ? '' : tag)}
+                    >
+                      {tag}
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label>
-                <span>Fields</span>
-                <button className="toolbar-field-count" type="button" onClick={() => setBuildModal('field')}>
-                  {visibleFieldsForGrid.length} shown
-                </button>
-              </label>
-              <label>
-                <span>Filter</span>
-                <input
-                  value={gridFilter}
-                  onChange={(event) => setGridFilter(event.target.value)}
-                  placeholder="Find in visible table"
-                />
-              </label>
-              <label>
-                <span>Sort</span>
-                <select
-                  value={gridSortFieldId}
-                  onChange={(event) => {
-                    setGridSortFieldId(event.target.value)
-                    setGridSortDirection('asc')
-                  }}
-                >
-                  <option value="">Manual</option>
-                  {fieldsForSelectedTable.map((field) => (
-                    <option key={field.id} value={field.id}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Direction</span>
-                <select value={gridSortDirection} onChange={(event) => setGridSortDirection(event.target.value as GridSortDirection)}>
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
-                </select>
-              </label>
-              <label>
-                <span>Group</span>
-                <select value={gridGroupFieldId} onChange={(event) => setGridGroupFieldId(event.target.value)}>
-                  <option value="">None</option>
-                  {fieldsForSelectedTable.map((field) => (
-                    <option key={field.id} value={field.id}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Colour</span>
-                <select value={gridColorFieldId} onChange={(event) => setGridColorFieldId(event.target.value)}>
-                  <option value="">None</option>
-                  {fieldsForSelectedTable.map((field) => (
-                    <option key={field.id} value={field.id}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Density</span>
-                <select value={gridDensity} onChange={(event) => setGridDensity(event.target.value as GridDensity)}>
-                  <option value="compact">Compact</option>
-                  <option value="comfortable">Comfortable</option>
-                  <option value="expanded">Expanded</option>
-                </select>
-              </label>
-            </div>
-            <div className="view-bar">
-              <div className="visible-field-list">
-                {fieldsForSelectedTable.map((field) => (
-                  <button
-                    className={visibleFieldIds.includes(field.id) ? 'selected' : ''}
-                    key={field.id}
-                    type="button"
-                    onClick={() => toggleVisibleField(field.id)}
-                  >
-                    {field.label}
-                  </button>
-                ))}
+                </div>
               </div>
-              <div className="view-actions">
-                {localGridViews.map((view) => (
-                  <button
-                    className={view.id === activeGridViewId ? 'selected' : ''}
-                    key={view.id}
-                    type="button"
-                    onClick={() => applyGridView(view)}
-                  >
-                    {view.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="local-state-strip build-helper-strip">
-              <span>{buildPasteReceipt ? 'Paste received' : 'Paste cells'}</span>
-              <strong>{buildPasteReceipt || 'Click a cell, paste rows, then shape the table.'}</strong>
-              <div className="paste-helper-steps" aria-label="Paste helper state">
-                <small className={selectedGridCell ? 'done' : ''}>{selectedGridCell ? `Target: ${visibleFieldsForGrid.find((field) => field.id === selectedGridCell.fieldId)?.label || 'field'}` : 'Choose target'}</small>
-                <small className={buildPasteReceipt ? 'done' : ''}>{buildPasteReceipt ? `${buildPasteCellCount} cells` : 'Paste rows'}</small>
-                <small>Shape fields</small>
-              </div>
-            </div>
+            )}
             {migrationMessages.length > 0 && (
               <div className="local-state-strip migration-strip">
                 <span>Migration</span>
@@ -4017,7 +4866,7 @@ function App() {
                     <span>{group.records.length} records</span>
                   </div>
                 )}
-                <div className="record-table-wrap" onPaste={handleBuildGridPaste}>
+                <div className="record-table-wrap" data-testid="record-table-wrap" onPaste={handleBuildGridPaste}>
                   <table className={`record-table density-${gridDensity}`}>
                     <thead>
                       <tr>

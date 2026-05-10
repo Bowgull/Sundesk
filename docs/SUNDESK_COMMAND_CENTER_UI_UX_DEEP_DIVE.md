@@ -232,20 +232,63 @@ Current resolved alignment:
 - Settings now puts engine counts and rule-routing details behind manual disclosure.
 - Today now puts rule receipts behind manual disclosure.
 - Build now keeps constructive actions visible and moves table admin actions behind `Table options`.
+- Build now keeps only View, Filter, and `Shape grid` in the first toolbar read.
+- Secondary grid controls now live behind `Shape grid`.
 - Field creation and field editing now open on column behavior cards before raw type details.
+- Work now has a visible `Tags` column with tag route chips in Build.
+- Today now shows workflow tags on surfaced records.
+- Today workflow tags now open Build as a filtered route for the selected tag.
+- Timeline now exposes tag routes from the current record set and opens Build filtered to the selected tag.
 - Communities now show readiness, blockers, waiting count, meeting count, and next action in each place card.
+- Community records now open with a place command strip in the drawer.
+- Communities now have an in-screen place detail surface for readiness, event date, blockers, waiting, meetings, next action, and linked rows.
+- Communities now switch the place detail in-screen before opening the full record.
+- Communities now support quick editing status, event date, and readiness from the place detail.
+- Communities now support status or level edits for linked rows inside the place detail.
+- Communities now support adding and removing existing linked rows from the place detail.
+- Communities now support creating a new linked row from the place detail.
+- Communities new linked-row creation now exposes table-aware status or level and date fields when available.
+- Communities new linked-row creation now exposes additional table-aware fields such as priority and tags.
+- Communities place detail now routes into Build for Work, Waiting, and Meetings filtered by the selected place.
 - Meetings now puts a generated weekly note object above the computed agenda and source receipts.
+- Meetings now has an editable weekly-note draft with copy and export actions.
+- Weekly note drafts now persist into the meeting record.
+- Meetings weekly notes now show field chips for date, communities, work, waiting, approvals, risks, and note state.
+- Meetings weekly notes now have structured section editors for decisions, risks, and next steps.
+- Meetings weekly note sections now support source-record insertion.
+- Meetings source-record insertion now routes records to Decisions, Risks, or Next steps.
+- Meetings source records now have explicit Open routes back into Build.
+- Meetings source-record routing now includes table-aware section decisions and visible route reasons.
+- Build now shows post-paste helper cards for created rows, updated rows, columns read, and the next shape check.
+- Build post-paste helpers now suggest likely field behavior from pasted values, including select-like status fields.
+- Build post-paste helpers now expose one-click apply controls for suggested field behavior.
+- Build post-paste apply controls now migrate existing values when text fields become dates, numbers, or tags.
+- Today now has a first-read rail for Now, Waiting, Next, Changed, and Can slip before the deeper lanes and receipts.
+- Today now has a touch-first focus band that names the first record, why it surfaced, and the open action.
+- Timeline now gives every mode a receipt that states the question, record count, dated rows, dependency rows, and matched reads.
+- Timeline Graph mode now has a place-focus control instead of locking to the first community.
+- Timeline Kanban mode now supports one-click status movement on cards.
+- Timeline Calendar mode now has date-focus buckets and a selected-day detail.
+- Timeline readiness mode now has a place-focus panel with focused linked rows.
+- The default deck skin now uses calmer flat backgrounds and reduced surface shadows.
+- The app shell now keeps navigation first and tucks workspace/system receipts behind manual rail disclosure.
+- Today now puts the count summary behind manual disclosure so the first read is hero, first-read cards, then touch-first focus.
+- Sundesk now has the first parallel build lanes: shared app config in `src/appConfig.ts`, theme tokens in `src/styles/themes.css`, Build paste helper in `src/components/BuildPasteHelper.tsx`, and Waiting On in `src/components/WaitingOnScreen.tsx`.
+- The second parallel block extracted Today into `src/components/TodayScreen.tsx`, moved Settings CSS into `src/styles/settings.css`, and added theme/config guardrails for longer worker runs.
+- The third parallel block extracted Build toolbar/view controls into `src/components/BuildToolbar.tsx`, moved Timeline CSS into `src/styles/timeline.css`, and tightened TodayScreen internals without visible behavior changes.
+- The fourth parallel block extracted the Timeline shell into `src/components/TimelineScreen.tsx`, moved Communities CSS into `src/styles/communities.css`, and tightened Build toolbar/paste helper internals without visible behavior changes.
 
 Remaining gaps:
 
-- Build is paste-capable, but it still needs to feel even more paste-first.
-- Build still has many controls once the user is in the grid. The deck makes the grid primary and moves explanation into tiny helpers.
-- Tags are rendered, but they do not yet drive visible workflow routes.
-- Communities are closer to the deck, but still need a deeper place-detail command center pass.
-- Meetings has the weekly-note object, but still needs a deeper editable note format pass.
-- Kanban, Calendar, Timeline, and Graph exist, but each needs a deeper full-screen polish pass.
-- Today is calmer, but still needs a stricter first-read pass around what can slip, what changed, Now, Waiting, Next.
-- The current CSS still carries some heavier mood from earlier iterations. The deck uses a calmer product skin.
+- Build post-paste apply controls now set field behavior and migrate simple text values into dates, numbers, and tags.
+- Today, Timeline, Meetings, and Communities now all have deck-first routes back into Build.
+- Communities can create, add, remove, quick-edit, and set richer table-aware fields on linked rows.
+- Meetings source records now route with table-aware section decisions and visible route reasons.
+- Kanban, Calendar, Timeline, and Graph now have mode receipts and first-pass interaction polish.
+- Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
+- App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
+- The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Communities screen, Build sidecars, Meetings screen.
 
 ## UI/UX Audit Checklist
 
