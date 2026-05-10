@@ -188,9 +188,11 @@ export function RecordDrawer({
                 <strong>Fields</strong>
               </div>
               <div className="record-form">
-                {editableFieldsForSelectedTable.map((field) =>
-                  onRenderRecordInput(field, selectedRecord.values[field.id], onSelectedRecordChange),
-                )}
+                {editableFieldsForSelectedTable.map((field) => (
+                  <div className="record-field-input-slot" key={field.id}>
+                    {onRenderRecordInput(field, selectedRecord.values[field.id], onSelectedRecordChange)}
+                  </div>
+                ))}
               </div>
             </section>
 

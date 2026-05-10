@@ -3,12 +3,15 @@ import './styles/themes.css'
 import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { mainScreens, themes, type AppScreen, type TimelineView } from './appConfig'
 import { BuildGrid } from './components/BuildGrid'
+import { BuildGridCell } from './components/BuildGridCell'
 import { BuildPasteHelper } from './components/BuildPasteHelper'
 import { BuildRulesPanel } from './components/BuildRulesPanel'
 import { BuildToolbar } from './components/BuildToolbar'
 import { BuildViewsPanel } from './components/BuildViewsPanel'
 import { CommunitiesScreen } from './components/CommunitiesScreen'
+import { MeetingPrepPanel } from './components/MeetingPrepPanel'
 import { MeetingsScreen } from './components/MeetingsScreen'
+import { RecordFieldInput } from './components/RecordFieldInput'
 import { RecordDrawer } from './components/RecordDrawer'
 import { TasksScreen } from './components/TasksScreen'
 import { TimelineScreen } from './components/TimelineScreen'
@@ -93,7 +96,6 @@ import {
   getDependencyPickerRecords,
   getLocalEngineStats,
   getMeetingAgendaText,
-  getMeetingDigestPreview,
   getMeetingPrep,
   getMeetingWeeklyNoteText,
   getRuleDestinationStats,
@@ -2701,180 +2703,22 @@ function App() {
     value: RecordValue,
     onChange: (fieldId: string, value: RecordValue) => void,
   ) {
-    const linkedRecords = field.linkedTableId ? getRecordsForTable(base, field.linkedTableId) : []
-    const selectedLinkedIds = Array.isArray(value) ? value : []
-
-    if (field.type === 'linkedRecord') {
-      const linkedTable = base.tables.find((table) => table.id === field.linkedTableId)
-      const searchKey = `${field.tableId}:${field.id}`
-      const searchTerm = linkedRecordFilters[searchKey] || ''
-      const normalizedSearchTerm = searchTerm.trim().toLowerCase()
-      const selectedRecords = selectedLinkedIds.map((recordId) => getRecord(base, recordId))
-      const filteredLinkedRecords = linkedRecords.filter((record) => {
-        if (!normalizedSearchTerm) {
-          return true
-        }
-
-        const title = getRecordTitle(base, record).toLowerCase()
-        const context = getRecordContext(record).toLowerCase()
-
-        return title.includes(normalizedSearchTerm) || context.includes(normalizedSearchTerm)
-      })
-
-      return (
-        <label className="full-row" key={field.id}>
-          <span>{field.label}</span>
-          <div className="linked-record-picker">
-            <div className="linked-picker-head">
-              <div>
-                <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
-                <small>{field.allowMultiple ? `${selectedLinkedIds.length} selected` : selectedLinkedIds.length > 0 ? '1 selected' : 'None selected'}</small>
-              </div>
-              {linkedTable && <small>{linkedRecords.length} records</small>}
-            </div>
-            {field.linkedTableId ? (
-              <>
-                <input
-                  aria-label={`Search ${field.label}`}
-                  placeholder={`Search ${linkedTable?.label || 'records'}`}
-                  type="search"
-                  value={searchTerm}
-                  onChange={(event) =>
-                    setLinkedRecordFilters((current) => ({
-                      ...current,
-                      [searchKey]: event.target.value,
-                    }))
-                  }
-                />
-                {selectedLinkedIds.length > 0 && (
-                  <div className="linked-selected-list" aria-label={`Selected ${field.label}`}>
-                    {selectedRecords.map((record, index) => {
-                      const recordId = selectedLinkedIds[index]
-
-                      return (
-                        <button
-                          key={recordId}
-                          type="button"
-                          onClick={() => onChange(field.id, selectedLinkedIds.filter((selectedId) => selectedId !== recordId))}
-                        >
-                          <strong>{record ? getRecordTitle(base, record) : recordId}</strong>
-                          {record && <small>{getPickerRecordMeta(record)}</small>}
-                          <small>Remove</small>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-                <div className="linked-choice-grid">
-                  {linkedRecords.length === 0 && <small>Add a record in the linked table.</small>}
-                  {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
-                  {filteredLinkedRecords.map((record) => {
-                    const isSelected = selectedLinkedIds.includes(record.id)
-
-                    return (
-                      <button
-                        className={isSelected ? 'selected' : ''}
-                        key={record.id}
-                        type="button"
-                        onClick={() => onChange(field.id, toggleListValue(selectedLinkedIds, record.id, field.allowMultiple))}
-                      >
-                        <strong>{getPickerRecordLabel(record)}</strong>
-                        <small>{getPickerRecordMeta(record)}</small>
-                      </button>
-                    )
-                  })}
-                </div>
-              </>
-            ) : (
-              <p className="empty-note">Choose a linked table in field settings.</p>
-            )}
-          </div>
-        </label>
-      )
-    }
-
-    if (field.type === 'multiSelect' && field.options) {
-      const selectedOptions = Array.isArray(value) ? value : []
-
-      return (
-        <label className="full-row" key={field.id}>
-          <span>{field.label}</span>
-          <div className="linked-choice-grid option-choice-grid">
-            {field.options.map((option) => {
-              const isSelected = selectedOptions.includes(option)
-
-              return (
-                <button
-                  className={isSelected ? 'selected' : ''}
-                  key={option}
-                  type="button"
-                  onClick={() => onChange(field.id, toggleListValue(selectedOptions, option))}
-                >
-                  <strong>{option}</strong>
-                </button>
-              )
-            })}
-          </div>
-        </label>
-      )
-    }
-
-    if (field.options) {
-      return (
-        <label key={field.id}>
-          <span>{field.label}</span>
-          <select
-            value={typeof value === 'string' ? value : ''}
-            onChange={(event) => onChange(field.id, event.target.value)}
-          >
-            <option value="">Choose</option>
-            {field.options.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-      )
-    }
-
-    if (field.type === 'checkbox') {
-      return (
-        <label className="checkbox-row" key={field.id}>
-          <span>{field.label}</span>
-          <input
-            checked={Boolean(value)}
-            type="checkbox"
-            onChange={(event) => onChange(field.id, event.target.checked)}
-          />
-        </label>
-      )
-    }
-
-    if (field.type === 'longText') {
-      return (
-        <label className="full-row" key={field.id}>
-          <span>{field.label}</span>
-          <textarea
-            value={typeof value === 'string' ? value : ''}
-            rows={3}
-            onChange={(event) => onChange(field.id, event.target.value)}
-          />
-        </label>
-      )
-    }
-
-    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
-
     return (
-      <label key={field.id}>
-        <span>{field.label}</span>
-        <input
-          type={inputType}
-          value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-          onChange={(event) => onChange(field.id, inputType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
-        />
-      </label>
+      <RecordFieldInput
+        base={base}
+        field={field}
+        getPickerRecordLabel={getPickerRecordLabel}
+        getPickerRecordMeta={getPickerRecordMeta}
+        getRecord={getRecord}
+        getRecordContext={getRecordContext}
+        getRecordTitle={getRecordTitle}
+        getRecordsForTable={getRecordsForTable}
+        linkedRecordFilters={linkedRecordFilters}
+        setLinkedRecordFilters={setLinkedRecordFilters}
+        toggleListValue={toggleListValue}
+        value={value}
+        onChange={onChange}
+      />
     )
   }
 
@@ -2958,459 +2802,58 @@ function App() {
   }
 
   function renderMeetingPrep(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
-    const weeklyNoteDraft = getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep)
-    const hasSavedWeeklyNote = Boolean(getStringValue(prep.meeting, 'weeklyNote'))
-    const decisionDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Decisions')
-    const riskDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Risks')
-    const nextStepDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Next steps')
-    const sectionInsertRecords = [...prep.communities, ...prep.linkedTasks, ...prep.overdueFollowups, ...prep.unresolvedApprovals, ...prep.risks].slice(0, 6)
-
     return (
-      <div className="meeting-prep" data-testid="meeting-prep">
-        <div className="meeting-prep-head">
-          <div>
-            <span className="eyebrow">Computed prep</span>
-            <strong>{getRecordTitle(base, prep.meeting)}</strong>
-          </div>
-          <span>Not saved. Rebuilt from source records.</span>
-        </div>
-        <div className="meeting-prep-stats">
-          <span>{prep.communities.length} communities</span>
-          <span>{prep.linkedTasks.length} work items</span>
-          <span>{prep.overdueFollowups.length} waiting items</span>
-          <span>{prep.unresolvedApprovals.length} open approvals</span>
-          <span>{prep.risks.length} risks</span>
-        </div>
-        <div className="meeting-note-shell" data-testid="meeting-weekly-note">
-          <div className="meeting-note-paper">
-            <div className="meeting-note-title">
-              <span>Generated weekly note</span>
-              <strong>{getRecordTitle(base, prep.meeting)}</strong>
-              <small>Edit this note here. It stays local to this screen until copied or exported.</small>
-              <div className="meeting-note-actions" aria-label="Weekly note actions">
-                <button type="button" onClick={() => void copyMeetingNote(prep)}>Copy note</button>
-                <button type="button" onClick={() => exportMeetingNote(prep)}>Export note</button>
-              </div>
-            </div>
-            <div className="meeting-note-summary">
-              <p><strong>Focus.</strong> {prep.agenda[0]?.detail || 'No agenda items surfaced yet.'}</p>
-              <p><strong>Next steps.</strong> {prep.nextSteps.length} records need a next move.</p>
-            </div>
-            <div className="meeting-note-fields" aria-label="Weekly note fields">
-              <article>
-                <span>Meeting date</span>
-                <strong>{getStringValue(prep.meeting, 'date') || getFirstDateValue(prep.meeting) || 'No date'}</strong>
-              </article>
-              <article>
-                <span>Communities</span>
-                <strong>{prep.communities.length}</strong>
-              </article>
-              <article>
-                <span>Work</span>
-                <strong>{prep.linkedTasks.length}</strong>
-              </article>
-              <article>
-                <span>Waiting</span>
-                <strong>{prep.overdueFollowups.length}</strong>
-              </article>
-              <article>
-                <span>Approvals</span>
-                <strong>{prep.unresolvedApprovals.length}</strong>
-              </article>
-              <article>
-                <span>Risks</span>
-                <strong>{prep.risks.length}</strong>
-              </article>
-              <article>
-                <span>Note state</span>
-                <strong>{hasSavedWeeklyNote ? 'Saved draft' : 'Generated'}</strong>
-              </article>
-            </div>
-            <div className="meeting-note-sections" aria-label="Weekly note sections">
-              {[
-                { heading: 'Decisions', value: decisionDraft },
-                { heading: 'Risks', value: riskDraft },
-                { heading: 'Next steps', value: nextStepDraft },
-              ].map((section) => (
-                <div className="meeting-note-section-card" key={section.heading}>
-                  <label>
-                    <span>{section.heading}</span>
-                    <textarea
-                      value={section.value}
-                      rows={3}
-                      onChange={(event) => updateRecordField(prep.meeting.id, 'weeklyNote', updateWeeklyNoteSection(weeklyNoteDraft, section.heading, event.target.value))}
-                    />
-                  </label>
-                </div>
-              ))}
-              <div className="meeting-note-routed-sources" aria-label="Routed source inserts">
-                <span>Source inserts</span>
-                {sectionInsertRecords.map((record) => {
-                  const route = getWeeklyNoteSectionRoute(record)
-
-                  return (
-                    <div className="meeting-source-row" key={record.id}>
-                      <button
-                        type="button"
-                        onClick={() => updateRecordField(prep.meeting.id, 'weeklyNote', appendWeeklyNoteSectionLine(weeklyNoteDraft, route.section, record))}
-                      >
-                        <strong>{getRecordTitle(base, record)}</strong>
-                        <small>{route.section}</small>
-                        <small className="route-reason">{route.reason}</small>
-                      </button>
-                      <button
-                        aria-label={`Open source record ${getRecordTitle(base, record)}`}
-                        type="button"
-                        onClick={() => openMeetingSourceRoute(record)}
-                      >
-                        Open
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-            <label className="meeting-note-editor">
-              <span>Weekly note draft</span>
-              <textarea
-                value={weeklyNoteDraft}
-                rows={10}
-                onChange={(event) => updateRecordField(prep.meeting.id, 'weeklyNote', event.target.value)}
-              />
-            </label>
-          </div>
-        </div>
-        <div className="meeting-prep-workspace">
-          <div className="meeting-agenda" data-testid="meeting-agenda">
-            <div className="meeting-agenda-head">
-              <div className="mini-title">
-                <strong>Generated agenda</strong>
-                <span className="metric-pill">{prep.agenda.length}</span>
-              </div>
-              <div className="agenda-actions" aria-label="Computed agenda actions">
-                <button type="button" onClick={() => void copyMeetingAgenda(prep)}>Copy agenda</button>
-                <button type="button" onClick={() => exportMeetingAgenda(prep)}>Export .md</button>
-                <button
-                  aria-expanded={activeDigestPreviewMeetingId === prep.meeting.id}
-                  type="button"
-                  onClick={() => setActiveDigestPreviewMeetingId((current) => current === prep.meeting.id ? '' : prep.meeting.id)}
-                >
-                  Preview summary
-                </button>
-              </div>
-            </div>
-            {activeDigestPreviewMeetingId === prep.meeting.id && (
-              <div className="agenda-digest-preview" data-testid="agenda-digest-preview">
-                <strong>Command send preview</strong>
-                <pre>{getMeetingDigestPreview(base, prep)}</pre>
-              </div>
-            )}
-            <ol>
-              {prep.agenda.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                  {item.recordIds.length > 0 && (
-                    <div className="meeting-agenda-records">
-                      {item.recordIds.map((recordId) => {
-                        const record = getRecord(base, recordId)
-
-                        return record ? (
-                          <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                            {getRecordTitle(base, record)}
-                          </button>
-                        ) : null
-                      })}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="meeting-source-receipts" aria-label="Meeting prep source records">
-            <strong>Source records</strong>
-            {[...prep.communities, ...prep.linkedTasks].length === 0 ? (
-              <p className="empty-line">Link a community or work item to compute prep.</p>
-            ) : (
-              <div>
-                {[...prep.communities, ...prep.linkedTasks].map((record) => (
-                  <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                    {getRecordTitle(base, record)}
-                    <small>{getPickerRecordMeta(record)}</small>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="meeting-prep-sections">
-          {prep.sections.map((section) => (
-            <section key={section.id}>
-              <div className="mini-title">
-                <strong>{section.label}</strong>
-                <span className="metric-pill">{section.records.length}</span>
-              </div>
-              {section.records.length === 0 ? (
-                <p className="empty-line">No records surfaced.</p>
-              ) : (
-                <div className="meeting-prep-list">
-                  {section.records.slice(0, 4).map((record) => (
-                    <button key={record.id} type="button" onClick={() => openBuildRecord(record.tableId, record.id)}>
-                      <strong>{getRecordTitle(base, record)}</strong>
-                      <small>{getPickerRecordMeta(record)}</small>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  function renderSavedGridCell(record: BaseRecord, field: FieldDefinition) {
-    const value = record.values[field.id]
-
-    if (field.type === 'checkbox') {
-      return (
-        <span className={`saved-check check-${field.checkboxColor || 'lime'} ${value ? 'checked' : ''}`}>
-          {value ? renderCheckboxIcon(field.checkboxIcon) : 'No'}
-        </span>
-      )
-    }
-
-    if (field.type === 'multiSelect' && Array.isArray(value)) {
-      return (
-        <span className="saved-pill-list">
-          {value.length === 0 && <span className="grid-linked-empty">Empty</span>}
-          {value.map((option) => (
-            <span className={`select-tag ${getChipColorClass(option)}`} key={option}>{option}</span>
-          ))}
-        </span>
-      )
-    }
-
-    if (field.options) {
-      const selectedValue = typeof value === 'string' ? value : ''
-
-      return selectedValue ? <span className={`select-tag ${getChipColorClass(selectedValue)}`}>{selectedValue}</span> : <span className="grid-linked-empty">Empty</span>
-    }
-
-    if (field.type === 'linkedRecord' && Array.isArray(value)) {
-      return (
-        <span className="saved-pill-list">
-          {value.length === 0 && <span className="grid-linked-empty">Empty</span>}
-          {value.map((recordId) => {
-            const linkedRecord = getRecord(base, recordId)
-
-            return (
-              <span className="linked-display-pill" key={recordId}>
-                {linkedRecord ? getRecordTitle(base, linkedRecord) : recordId}
-              </span>
-            )
-          })}
-        </span>
-      )
-    }
-
-    return <span className={computedFieldTypes.includes(field.type) ? 'grid-cell-readonly' : 'saved-cell-value'}>{getFieldDisplayValue(record, field)}</span>
-  }
-
-  function renderGridCellEditor(field: FieldDefinition) {
-    const value = gridEditDraft
-
-    if (field.type === 'checkbox') {
-      return (
-        <input
-          autoFocus
-          aria-label={`${field.label} editor`}
-          checked={Boolean(value)}
-          type="checkbox"
-          onChange={(event) => setGridEditDraft(event.target.checked)}
-        />
-      )
-    }
-
-    if (field.type === 'multiSelect' && field.options) {
-      const selectedOptions = Array.isArray(value) ? value : []
-
-      return (
-        <div className="grid-option-list" aria-label={`${field.label} editor`}>
-          {field.options.map((option) => (
-            <button
-              className={selectedOptions.includes(option) ? 'selected' : ''}
-              key={option}
-              type="button"
-              onClick={() => setGridEditDraft(toggleListValue(selectedOptions, option))}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      )
-    }
-
-    if (field.options) {
-      return (
-        <select
-          autoFocus
-          aria-label={`${field.label} editor`}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => setGridEditDraft(event.target.value)}
-        >
-          <option value="">Choose</option>
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      )
-    }
-
-    if (field.type === 'linkedRecord' && field.linkedTableId) {
-      const selectedLinkedIds = Array.isArray(value) ? value : []
-      const searchKey = `grid:${field.tableId}:${field.id}`
-      const searchTerm = linkedRecordFilters[searchKey] || ''
-      const normalizedSearchTerm = searchTerm.trim().toLowerCase()
-      const linkedRecords = getRecordsForTable(base, field.linkedTableId)
-      const selectedRecords = selectedLinkedIds.map((recordId) => getRecord(base, recordId)).filter(Boolean) as BaseRecord[]
-      const filteredLinkedRecords = linkedRecords.filter((linkedRecord) => {
-        if (!normalizedSearchTerm) {
-          return true
-        }
-
-        return [
-          getPickerRecordLabel(linkedRecord),
-          getRecordContext(linkedRecord),
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(normalizedSearchTerm)
-      })
-
-      return (
-        <div className="grid-linked-editor" aria-label={`${field.label} editor`}>
-          <div className="grid-linked-editor-head">
-            <strong>{base.tables.find((table) => table.id === field.linkedTableId)?.label || 'Linked records'}</strong>
-            <small>{selectedLinkedIds.length} selected</small>
-          </div>
-          <input
-            autoFocus
-            aria-label={`Search ${field.label}`}
-            placeholder="Search records"
-            type="search"
-            value={searchTerm}
-            onChange={(event) =>
-              setLinkedRecordFilters((current) => ({
-                ...current,
-                [searchKey]: event.target.value,
-              }))
-            }
-          />
-          {selectedRecords.length > 0 && (
-            <div className="grid-linked-selected" aria-label={`Selected ${field.label}`}>
-              {selectedRecords.map((selectedRecord) => (
-                <button
-                  key={selectedRecord.id}
-                  type="button"
-                  onClick={() => setGridEditDraft(selectedLinkedIds.filter((recordId) => recordId !== selectedRecord.id))}
-                >
-                  {getPickerRecordLabel(selectedRecord)}
-                  <small>Remove</small>
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="grid-linked-pills">
-            {filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
-            {filteredLinkedRecords.map((linkedRecord) => {
-              const isSelected = selectedLinkedIds.includes(linkedRecord.id)
-
-              return (
-                <button
-                  className={isSelected ? 'selected' : ''}
-                  key={linkedRecord.id}
-                  type="button"
-                  onClick={() => setGridEditDraft(toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple))}
-                >
-                  <span>{getPickerRecordLabel(linkedRecord)}</span>
-                  <small>{getPickerRecordMeta(linkedRecord)}</small>
-                </button>
-              )
-            })}
-          </div>
-          <button type="button" onClick={commitGridCellEdit}>Done</button>
-        </div>
-      )
-    }
-
-    if (field.type === 'longText') {
-      return (
-        <textarea
-          autoFocus
-          aria-label={`${field.label} editor`}
-          rows={2}
-          value={typeof value === 'string' ? value : ''}
-          onChange={(event) => setGridEditDraft(event.target.value)}
-        />
-      )
-    }
-
-    const inputType = field.type === 'date' ? 'date' : field.type === 'dateTime' ? 'datetime-local' : ['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : field.type === 'url' ? 'url' : 'text'
-
-    return (
-      <input
-        autoFocus
-        aria-label={`${field.label} editor`}
-        type={inputType}
-        value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-        onChange={(event) => setGridEditDraft(inputType === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
+      <MeetingPrepPanel
+        activeDigestPreviewMeetingId={activeDigestPreviewMeetingId}
+        appendWeeklyNoteSectionLine={appendWeeklyNoteSectionLine}
+        base={base}
+        getPickerRecordMeta={getPickerRecordMeta}
+        getWeeklyNoteSection={getWeeklyNoteSection}
+        getWeeklyNoteSectionRoute={getWeeklyNoteSectionRoute}
+        onCopyMeetingAgenda={copyMeetingAgenda}
+        onCopyMeetingNote={copyMeetingNote}
+        onExportMeetingAgenda={exportMeetingAgenda}
+        onExportMeetingNote={exportMeetingNote}
+        onOpenMeetingSourceRoute={openMeetingSourceRoute}
+        onOpenRecord={openBuildRecord}
+        onSetActiveDigestPreviewMeetingId={setActiveDigestPreviewMeetingId}
+        onUpdateRecordField={updateRecordField}
+        prep={prep}
+        updateWeeklyNoteSection={updateWeeklyNoteSection}
       />
     )
   }
 
   function renderEditableGridCell(record: BaseRecord, field: FieldDefinition) {
-    const cell = { recordId: record.id, fieldId: field.id }
-    const isSelected = isSameGridCell(selectedGridCell, cell)
-    const isEditing = isSameGridCell(editingGridCell, cell)
-
-    if (isEditing) {
-      return (
-        <div
-          className="grid-cell-editor"
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => handleGridEditorKeyDown(record, field, event)}
-        >
-          {renderGridCellEditor(field)}
-        </div>
-      )
-    }
-
     return (
-      <button
-        aria-label={`${getRecordTitle(base, record)} ${field.label}`}
-        className={`grid-cell-button ${isSelected ? 'selected-cell' : ''} ${computedFieldTypes.includes(field.type) ? 'readonly-cell' : ''}`}
-        data-grid-cell={getGridCellKey(cell)}
-        data-testid={`grid-cell-${record.id}-${field.id}`}
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation()
-          if (editingGridCell && !isSameGridCell(editingGridCell, cell)) {
-            commitGridCellEdit()
-          }
-          selectGridCell(record.id, field.id)
-          setSelectedBuildRecordId(record.id)
-        }}
-        onDoubleClick={(event) => {
-          event.stopPropagation()
-          startGridCellEdit(record, field)
-        }}
-        onKeyDown={(event) => handleSavedGridCellKeyDown(record, field, event)}
-      >
-        {renderSavedGridCell(record, field)}
-      </button>
+      <BuildGridCell
+        commitGridCellEdit={commitGridCellEdit}
+        editDraft={gridEditDraft}
+        editingGridCell={editingGridCell}
+        field={field}
+        getChipColorClass={getChipColorClass}
+        getFieldDisplayValue={getFieldDisplayValue}
+        getGridCellKey={getGridCellKey}
+        getLinkedRecord={(recordId) => getRecord(base, recordId)}
+        getLinkedRecordsForTable={(tableId) => getRecordsForTable(base, tableId)}
+        getLinkedTableLabel={(tableId) => base.tables.find((table) => table.id === tableId)?.label}
+        getPickerRecordLabel={getPickerRecordLabel}
+        getPickerRecordMeta={getPickerRecordMeta}
+        getRecordContext={getRecordContext}
+        getRecordTitle={(recordItem) => getRecordTitle(base, recordItem)}
+        isComputedField={(fieldItem) => computedFieldTypes.includes(fieldItem.type)}
+        linkedRecordFilters={linkedRecordFilters}
+        record={record}
+        renderCheckboxIcon={renderCheckboxIcon}
+        selectedGridCell={selectedGridCell}
+        selectGridCell={selectGridCell}
+        setEditDraft={setGridEditDraft}
+        setLinkedRecordFilters={setLinkedRecordFilters}
+        setSelectedBuildRecordId={setSelectedBuildRecordId}
+        startGridCellEdit={startGridCellEdit}
+        onEditorKeyDown={handleGridEditorKeyDown}
+        onSavedKeyDown={handleSavedGridCellKeyDown}
+      />
     )
   }
 
@@ -3729,12 +3172,16 @@ function App() {
           </div>
           <div className="record-form">
             {isCreatingRecord || !selectedBuildRecord
-              ? editableFieldsForSelectedTable.map((field) =>
-                  renderRecordInput(field, recordDraft[field.id], updateRecordDraft),
-                )
-              : editableFieldsForSelectedTable.map((field) =>
-                  renderRecordInput(field, selectedBuildRecord.values[field.id], updateSelectedRecord),
-                )}
+              ? editableFieldsForSelectedTable.map((field) => (
+                  <div className="record-field-input-slot" key={field.id}>
+                    {renderRecordInput(field, recordDraft[field.id], updateRecordDraft)}
+                  </div>
+                ))
+              : editableFieldsForSelectedTable.map((field) => (
+                  <div className="record-field-input-slot" key={field.id}>
+                    {renderRecordInput(field, selectedBuildRecord.values[field.id], updateSelectedRecord)}
+                  </div>
+                ))}
           </div>
           {!isCreatingRecord && selectedBuildRecord && (
             <div className="record-modal-links">
