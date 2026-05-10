@@ -7,7 +7,7 @@ import type {
   FirestoreWriteGateState,
 } from '../data/firestoreReadShadow'
 import type { FirebaseSetupState } from '../data/firebaseSetup'
-import { searchHelpArticles } from '../data/help'
+import { searchHelpArticles, type HelpRouteLabel } from '../data/help'
 import type { LocalRule } from '../data/rules'
 
 type ThemeSwatch = {
@@ -121,6 +121,15 @@ export function SettingsScreen({
     return status.replace(/-/g, ' ')
   }
 
+  function getHelpRouteScreen(routeLabel: HelpRouteLabel): AppScreen {
+    if (routeLabel === 'Today') return 'today'
+    if (routeLabel === 'Build') return 'build'
+    if (routeLabel === 'Meetings') return 'meetings'
+    if (routeLabel === 'Sundesk Lab') return 'lab'
+
+    return 'settings'
+  }
+
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
       <article className="settings-panel settings-help-panel">
@@ -147,6 +156,9 @@ export function SettingsScreen({
               <span>{article.routeLabel}</span>
               <strong>{article.title}</strong>
               <p>{article.body}</p>
+              <button type="button" onClick={() => openScreen(getHelpRouteScreen(article.routeLabel))}>
+                Open {article.routeLabel}
+              </button>
             </article>
           )) : (
             <div className="help-empty-result">

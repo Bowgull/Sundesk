@@ -81,6 +81,14 @@
   line-height: 1.45;
 }
 
+.help-result-card button {
+  justify-self: start;
+  min-height: 34px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .help-empty-result {
   grid-column: 1 / -1;
   border-style: dashed;

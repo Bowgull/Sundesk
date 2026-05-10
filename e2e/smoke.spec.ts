@@ -1241,6 +1241,9 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await page.getByLabel('Search Help').fill('PDF boss')
   await expect(page.getByLabel('Help results')).toContainText('Meeting notes and PDFs')
   await expect(page.getByLabel('Help results')).toContainText('Meetings')
+  await page.getByRole('button', { name: 'Open Meetings' }).click()
+  await expect(page.getByText('Meetings generate the weekly notes.')).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' }).click()
 
   await page.getByLabel('Search Help').fill('iPhone PWA')
   await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
