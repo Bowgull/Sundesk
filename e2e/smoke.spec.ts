@@ -142,6 +142,39 @@ test('Today command-send preview is local-only and keeps Today as home', async (
   await expect(preview).toContainText(/meeting prep/i)
 })
 
+test('Deck-first shell keeps Today home and simplified surfaces reachable', async ({ page }) => {
+  const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
+
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/#?$/)
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+  await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Waiting On' }).click()
+  await expect(page.getByRole('heading', { name: 'Who owes the next move.' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Communities' }).click()
+  await expect(page.getByRole('heading', { name: 'Communities are the command center.' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Meetings' }).click()
+  await expect(page.getByTestId('meeting-prep')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Weekly prep.' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Timeline' }).click()
+  await expect(page.getByTestId('timeline-screen')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Timeline has 5 ways to look.' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByTestId('build-screen')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+})
+
 test('Build renders table workshop, record drawer, dependency editor, and Rules panel', async ({ page }) => {
   await page.goto('/#build')
 
@@ -978,12 +1011,30 @@ test('Settings exports and imports a local backup without changing Firebase writ
 
 test('Mobile keeps navigation and touch targets usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/#build')
+  await page.goto('/')
 
   const railPosition = await page.locator('.rail').evaluate((element) => window.getComputedStyle(element).position)
-  const buildLinkHeight = await page.getByRole('link', { name: 'Build' }).evaluate((element) => element.getBoundingClientRect().height)
+  const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
+  const coreNavigationLabels = ['Today', 'Communities', 'Waiting On', 'Meetings', 'Timeline', 'Build']
 
   expect(railPosition).toBe('fixed')
-  expect(buildLinkHeight).toBeGreaterThanOrEqual(44)
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+
+  for (const label of coreNavigationLabels) {
+    const link = navigation.getByRole('link', { name: label })
+
+    await expect(link).toBeVisible()
+
+    const box = await link.boundingBox()
+
+    expect(box?.height).toBeGreaterThanOrEqual(44)
+    expect(box?.x).toBeGreaterThanOrEqual(0)
+    expect(box ? box.x + box.width : 0).toBeLessThanOrEqual(390)
+    expect(box ? box.y + box.height : 0).toBeLessThanOrEqual(844)
+  }
+
+  await navigation.getByRole('link', { name: 'Build' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
+  await expect(navigation.getByRole('link', { name: 'Today' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
 })

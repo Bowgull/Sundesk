@@ -124,7 +124,7 @@ export function TodayScreen({
       </header>
 
       <section className="today-first-read" aria-label="Today first read" data-testid="today-first-read">
-        <article>
+        <article className="primary">
           <span>Now</span>
           <strong>{todayNowLane?.records.length || 0}</strong>
           <small>{todayNowLane?.records[0] ? getRecordTitle(todayNowLane.records[0]) : 'No immediate moves.'}</small>
@@ -159,9 +159,14 @@ export function TodayScreen({
             <small>{getCommandTableLabel(todayFocusRecord.tableId)} · {getRecordContext(todayFocusRecord)}</small>
           </div>
           <div>
-            <span>Why</span>
+            <span>Why this matters</span>
             <strong>{focusRuleMatch ? getCommandReason(focusRuleMatch.rule) : focusDependency?.label || 'Highest visible lane.'}</strong>
             <small>{focusDependency ? `${focusDependency.label}: ${focusDependency.title}` : 'No dependency receipt on this row.'}</small>
+          </div>
+          <div>
+            <span>Opens next</span>
+            <strong>Record detail.</strong>
+            <small>Review fields, linked records, and the Build route from one place.</small>
           </div>
           <button type="button" onClick={() => onOpenDailyRecord(todayFocusRecord)}>Open focus</button>
         </section>
@@ -196,6 +201,7 @@ export function TodayScreen({
               <strong>{lane.records.length}</strong>
             </div>
             <h2>{lane.title}</h2>
+            <p className="lane-intent">Open the row that should move next. Tags route straight into Build.</p>
             <ol>
               {lane.records.map((record) => {
                 const recordTitle = getRecordTitle(record)
@@ -203,6 +209,7 @@ export function TodayScreen({
                 const ruleMatches = getTodayRuleMatchesForRecord(record.id)
                 const firstRuleMatch = ruleMatches[0]
                 const dependencies = getDependencySummary(record.id)
+                const nextOpen = workflowTags[0] ? `Build filtered to ${workflowTags[0]}.` : `${getCommandTableLabel(record.tableId)} record.`
 
                 return (
                   <li key={record.id}>
@@ -210,6 +217,10 @@ export function TodayScreen({
                       <strong>{recordTitle}</strong>
                     </button>
                     <span>{getRecordContext(record)}</span>
+                    <div className="lane-next-step">
+                      <span>Opens next</span>
+                      <small>{nextOpen}</small>
+                    </div>
                     {workflowTags.length > 0 && (
                       <div className="workflow-tag-route-list" aria-label={`${recordTitle} workflow tags`}>
                         {workflowTags.map((tag) => (
@@ -226,15 +237,12 @@ export function TodayScreen({
                     )}
                     {firstRuleMatch && (
                       <div className="lane-rule-list">
-                        <small>{getCommandReason(firstRuleMatch.rule)}</small>
-                        {ruleMatches.length > 1 && (
-                          <details>
-                            <summary>Why this is here</summary>
-                            {ruleMatches.slice(1).map((match) => (
-                              <small key={match.rule.id}>{getCommandReason(match.rule)}</small>
-                            ))}
-                          </details>
-                        )}
+                        <details>
+                          <summary>Rule receipt</summary>
+                          {ruleMatches.map((match) => (
+                            <small key={match.rule.id}>{getCommandReason(match.rule)}</small>
+                          ))}
+                        </details>
                       </div>
                     )}
                     {dependencies.length > 0 && (

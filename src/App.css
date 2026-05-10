@@ -41,13 +41,108 @@
   background: var(--rail-bg);
   border-right: 1px solid var(--line);
   box-shadow: none;
+  gap: 18px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.brand strong,
+.brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.main-nav {
+  gap: 4px;
+}
+
+.main-nav span,
+.pinned-view-nav > span {
+  margin-inline: 10px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.main-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--ink-2);
+  line-height: 1.1;
 }
 
 .main-nav a.active,
-.main-nav a:hover {
+.main-nav a:hover,
+.main-nav a:focus-visible {
   background: var(--night);
   border-color: var(--night);
   color: var(--primary-fg);
+}
+
+.main-nav a:focus-visible,
+.pinned-view-nav button:focus-visible,
+.privacy-card summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring), transparent 62%);
+  outline-offset: 2px;
+}
+
+.main-nav a:not(.active):hover {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.pinned-view-nav {
+  gap: 6px;
+}
+
+.pinned-view-nav button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--rail-bg));
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.pinned-view-nav button:hover,
+.pinned-view-nav button:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.pinned-view-nav button.active {
+  border-color: var(--night);
+  background: color-mix(in srgb, var(--night) 10%, var(--surface));
+}
+
+.pinned-view-nav button strong,
+.pinned-view-nav button small {
+  overflow: hidden;
+  max-width: 100%;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned-view-nav button strong {
+  font-size: 12px;
+}
+
+.pinned-view-nav button small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
 }
 
 .desk {
@@ -265,13 +360,22 @@
 
 .today-first-read {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.25fr) repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
 .today-first-read article {
   min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 112px;
   padding: 12px;
+}
+
+.today-first-read article.primary {
+  border-color: color-mix(in srgb, var(--accent), transparent 48%);
+  background: color-mix(in srgb, var(--surface-raised) 82%, var(--surface-wash));
 }
 
 .today-first-read span {
@@ -286,7 +390,6 @@
 
 .today-first-read strong {
   display: block;
-  margin-top: 6px;
   color: var(--ink);
   font-size: 18px;
   line-height: 1.08;
@@ -294,7 +397,6 @@
 
 .today-first-read small {
   display: block;
-  margin-top: 6px;
   color: var(--ink-2);
   font-size: 12px;
   font-weight: 760;
@@ -303,7 +405,7 @@
 
 .today-focus-band {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.05fr) minmax(0, 0.9fr) auto;
   gap: 10px;
   align-items: stretch;
   margin-top: 10px;
@@ -316,6 +418,12 @@
 
 .today-focus-band div {
   min-width: 0;
+  padding-right: 10px;
+  border-right: 1px solid color-mix(in srgb, var(--line), transparent 28%);
+}
+
+.today-focus-band div:last-of-type {
+  border-right: 0;
 }
 
 .today-focus-band span,
@@ -1657,7 +1765,7 @@ h2 {
 
 .today-lane {
   min-width: 0;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper);
@@ -1709,9 +1817,17 @@ h2 {
   line-height: 1.18;
 }
 
+.lane-intent {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
 .today-lane ol {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin: 14px 0 0;
   padding-left: 18px;
   color: var(--ink-2);
@@ -1745,6 +1861,33 @@ h2 {
   margin-top: 3px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.lane-next-step {
+  display: grid;
+  gap: 2px;
+  margin-top: 7px;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--line), transparent 20%);
+  border-radius: 8px;
+  background: var(--surface-wash);
+}
+
+.lane-next-step span {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--label-font);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lane-next-step small {
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.3;
 }
 
 .lane-dependency-list,
@@ -1781,6 +1924,10 @@ h2 {
 
 .lane-rule-list details {
   width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-raised) 62%, transparent);
 }
 
 .lane-rule-list summary {
@@ -4491,6 +4638,8 @@ h2 {
     padding: 8px;
     border-top: 1px solid var(--line);
     border-right: 0;
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 
   .brand,
@@ -4862,8 +5011,21 @@ h2 {
 @media (max-width: 980px) {
   .today-command-strip,
   .today-first-read,
+  .today-focus-band,
   .waiting-row {
     grid-template-columns: 1fr;
+  }
+
+  .today-focus-band div {
+    padding-right: 0;
+    padding-bottom: 10px;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 28%);
+  }
+
+  .today-focus-band div:last-of-type {
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
   .build-helper-strip {
@@ -4910,7 +5072,7 @@ h2 {
     display: flex;
     gap: 4px;
     overflow-x: hidden;
-    padding-bottom: 2px;
+    padding-bottom: calc(2px + env(safe-area-inset-bottom));
   }
 
   .main-nav span {
@@ -4924,11 +5086,26 @@ h2 {
     min-width: 0;
     min-height: 44px;
     padding: 7px 4px;
-    border-radius: 14px;
+    border: 1px solid transparent;
+    border-radius: 7px;
     font-size: 0;
     line-height: 1;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .main-nav a.active,
+  .main-nav a:hover,
+  .main-nav a:focus-visible {
+    background: var(--night);
+    border-color: var(--night);
+    color: var(--primary-fg);
+  }
+
+  .main-nav a:not(.active):hover {
+    background: var(--surface);
+    border-color: var(--line-strong);
+    color: var(--ink);
   }
 
   .main-nav a::before {

@@ -3453,7 +3453,13 @@ function App() {
           <section className="pinned-view-nav" aria-label="Pinned Build views">
             <span>Pinned views</span>
             {pinnedGridViews.map((view) => (
-              <button key={view.id} type="button" onClick={() => openPinnedGridView(view)}>
+              <button
+                aria-current={activeScreen === 'build' && activeGridViewId === view.id ? 'page' : undefined}
+                className={activeScreen === 'build' && activeGridViewId === view.id ? 'active' : ''}
+                key={view.id}
+                type="button"
+                onClick={() => openPinnedGridView(view)}
+              >
                 <strong>{view.name}</strong>
                 <small>{base.tables.find((table) => table.id === view.tableId)?.label || view.tableId}</small>
               </button>
