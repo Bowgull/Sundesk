@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { workbase } from './workbase'
 import { getDefaultLocalRules } from './rules'
 import {
+  getDefaultSundeskEducationState,
+} from './educationState'
+import {
   createFirestoreWorkspaceSnapshot,
   defaultFirestoreWorkspaceId,
   getDefaultFirestoreBuildViewState,
@@ -26,10 +29,18 @@ describe('Firestore workspace persistence helpers', () => {
 
   it('converts local state into a Firestore workspace snapshot', () => {
     const buildViewState = getDefaultFirestoreBuildViewState()
+    const educationState = {
+      ...getDefaultSundeskEducationState(),
+      copyMode: {
+        rupaulMode: true,
+        updatedAt: '2026-05-10T12:00:00.000Z',
+      },
+    }
     const snapshot = createFirestoreWorkspaceSnapshot({
       base: workbase,
       rules: getDefaultLocalRules(),
       buildViewState,
+      educationState,
       theme: 'coast',
       metadata: {
         updatedAt: '2026-05-10T12:00:00.000Z',
@@ -54,6 +65,7 @@ describe('Firestore workspace persistence helpers', () => {
     expect(snapshot.base.tables).toHaveLength(workbase.tables.length)
     expect(snapshot.rules).toHaveLength(getDefaultLocalRules().length)
     expect(snapshot.buildViewState).toEqual(buildViewState)
+    expect(snapshot.educationState).toEqual(educationState)
   })
 
   it('normalizes loaded workspace payloads and falls back for invalid slices', () => {
@@ -78,6 +90,16 @@ describe('Firestore workspace persistence helpers', () => {
         columnWidths: { title: 180, bad: 'wide' },
       },
       theme: 'not-a-theme',
+      educationState: {
+        version: 1,
+        onboarding: {
+          status: 'completed',
+          completedStepIds: ['welcome', 1],
+        },
+        copyMode: {
+          rupaulMode: true,
+        },
+      },
       metadata: {
         updatedAt: '2026-05-10T12:00:00.000Z',
         updatedByUid: 'lindsay',
@@ -96,11 +118,15 @@ describe('Firestore workspace persistence helpers', () => {
       columnWidths: { title: 180 },
     })
     expect(normalized.theme).toBe('command-center')
+    expect(normalized.educationState.onboarding.status).toBe('completed')
+    expect(normalized.educationState.onboarding.completedStepIds).toEqual(['welcome'])
+    expect(normalized.educationState.copyMode.rupaulMode).toBe(true)
     expect(normalized.usedFallbacks).toEqual({
       base: true,
       rules: true,
       buildViewState: false,
       theme: true,
+      educationState: false,
     })
   })
 

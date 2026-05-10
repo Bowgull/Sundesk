@@ -54,7 +54,7 @@ export function RecordFieldInput({
     return (
       <label className="full-row" key={field.id}>
         <span>{field.label}</span>
-        <div className="linked-record-picker">
+        <div className="linked-record-picker" data-onboarding-target="linked-record-cell">
           <div className="linked-picker-head">
             <div>
               <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
@@ -103,6 +103,7 @@ export function RecordFieldInput({
 
                   return (
                     <button
+                      aria-pressed={isSelected}
                       className={isSelected ? 'selected' : ''}
                       key={record.id}
                       type="button"
@@ -129,12 +130,13 @@ export function RecordFieldInput({
     return (
       <label className="full-row" key={field.id}>
         <span>{field.label}</span>
-        <div className="linked-choice-grid option-choice-grid">
+        <div className="linked-choice-grid option-choice-grid" data-onboarding-target="field-tags-cell">
           {field.options.map((option) => {
             const isSelected = selectedOptions.includes(option)
 
             return (
               <button
+                aria-pressed={isSelected}
                 className={isSelected ? 'selected' : ''}
                 key={option}
                 type="button"

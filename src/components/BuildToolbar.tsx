@@ -73,7 +73,7 @@ export function BuildToolbar({
 
   return (
     <>
-      <div className="grid-toolbar build-toolbar">
+      <div className="grid-toolbar build-toolbar" data-onboarding-target="build-view-controls">
         <label>
           <span>View</span>
           <select value={activeGridViewId} onChange={(event) => applySelectedGridView(event.target.value)}>

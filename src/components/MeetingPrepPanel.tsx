@@ -85,7 +85,7 @@ export function MeetingPrepPanel({
             <small>Edit this note here. It stays local to this screen until copied or exported.</small>
             <div className="meeting-note-actions" aria-label="Weekly note actions">
               <button type="button" onClick={() => void onCopyMeetingNote(prep)}>Copy note</button>
-              <button type="button" onClick={() => onExportMeetingNote(prep)}>Export note</button>
+              <button type="button" onClick={() => onExportMeetingNote(prep)}>Export PDF</button>
             </div>
           </div>
           <div className="meeting-note-summary">
@@ -185,7 +185,7 @@ export function MeetingPrepPanel({
             </div>
             <div className="agenda-actions" aria-label="Computed agenda actions">
               <button type="button" onClick={() => void onCopyMeetingAgenda(prep)}>Copy agenda</button>
-              <button type="button" onClick={() => onExportMeetingAgenda(prep)}>Export .md</button>
+              <button type="button" onClick={() => onExportMeetingAgenda(prep)}>Export agenda PDF</button>
               <button
                 aria-expanded={activeDigestPreviewMeetingId === prep.meeting.id}
                 type="button"

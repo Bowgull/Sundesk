@@ -68,7 +68,7 @@ export function BuildGrid({
                     </th>
                   ))}
                   <th className="add-field-column">
-                    <button aria-label="Add field from grid" type="button" onClick={onAddField}>+ Add field</button>
+                    <button aria-label="Add field from grid" data-onboarding-target="build-add-field" type="button" onClick={onAddField}>+ Add field</button>
                   </th>
                   <th className="row-action-column">Saved</th>
                 </tr>
@@ -77,6 +77,7 @@ export function BuildGrid({
                 {group.records.map((record) => (
                   <tr
                     className={`${record.id === selectedRecordId ? 'selected-row' : ''} ${getGridRowColorClass(record)}`.trim()}
+                    data-onboarding-target="build-record-row"
                     key={record.id}
                     onClick={() => onSelectRecord(record.id)}
                     onDoubleClick={() => onEditRecord(record.id)}

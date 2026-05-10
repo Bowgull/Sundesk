@@ -274,6 +274,7 @@ export function BuildModals({
                 <span>Behavior type</span>
                 <select
                   aria-label="Type"
+                  data-onboarding-target="field-type-menu"
                   value={fieldDraft.type}
                   onChange={(event) => {
                     const type = event.target.value as FieldType
@@ -310,12 +311,15 @@ export function BuildModals({
                       {checkboxIconOptions.map((option) => (
                         <button
                           aria-label={option.label}
+                          aria-pressed={fieldDraft.checkboxIcon === option.value}
                           className={fieldDraft.checkboxIcon === option.value ? 'selected' : ''}
+                          data-onboarding-target={`checkbox-icon-${option.value}`}
                           key={option.value}
                           type="button"
                           onClick={() => setFieldDraft((current) => ({ ...current, checkboxIcon: option.value }))}
                         >
                           {renderCheckboxIcon(option.value)}
+                          <span className="selection-mark" aria-hidden="true">✓</span>
                         </button>
                       ))}
                     </div>
@@ -325,12 +329,16 @@ export function BuildModals({
                     <div className="checkbox-color-grid">
                       {checkboxColorOptions.map((option) => (
                         <button
-                          aria-label={option.label}
+                          aria-label={`Checkbox colour option ${checkboxColorOptions.indexOf(option) + 1}`}
+                          aria-pressed={fieldDraft.checkboxColor === option.value}
                           className={`check-${option.value} ${fieldDraft.checkboxColor === option.value ? 'selected' : ''}`}
+                          data-onboarding-target="checkbox-colour-swatch"
                           key={option.value}
                           type="button"
                           onClick={() => setFieldDraft((current) => ({ ...current, checkboxColor: option.value }))}
-                        />
+                        >
+                          <span className="selection-mark" aria-hidden="true">✓</span>
+                        </button>
                       ))}
                     </div>
                   </label>
@@ -444,6 +452,7 @@ export function BuildModals({
                 <span>Behavior type</span>
                 <select
                   aria-label="Type"
+                  data-onboarding-target="field-type-menu"
                   value={settingsField.type}
                   onChange={(event) => updateField(settingsField.id, { type: event.target.value as FieldType })}
                 >
@@ -472,12 +481,15 @@ export function BuildModals({
                       {checkboxIconOptions.map((option) => (
                         <button
                           aria-label={option.label}
+                          aria-pressed={(settingsField.checkboxIcon || 'check') === option.value}
                           className={(settingsField.checkboxIcon || 'check') === option.value ? 'selected' : ''}
+                          data-onboarding-target={`checkbox-icon-${option.value}`}
                           key={option.value}
                           type="button"
                           onClick={() => updateField(settingsField.id, { checkboxIcon: option.value })}
                         >
                           {renderCheckboxIcon(option.value)}
+                          <span className="selection-mark" aria-hidden="true">✓</span>
                         </button>
                       ))}
                     </div>
@@ -487,12 +499,16 @@ export function BuildModals({
                     <div className="checkbox-color-grid">
                       {checkboxColorOptions.map((option) => (
                         <button
-                          aria-label={option.label}
+                          aria-label={`Checkbox colour option ${checkboxColorOptions.indexOf(option) + 1}`}
+                          aria-pressed={(settingsField.checkboxColor || 'lime') === option.value}
                           className={`check-${option.value} ${(settingsField.checkboxColor || 'lime') === option.value ? 'selected' : ''}`}
+                          data-onboarding-target="checkbox-colour-swatch"
                           key={option.value}
                           type="button"
                           onClick={() => updateField(settingsField.id, { checkboxColor: option.value })}
-                        />
+                        >
+                          <span className="selection-mark" aria-hidden="true">✓</span>
+                        </button>
                       ))}
                     </div>
                   </label>

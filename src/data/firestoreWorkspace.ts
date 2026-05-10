@@ -1,5 +1,9 @@
 import { themes, type ThemeId } from '../appConfig'
 import {
+  normalizeSundeskEducationState,
+  type SundeskEducationState,
+} from './educationState'
+import {
   cloneWorkbase,
   computedFieldTypes,
   defaultVisibleFieldIdsByTable,
@@ -64,6 +68,7 @@ export type FirestoreWorkspaceSnapshot = {
   base: Workbase
   rules: LocalRule[]
   buildViewState: StoredBuildViewState
+  educationState?: SundeskEducationState
   theme: ThemeId
   metadata: FirestoreWorkspaceMetadata
 }
@@ -72,6 +77,7 @@ export type FirestoreWorkspaceLocalState = {
   base: Workbase
   rules: LocalRule[]
   buildViewState: StoredBuildViewState
+  educationState?: SundeskEducationState
   theme: ThemeId
   workspaceId?: string
   metadata: {
@@ -81,12 +87,14 @@ export type FirestoreWorkspaceLocalState = {
   }
 }
 
-export type NormalizedFirestoreWorkspaceState = FirestoreWorkspaceSnapshot & {
+export type NormalizedFirestoreWorkspaceState = Omit<FirestoreWorkspaceSnapshot, 'educationState'> & {
+  educationState: SundeskEducationState
   usedFallbacks: {
     base: boolean
     rules: boolean
     buildViewState: boolean
     theme: boolean
+    educationState: boolean
   }
 }
 
@@ -145,6 +153,7 @@ export function createFirestoreWorkspaceSnapshot(state: FirestoreWorkspaceLocalS
     base: cloneWorkbase(state.base),
     rules: state.rules.map((rule) => ({ ...rule })),
     buildViewState: cloneBuildViewState(state.buildViewState),
+    ...(state.educationState ? { educationState: normalizeSundeskEducationState(state.educationState).educationState } : {}),
     theme: state.theme,
     metadata: {
       schemaVersion: firestoreWorkspaceSchemaVersion,
@@ -161,6 +170,7 @@ export function normalizeFirestoreWorkspaceSnapshot(value: unknown): NormalizedF
   const normalizedRules = normalizeFirestoreRules(snapshot.rules)
   const normalizedBuildViewState = normalizeFirestoreBuildViewState(snapshot.buildViewState)
   const normalizedTheme = normalizeFirestoreTheme(snapshot.theme)
+  const normalizedEducationState = normalizeSundeskEducationState(snapshot.educationState)
   const metadata = normalizeFirestoreMetadata(snapshot.metadata, workspaceId)
 
   return {
@@ -169,6 +179,7 @@ export function normalizeFirestoreWorkspaceSnapshot(value: unknown): NormalizedF
     base: normalizedBase.base,
     rules: normalizedRules.rules,
     buildViewState: normalizedBuildViewState.buildViewState,
+    educationState: normalizedEducationState.educationState,
     theme: normalizedTheme.theme,
     metadata,
     usedFallbacks: {
@@ -176,6 +187,7 @@ export function normalizeFirestoreWorkspaceSnapshot(value: unknown): NormalizedF
       rules: normalizedRules.usedFallback,
       buildViewState: normalizedBuildViewState.usedFallback,
       theme: normalizedTheme.usedFallback,
+      educationState: normalizedEducationState.usedFallback,
     },
   }
 }

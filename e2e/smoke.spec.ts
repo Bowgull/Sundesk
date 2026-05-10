@@ -491,6 +491,69 @@ test('Build chips use semantic colour and field type treatment', async ({ page }
   await expect(page.getByTestId('record-drawer').locator('.field-type-chip').first()).toBeVisible()
 })
 
+test('Build drawer keeps several tags on one record across reload', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
+
+  const tagPicker = page.getByTestId('record-drawer').locator('[data-onboarding-target="field-tags-cell"]')
+
+  await tagPicker.getByRole('button', { name: 'Permit', exact: true }).click()
+  await tagPicker.getByRole('button', { name: 'Prep', exact: true }).click()
+  await expect(tagPicker.getByRole('button', { name: 'Permit', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(tagPicker.getByRole('button', { name: 'Prep', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
+
+  await page.reload()
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('edit-record-task_coi_halifax').click()
+
+  const reopenedTagPicker = page.getByTestId('record-drawer').locator('[data-onboarding-target="field-tags-cell"]')
+
+  await expect(reopenedTagPicker.getByRole('button', { name: 'Permit', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(reopenedTagPicker.getByRole('button', { name: 'Prep', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
+})
+
+test('Build exposes onboarding targets for tags, links, views, and checkbox options', async ({ page }) => {
+  await page.goto('/#build')
+
+  await expect(page.locator('[data-onboarding-target="nav-build"]')).toBeVisible()
+  await expect(page.locator('[data-onboarding-target="build-table-tabs"]')).toBeVisible()
+  await expect(page.locator('[data-onboarding-target="build-active-table"]')).toBeVisible()
+  await expect(page.locator('[data-onboarding-target="build-view-controls"]')).toBeVisible()
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags')).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags')).toHaveAttribute('data-onboarding-target', 'field-tags-cell')
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-community')).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_coi_halifax-community')).toHaveAttribute('data-onboarding-target', 'linked-record-cell')
+
+  await page.locator('[data-onboarding-target="build-add-field"]').first().click()
+  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+
+  await expect(addFieldModal.locator('[data-onboarding-target="field-type-menu"]')).toBeVisible()
+  await addFieldModal.getByLabel('Type').selectOption('checkbox')
+  await expect(addFieldModal.locator('[data-onboarding-target="checkbox-icon-flag"] svg')).toBeVisible()
+
+  const flagIconOption = addFieldModal.locator('[data-onboarding-target="checkbox-icon-flag"]')
+
+  await flagIconOption.click()
+  await expect(flagIconOption).toHaveAttribute('aria-pressed', 'true')
+  await expect(flagIconOption).toHaveClass(/selected/)
+
+  const swatchButtons = addFieldModal.locator('[data-onboarding-target="checkbox-colour-swatch"]')
+  const swatchVisibleText = await swatchButtons.evaluateAll((buttons) => buttons.map((button) => button.textContent || '').join(' '))
+
+  expect(await swatchButtons.count()).toBeGreaterThanOrEqual(8)
+  expect(swatchVisibleText).not.toMatch(/lime|mint|cyan|blue|violet|pink|rose|orange|gold|graphite/i)
+
+  const secondSwatch = swatchButtons.nth(1)
+
+  await secondSwatch.click()
+  await expect(secondSwatch).toHaveAttribute('aria-pressed', 'true')
+  await expect(secondSwatch).toHaveClass(/selected/)
+})
+
 test('Build grid linked-record editor searches and commits readable records', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -870,12 +933,13 @@ test('Daily support actions open real local surfaces', async ({ page }) => {
   await expect(page.getByLabel('Weekly note draft').first()).toHaveValue('## Decisions\n- Move vendor call to Monday.')
   await expect(page.getByTestId('meeting-weekly-note').getByLabel('Weekly note fields')).toContainText('Saved draft')
   await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toBeVisible()
-  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export note' }).first()).toBeVisible()
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toBeVisible()
   await expect(page.getByTestId('meeting-prep').getByText('Source records').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByText('Generated agenda').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByText('Assign next steps.').first()).toBeVisible()
   await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toBeVisible()
-  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export .md' }).first()).toBeVisible()
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export agenda PDF' }).first()).toBeVisible()
+  await expect(page.getByTestId('meeting-prep')).not.toContainText('Export .md')
   await page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview summary' }).first().click()
   await expect(page.getByTestId('agenda-digest-preview').getByText('Command send preview.').first()).toBeVisible()
   await expect(page.getByTestId('agenda-digest-preview').getByText('Agenda items: 5. Source records: 2.').first()).toBeVisible()

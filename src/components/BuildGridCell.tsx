@@ -99,6 +99,11 @@ export function BuildGridCell({
   const isSelected = isSameGridCell(selectedGridCell, cell)
   const isEditing = isSameGridCell(editingGridCell, cell)
   const isReadonly = isComputedField(field)
+  const onboardingTarget = field.type === 'multiSelect'
+    ? 'field-tags-cell'
+    : field.type === 'linkedRecord'
+      ? 'linked-record-cell'
+      : undefined
 
   function renderSavedGridCell() {
     const value = record.values[field.id]
@@ -170,6 +175,7 @@ export function BuildGridCell({
         <div className="grid-option-list" aria-label={`${field.label} editor`}>
           {field.options.map((option) => (
             <button
+              aria-pressed={selectedOptions.includes(option)}
               className={selectedOptions.includes(option) ? 'selected' : ''}
               key={option}
               type="button"
@@ -262,6 +268,7 @@ export function BuildGridCell({
               return (
                 <button
                   className={isSelectedLinkedRecord ? 'selected' : ''}
+                  aria-pressed={isSelectedLinkedRecord}
                   key={linkedRecord.id}
                   type="button"
                   onClick={() => setEditDraft(toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple))}
@@ -319,6 +326,7 @@ export function BuildGridCell({
       aria-label={`${getRecordTitle(record)} ${field.label}`}
       className={`grid-cell-button ${isSelected ? 'selected-cell' : ''} ${isReadonly ? 'readonly-cell' : ''}`}
       data-grid-cell={getGridCellKey(cell)}
+      data-onboarding-target={onboardingTarget}
       data-testid={`grid-cell-${record.id}-${field.id}`}
       type="button"
       onClick={(event) => {

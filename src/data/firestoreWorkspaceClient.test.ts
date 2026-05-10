@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { DocumentReference, Firestore } from 'firebase/firestore'
 import { getDefaultLocalRules } from './rules'
 import { workbase } from './workbase'
+import { getDefaultSundeskEducationState } from './educationState'
 import {
   createFirestoreWorkspaceClient,
   createFirestoreWorkspaceSdkDocumentStore,
@@ -37,11 +38,13 @@ describe('Firestore workspace client', () => {
     expect(result.state.base.tables).toHaveLength(workbase.tables.length)
     expect(result.state.rules).toHaveLength(getDefaultLocalRules().length)
     expect(result.state.theme).toBe('command-center')
+    expect(result.state.educationState).toEqual(getDefaultSundeskEducationState())
     expect(result.state.usedFallbacks).toEqual({
       base: true,
       rules: true,
       buildViewState: true,
       theme: true,
+      educationState: true,
     })
   })
 
@@ -128,11 +131,13 @@ describe('Firestore workspace client', () => {
       updatedByUid: '',
       updatedByEmail: undefined,
     })
+    expect(result.state.educationState).toEqual(getDefaultSundeskEducationState())
     expect(result.state.usedFallbacks).toEqual({
       base: true,
       rules: true,
       buildViewState: true,
       theme: true,
+      educationState: true,
     })
   })
 

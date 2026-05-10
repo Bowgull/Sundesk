@@ -26,6 +26,10 @@ import { WaitingOnScreen } from './components/WaitingOnScreen'
 import {
   savedViews,
 } from './data/demoData'
+import {
+  buildMeetingAgendaPdfExport,
+  buildMeetingNotePdfExport,
+} from './data/meetingPdf'
 import { exportTableCsv } from './data/tableExport'
 import {
   type DependencyRelationship,
@@ -326,7 +330,7 @@ function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
   if (icon === 'flag') {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M5 21V4.2c0-.55.45-1 1-1h11.2c.48 0 .9.34.99.81l.92 4.78a1 1 0 0 1-.98 1.19H7v7.02h10.2c.48 0 .9.34.99.81l.92 4.78a1 1 0 0 1-.98 1.19H6a1 1 0 0 1-1-1Z" />
+        <path d="M5 21.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.25c.43 0 .82.28.95.69l1.38 4.34a1 1 0 0 1-.95 1.31H6v6.16h8.75c.43 0 .82.28.95.69l1.38 4.34a1 1 0 0 1-.95 1.31H5Z" />
       </svg>
     )
   }
@@ -791,18 +795,22 @@ function App() {
   }
 
   function exportMeetingAgenda(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
-    const fileName = `${toSlug(getRecordTitle(base, prep.meeting))}-computed-agenda.md`
-    const blob = new Blob([getMeetingAgendaText(base, prep)], { type: 'text/markdown;charset=utf-8' })
+    const pdfExport = buildMeetingAgendaPdfExport(base, prep)
+    const pdfBuffer = pdfExport.bytes.buffer.slice(
+      pdfExport.bytes.byteOffset,
+      pdfExport.bytes.byteOffset + pdfExport.bytes.byteLength,
+    ) as ArrayBuffer
+    const blob = new Blob([pdfBuffer], { type: pdfExport.mimeType })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
 
     link.href = url
-    link.download = fileName
+    link.download = pdfExport.fileName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    showToast('Agenda exported.')
+    showToast('Agenda PDF exported.')
   }
 
   async function copyMeetingNote(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
@@ -815,18 +823,22 @@ function App() {
   }
 
   function exportMeetingNote(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
-    const fileName = `${toSlug(getRecordTitle(base, prep.meeting))}-weekly-note.md`
-    const blob = new Blob([getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep)], { type: 'text/markdown;charset=utf-8' })
+    const pdfExport = buildMeetingNotePdfExport(base, prep)
+    const pdfBuffer = pdfExport.bytes.buffer.slice(
+      pdfExport.bytes.byteOffset,
+      pdfExport.bytes.byteOffset + pdfExport.bytes.byteLength,
+    ) as ArrayBuffer
+    const blob = new Blob([pdfBuffer], { type: pdfExport.mimeType })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
 
     link.href = url
-    link.download = fileName
+    link.download = pdfExport.fileName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    showToast('Weekly note exported.')
+    showToast('Meeting note PDF exported.')
   }
 
   function exportLocalBackup() {
@@ -3426,6 +3438,7 @@ function App() {
               <a
                 aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
+                data-onboarding-target={`nav-${screen.id}`}
                 data-short={screen.shortLabel}
                 href={`#${screen.id}`}
                 key={screen.id}
@@ -3440,6 +3453,7 @@ function App() {
               <a
                 aria-current={activeScreen === screen.id ? 'page' : undefined}
                 className={activeScreen === screen.id ? 'active' : ''}
+                data-onboarding-target={`nav-${screen.id}`}
                 data-short={screen.shortLabel}
                 href={`#${screen.id}`}
                 key={screen.id}
@@ -3740,9 +3754,9 @@ function App() {
                     {activeGridViewChanged ? 'View changed' : 'View active'}: {activeGridView.name}
                   </span>
                 )}
-                <button type="button" onClick={() => setBuildModal('table')}>Add table</button>
-                <button type="button" onClick={() => setBuildModal('field')}>Add field</button>
-                <button type="button" onClick={saveGridView}>Save view</button>
+                <button data-onboarding-target="build-add-table" type="button" onClick={() => setBuildModal('table')}>Add table</button>
+                <button data-onboarding-target="build-add-field" type="button" onClick={() => setBuildModal('field')}>Add field</button>
+                <button data-onboarding-target="build-save-view" type="button" onClick={saveGridView}>Save view</button>
                 <details className="build-options-menu">
                   <summary>Table options</summary>
                   <div>
@@ -3753,11 +3767,12 @@ function App() {
                 </details>
               </div>
             </div>
-            <div className="table-tabs" role="tablist" aria-label="Tables">
+            <div className="table-tabs" data-onboarding-target="build-table-tabs" role="tablist" aria-label="Tables">
               {buildTableRows.map((table) => (
                 <button
                   aria-selected={table.id === selectedBuildTable?.id}
                   className={table.id === selectedBuildTable?.id ? 'selected' : ''}
+                  data-onboarding-target={table.id === selectedBuildTable?.id ? 'build-active-table' : undefined}
                   data-testid={`build-table-${table.id}`}
                   key={table.id}
                   role="tab"
@@ -3802,12 +3817,14 @@ function App() {
               visibleFieldsForGrid={visibleFieldsForGrid}
             />
             {tagRouteOptions.length > 0 && (
-              <div className="tag-route-strip" aria-label="Tag workflow routes">
+              <div className="tag-route-strip" aria-label="Tag workflow routes" data-onboarding-target="tag-route-controls">
                 <span>Tag routes</span>
                 <div>
                   {tagRouteOptions.map((tag) => (
                     <button
+                      aria-pressed={gridFilter === tag}
                       className={`select-tag ${getChipColorClass(tag)} ${gridFilter === tag ? 'selected' : ''}`}
+                      data-onboarding-target="tag-route-chip"
                       key={tag}
                       type="button"
                       onClick={() => setGridFilter((current) => current === tag ? '' : tag)}
