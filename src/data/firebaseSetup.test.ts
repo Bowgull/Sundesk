@@ -60,4 +60,53 @@ describe('firebase setup state', () => {
       writeGateEnabled: true,
     })
   })
+
+  it('keeps writes disabled unless the write gate is exactly lowercase enabled', () => {
+    expect(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITES: ' Enabled ',
+    })).toMatchObject({
+      status: 'ready',
+      statusLabel: 'Sign-in ready',
+      writeGateEnabled: false,
+    })
+  })
+
+  it('counts trimmed allowlist emails once', () => {
+    expect(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_ALLOWED_EMAILS: ' owner@example.invalid, helper@example.invalid, owner@example.invalid , ',
+    })).toMatchObject({
+      allowlistCount: 2,
+      configComplete: true,
+      status: 'ready',
+    })
+  })
+
+  it('keeps partial setup focused on the missing step even when writes are enabled', () => {
+    expect(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_FIREBASE_APP_ID: '',
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    })).toMatchObject({
+      configComplete: false,
+      nextAction: 'Finish Firebase config in the private environment.',
+      status: 'partial',
+      statusLabel: 'Setup incomplete',
+      writeGateEnabled: true,
+    })
+
+    expect(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_ALLOWED_EMAILS: ' , ',
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    })).toMatchObject({
+      allowlistCount: 0,
+      configComplete: true,
+      nextAction: 'Add approved Google accounts in private config.',
+      status: 'partial',
+      statusLabel: 'Setup incomplete',
+      writeGateEnabled: true,
+    })
+  })
 })

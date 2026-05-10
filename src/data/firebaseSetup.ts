@@ -34,11 +34,11 @@ function getDefaultFirebaseSetupEnv(): FirebaseSetupEnv {
 
 export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebaseSetupEnv()): FirebaseSetupState {
   const missingConfigKeys = requiredConfigKeys.filter((key) => !String(env[key] || '').trim())
-  const allowlistCount = String(env.VITE_SUNDESK_ALLOWED_EMAILS || '')
+  const allowlistCount = new Set(String(env.VITE_SUNDESK_ALLOWED_EMAILS || '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-    .length
+    .map((item) => item.toLowerCase())).size
   const hasAnyConfigValue = requiredConfigKeys.some((key) => String(env[key] || '').trim())
   const configComplete = missingConfigKeys.length === 0
   const writeGateEnabled = env.VITE_SUNDESK_FIRESTORE_WRITES === 'enabled'

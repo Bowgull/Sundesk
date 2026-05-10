@@ -709,6 +709,13 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await page.goto('/#settings')
 
   await expect(page.getByRole('heading', { name: 'Local workspace.' })).toBeVisible()
+  const sensitiveStorageMessage = 'Sensitive details are stored at your own risk.'
+  const dataRiskNote = 'Avoid files, document contents, private numbers, permit details, COI contents, and contract text unless you intend to store them here.'
+
+  await expect(page.getByText(sensitiveStorageMessage)).toBeVisible()
+  await expect(page.getByText(dataRiskNote)).toBeVisible()
+  await expect(page.getByRole('alert').filter({ hasText: sensitiveStorageMessage })).toHaveCount(0)
+  await expect(page.getByRole('banner').filter({ hasText: sensitiveStorageMessage })).toHaveCount(0)
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
   await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
   await expect(page.getByText('Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.')).toBeVisible()
@@ -725,6 +732,10 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await page.getByText('Show command routing').click()
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid').getByText('Timeline')).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
+  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
 })
 
 test('Mobile keeps navigation and touch targets usable', async ({ page }) => {

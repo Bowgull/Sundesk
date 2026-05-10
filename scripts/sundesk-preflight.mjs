@@ -76,7 +76,50 @@ const requiredIndexLinks = [
   },
 ];
 
-const forbiddenEmail = "lindsaybelldesign@gmail.com";
+const requiredFirestoreRuleSnippets = [
+  {
+    label: "allowlisted helper",
+    snippet: `function isAllowedUser() {
+      return hasSignedInEmail()
+        && exists(/databases/$(database)/documents/allowedUsers/$(request.auth.token.email));
+    }`,
+  },
+  {
+    label: "allowedUsers client write deny",
+    snippet: `match /allowedUsers/{email} {
+      allow get: if hasSignedInEmail() && request.auth.token.email == email;
+      allow list, create, update, delete: if false;
+    }`,
+  },
+  {
+    label: "fixed workspace root",
+    snippet: `match /workspaces/lindsay-sundesk {
+      allow read, write: if isAllowedUser();`,
+  },
+  {
+    label: "fixed workspace descendants",
+    snippet: `match /{document=**} {
+        allow read, write: if isAllowedUser();
+      }`,
+  },
+  {
+    label: "deny-all fallback",
+    snippet: `match /{document=**} {
+      allow read, write: if false;
+    }`,
+  },
+];
+
+const fixedFirestoreWorkspacePath = "lindsay-sundesk";
+const finalDenyAllFallbackPattern = new RegExp(
+  [
+    "match\\s+\\/\\{document=\\*\\*\\}\\s*\\{",
+    "\\s*allow\\s+read,\\s*write:\\s*if\\s+false;",
+    "\\s*\\}\\s*\\}\\s*\\}\\s*$",
+  ].join(""),
+);
+
+const forbiddenEmail = ["lindsaybelldesign", "gmail.com"].join("@");
 const forbiddenEmailScanRoots = ["docs", "apps-script", "src"];
 const forbiddenEmailScanExtensions = new Set([
   ".css",
@@ -142,6 +185,16 @@ function printCheck(passed, label, detail) {
 
 function namesDetail(missing) {
   return missing.length === 0 ? "none missing" : `missing ${missing.join(", ")}`;
+}
+
+function normalizeRules(contents) {
+  return contents.replace(/\s+/g, " ").trim();
+}
+
+function getUnexpectedWorkspaceMatches(contents) {
+  return Array.from(contents.matchAll(/match\s+\/workspaces\/([^\s{]+|\{[^}]+\})/g))
+    .map((match) => match[1])
+    .filter((workspacePath) => workspacePath !== fixedFirestoreWorkspacePath);
 }
 
 function hasManifestIcon(icons, requiredIcon) {
@@ -263,6 +316,37 @@ async function checkEnvExample() {
   return missing.length === 0 && !writesEnabled;
 }
 
+async function checkFirestoreRulesSafety() {
+  const rulesPath = "firestore.rules";
+
+  if (!(await exists(rulesPath))) {
+    printCheck(false, "firestore rules safety", "firestore.rules missing");
+    return false;
+  }
+
+  const contents = await readFile(path.join(root, rulesPath), "utf8");
+  const normalizedRules = normalizeRules(contents);
+  const missing = requiredFirestoreRuleSnippets
+    .filter((item) => !normalizedRules.includes(normalizeRules(item.snippet)))
+    .map((item) => item.label);
+  const unexpectedWorkspaceMatches = getUnexpectedWorkspaceMatches(contents);
+  const hasFinalDenyAllFallback = finalDenyAllFallbackPattern.test(contents.trim());
+  const passed = missing.length === 0 && unexpectedWorkspaceMatches.length === 0 && hasFinalDenyAllFallback;
+  const detailParts = [
+    `${requiredFirestoreRuleSnippets.length - missing.length}/${requiredFirestoreRuleSnippets.length} snippets present`,
+    namesDetail(missing),
+    hasFinalDenyAllFallback ? "final deny-all fallback" : "deny-all fallback is not final",
+  ];
+
+  if (unexpectedWorkspaceMatches.length > 0) {
+    detailParts.push(`unexpected workspaces: ${unexpectedWorkspaceMatches.join(", ")}`);
+  }
+
+  printCheck(passed, "firestore rules safety", detailParts.join("; "));
+
+  return passed;
+}
+
 async function listTrackedTextFiles() {
   let stdout = "";
 
@@ -316,6 +400,7 @@ checks.push(await checkRequiredFiles("firebase config", requiredFirebaseFiles));
 checks.push(await checkManifest());
 checks.push(await checkIndexLinks());
 checks.push(await checkEnvExample());
+checks.push(await checkFirestoreRulesSafety());
 checks.push(await checkForbiddenEmail());
 
 const passed = checks.every(Boolean);
