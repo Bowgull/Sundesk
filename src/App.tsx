@@ -15,8 +15,10 @@ import { MeetingPrepPanel } from './components/MeetingPrepPanel'
 import { MeetingsScreen } from './components/MeetingsScreen'
 import { RecordFieldInput } from './components/RecordFieldInput'
 import { RecordDrawer } from './components/RecordDrawer'
+import { RecordModal } from './components/RecordModal'
 import { SettingsScreen } from './components/SettingsScreen'
 import { TasksScreen } from './components/TasksScreen'
+import { TimelineModes } from './components/TimelineModes'
 import { TimelineScreen } from './components/TimelineScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WaitingOnScreen } from './components/WaitingOnScreen'
@@ -2828,381 +2830,53 @@ function App() {
   }
 
   function renderTimelineView() {
-    if (timelineView === 'kanban') {
-      const groups = ['Blocked', 'Waiting', 'In progress', 'Done']
-      const nextStatusByGroup: Record<string, string> = {
-        Blocked: 'Waiting',
-        Waiting: 'In progress',
-        'In progress': 'Done',
-      }
-
-      return (
-        <div className="timeline-kanban" data-testid="timeline-kanban">
-          {groups.map((status) => {
-            const records = timelineRecords.filter((record) => {
-              const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority')
-
-              return status === 'Done' ? recordStatus === 'Done' || recordStatus === 'Received' : recordStatus === status
-            })
-
-            return (
-              <section aria-label={`${status} lane`} className="kanban-column" key={status}>
-                <div>
-                  <strong>{status}</strong>
-                  <span>{records.length}</span>
-                </div>
-                {records.map((record) => {
-                  const nextStatus = nextStatusByGroup[status]
-                  const statusField = base.fields.find((field) =>
-                    field.tableId === record.tableId &&
-                    field.id === 'status' &&
-                    (field.type === 'status' || field.type === 'singleSelect') &&
-                    field.options?.includes(nextStatus),
-                  )
-
-                  return (
-                    <article className="kanban-card" key={record.id}>
-                      <button type="button" onClick={() => openDailyRecord(record)}>
-                        <strong>{getRecordTitle(base, record)}</strong>
-                        <small>{getRecordContext(record)}</small>
-                        <span>{getFirstDateValue(record) || 'No date'}</span>
-                      </button>
-                      {statusField && nextStatus && (
-                        <button
-                          className="kanban-card-action"
-                          type="button"
-                          onClick={() => {
-                            updateRecordField(record.id, statusField.id, nextStatus)
-                            showToast(`${getRecordTitle(base, record)} moved to ${nextStatus}.`)
-                          }}
-                        >
-                          Move to {nextStatus}
-                        </button>
-                      )}
-                    </article>
-                  )
-                })}
-              </section>
-            )
-          })}
-        </div>
-      )
-    }
-
-    if (timelineView === 'calendar') {
-      const datedRecords = timelineRecords.filter((record) => getFirstDateValue(record))
-      const dateGroups = Array.from(
-        datedRecords.reduce((groups, record) => {
-          const date = getFirstDateValue(record)
-
-          if (!date) {
-            return groups
-          }
-
-          groups.set(date, [...(groups.get(date) || []), record])
-
-          return groups
-        }, new Map<string, BaseRecord[]>()),
-      ).sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
-      const selectedDate = dateGroups.some(([date]) => date === timelineCalendarDate)
-        ? timelineCalendarDate
-        : dateGroups[0]?.[0] || ''
-      const selectedDateRecords = dateGroups.find(([date]) => date === selectedDate)?.[1] || []
-
-      return (
-        <div className="calendar-mode" data-testid="timeline-calendar">
-          <div className="calendar-date-strip" aria-label="Calendar date focus">
-            <span>Date focus</span>
-            <div>
-              {dateGroups.slice(0, 10).map(([date, records]) => (
-                <button
-                  className={date === selectedDate ? 'selected' : ''}
-                  key={date}
-                  type="button"
-                  onClick={() => setTimelineCalendarDate(date)}
-                >
-                  <strong>{date}</strong>
-                  <small>{records.length}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-          {selectedDate && (
-            <section className="calendar-day-detail" aria-label="Calendar day detail">
-              <div>
-                <span>Selected day</span>
-                <strong>{selectedDate}</strong>
-              </div>
-              <div>
-                {selectedDateRecords.map((record) => (
-                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{getRecordContext(record)}</small>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-          <div className="calendar-board">
-            {datedRecords.slice(0, 14).map((record) => (
-              <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                <span>{getFirstDateValue(record)}</span>
-                <strong>{getRecordTitle(base, record)}</strong>
-                <small>{getRecordContext(record)}</small>
-              </button>
-            ))}
-            {datedRecords.length === 0 && <p className="empty-note">No dated records match. Clear the filters.</p>}
-          </div>
-        </div>
-      )
-    }
-
-    if (timelineView === 'timeline') {
-      const selectedCommunity = communityRecords.find((community) => community.id === timelineReadinessCommunityId) || communityRecords[0]
-      const selectedCommunityRecords = selectedCommunity
-        ? timelineRecords.filter((record) =>
-            base.fields.some((field) => {
-              const value = record.values[field.id]
-
-              return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(selectedCommunity.id)
-            }),
-          )
-        : []
-
-      return (
-        <div className="readiness-timeline" data-testid="timeline-readiness">
-          {selectedCommunity && (
-            <section className="readiness-focus-panel" aria-label="Readiness place focus">
-              <div>
-                <span>Place focus</span>
-                <strong>{getRecordTitle(base, selectedCommunity)}</strong>
-                <small>{getNumberValue(selectedCommunity, 'readiness')}% ready</small>
-              </div>
-              <div className="readiness-focus-options">
-                {communityRecords.map((community) => (
-                  <button
-                    className={community.id === selectedCommunity.id ? 'selected' : ''}
-                    key={community.id}
-                    type="button"
-                    onClick={() => setTimelineReadinessCommunityId(community.id)}
-                  >
-                    {getRecordTitle(base, community)}
-                  </button>
-                ))}
-              </div>
-              <div className="readiness-focus-records" aria-label="Focused readiness rows">
-                {selectedCommunityRecords.slice(0, 5).map((record) => (
-                  <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                    <strong>{getRecordTitle(base, record)}</strong>
-                    <small>{getRecordContext(record)}</small>
-                  </button>
-                ))}
-                {selectedCommunityRecords.length === 0 && <p className="empty-note">No linked rows match the current filters.</p>}
-              </div>
-            </section>
-          )}
-          {communityRecords.map((community) => {
-            const communityTitle = getRecordTitle(base, community)
-            const linkedRecords = timelineRecords.filter((record) =>
-              base.fields.some((field) => {
-                const value = record.values[field.id]
-
-                return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(community.id)
-              }),
-            )
-
-            return (
-              <section key={community.id}>
-                <div>
-                  <strong>{communityTitle}</strong>
-                  <span>{getNumberValue(community, 'readiness')}% ready</span>
-                </div>
-                <div className="readiness-track">
-                  {linkedRecords.slice(0, 5).map((record) => (
-                    <button key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                      <span>{getRecordTitle(base, record)}</span>
-                    </button>
-                  ))}
-                  <i>Event</i>
-                </div>
-              </section>
-            )
-          })}
-        </div>
-      )
-    }
-
-    if (timelineView === 'graph') {
-      const selectedCommunity = communityRecords.find((community) => community.id === timelineGraphCommunityId) || communityRecords[0]
-      const relatedRecords = selectedCommunity
-        ? timelineRecords.filter((record) =>
-            base.fields.some((field) => {
-              const value = record.values[field.id]
-
-              return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(selectedCommunity.id)
-            }),
-          )
-        : []
-
-      return (
-        <div className="risk-graph-shell" data-testid="timeline-graph">
-          {selectedCommunity ? (
-            <>
-              <div className="graph-focus-strip" aria-label="Graph place focus">
-                <span>Place focus</span>
-                <div>
-                  {communityRecords.map((community) => (
-                    <button
-                      className={community.id === selectedCommunity.id ? 'selected' : ''}
-                      key={community.id}
-                      type="button"
-                      onClick={() => setTimelineGraphCommunityId(community.id)}
-                    >
-                      {getRecordTitle(base, community)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="risk-graph">
-                <button className="graph-node center" type="button" onClick={() => openDailyRecord(selectedCommunity)}>
-                  <strong>{getRecordTitle(base, selectedCommunity)}</strong>
-                  <span>{getNumberValue(selectedCommunity, 'readiness')}% ready</span>
-                </button>
-                <div className="graph-spokes">
-                  {relatedRecords.slice(0, 5).map((record) => (
-                    <button className={`graph-node ${getSemanticChipClass(getRecordContext(record))}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                      <strong>{getRecordTitle(base, record)}</strong>
-                      <span>{getRecordContext(record)}</span>
-                    </button>
-                  ))}
-                  {relatedRecords.length === 0 && <p className="empty-note">No linked records match the current filters.</p>}
-                </div>
-              </div>
-            </>
-          ) : (
-            <p className="empty-note">No community records are available.</p>
-          )}
-        </div>
-      )
-    }
-
     return (
-      <div className="timeline-list" data-testid="timeline-list">
-        {timelineRecords.map((record) => {
-          const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
-          const recordStatus = getStringValue(record, 'status') || getStringValue(record, 'level') || getStringValue(record, 'priority') || 'No status'
-          const recordDate = getFirstDateValue(record)
-          const dependencySummary = getDependencySummary(record.id)
-          const ruleSummary = getTimelineRuleMatchesForRecord(record.id)
-
-          return (
-            <button className="timeline-record-row" data-testid={`timeline-row-${record.id}`} key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-              <span>{recordDate || 'No date'}</span>
-              <strong>{getRecordTitle(base, record)}</strong>
-              <small>{table?.label || record.tableId}. {recordStatus}. {getRecordContext(record)}</small>
-              <span className="timeline-dependency-summary">
-                {dependencySummary.length === 0 ? (
-                  <small>No dependencies</small>
-                ) : (
-                  dependencySummary.slice(0, 2).map((dependency) => (
-                    <i key={dependency.id}>{dependency.label}: {dependency.title}</i>
-                  ))
-                )}
-                {dependencySummary.length > 2 && <small>+{dependencySummary.length - 2} more</small>}
-              </span>
-              {ruleSummary.length > 0 && (
-                <span className="timeline-rule-summary">
-                  {ruleSummary.slice(0, 2).map((match) => (
-                    <i key={match.rule.id}>Rule: {getRulePreview(match.rule)}</i>
-                  ))}
-                </span>
-              )}
-            </button>
-          )
-        })}
-        {timelineRecords.length === 0 && <p className="empty-note">No records match. Clear the timeline filters.</p>}
-      </div>
+      <TimelineModes
+        base={base}
+        communityRecords={communityRecords}
+        getDependencySummary={getDependencySummary}
+        getFirstDateValue={getFirstDateValue}
+        getNumberValue={getNumberValue}
+        getRecordContext={getRecordContext}
+        getRecordTitle={(record) => getRecordTitle(base, record)}
+        getRulePreview={getRulePreview}
+        getSemanticChipClass={getSemanticChipClass}
+        getStringValue={getStringValue}
+        getTimelineRuleMatchesForRecord={getTimelineRuleMatchesForRecord}
+        timelineCalendarDate={timelineCalendarDate}
+        timelineGraphCommunityId={timelineGraphCommunityId}
+        timelineReadinessCommunityId={timelineReadinessCommunityId}
+        timelineRecords={timelineRecords}
+        timelineView={timelineView}
+        onOpenDailyRecord={openDailyRecord}
+        onSetTimelineCalendarDate={setTimelineCalendarDate}
+        onSetTimelineGraphCommunityId={setTimelineGraphCommunityId}
+        onSetTimelineReadinessCommunityId={setTimelineReadinessCommunityId}
+        onShowToast={showToast}
+        onUpdateRecordField={updateRecordField}
+      />
     )
   }
 
   function renderRecordModal() {
-    if (buildModal !== 'record') {
-      return null
-    }
-
     return (
-      <div className="modal-backdrop" role="presentation">
-        <section className="build-modal record-modal" data-testid="record-modal" role="dialog" aria-modal="true" aria-label="Record editor">
-          <div className="modal-header">
-            <div>
-              <span className="eyebrow">{selectedBuildTable?.label}</span>
-              <h2>{isCreatingRecord || !selectedBuildRecord ? 'New record.' : getRecordTitle(base, selectedBuildRecord)}</h2>
-            </div>
-            <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
-          </div>
-          <div className="record-form">
-            {isCreatingRecord || !selectedBuildRecord
-              ? editableFieldsForSelectedTable.map((field) => (
-                  <div className="record-field-input-slot" key={field.id}>
-                    {renderRecordInput(field, recordDraft[field.id], updateRecordDraft)}
-                  </div>
-                ))
-              : editableFieldsForSelectedTable.map((field) => (
-                  <div className="record-field-input-slot" key={field.id}>
-                    {renderRecordInput(field, selectedBuildRecord.values[field.id], updateSelectedRecord)}
-                  </div>
-                ))}
-          </div>
-          {!isCreatingRecord && selectedBuildRecord && (
-            <div className="record-modal-links">
-              <section>
-                <strong>Backlinks</strong>
-                <div className="linked-list">
-                  {drawerBacklinks.length === 0 && <p className="empty-note">No records point here.</p>}
-                  {drawerBacklinks.map((backlink) => (
-                    <button
-                      className="linked-record-card"
-                      key={`${backlink.fromRecord.id}-${backlink.fieldId}`}
-                      type="button"
-                      onClick={() => openBuildRecord(backlink.fromRecord.tableId, backlink.fromRecord.id)}
-                    >
-                      <span className="pill prep">{backlink.fromRecord.tableLabel}</span>
-                      <strong>{backlink.fromRecord.title}</strong>
-                      <small>{backlink.fieldLabel}. {backlink.fromRecord.context}</small>
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <strong>Linked records</strong>
-                <div className="linked-list">
-                  {drawerLinkedRecords.length === 0 && <p className="empty-note">No linked records selected.</p>}
-                  {drawerLinkedRecords.map((link) => (
-                    <button
-                      className="linked-record-card"
-                      key={`${link.fieldId}-${link.record.id}`}
-                      type="button"
-                      onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
-                    >
-                      <span className="pill waiting">{link.record.tableLabel}</span>
-                      <strong>{link.record.title}</strong>
-                      <small>{link.fieldLabel}. {link.record.context}</small>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </div>
-          )}
-          <div className="modal-actions">
-            <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-            {isCreatingRecord ? (
-              <button className="primary" type="button" onClick={createRecord}>Add record</button>
-            ) : (
-              <button className="primary" type="button" onClick={closeBuildModal}>Done</button>
-            )}
-          </div>
-        </section>
-      </div>
+      <RecordModal
+        drawerBacklinks={drawerBacklinks}
+        drawerLinkedRecords={drawerLinkedRecords}
+        editableFieldsForSelectedTable={editableFieldsForSelectedTable}
+        isCreatingRecord={isCreatingRecord}
+        isOpen={buildModal === 'record'}
+        recordDraft={recordDraft}
+        selectedRecord={selectedBuildRecord}
+        selectedRecordTitle={selectedBuildRecord ? getRecordTitle(base, selectedBuildRecord) : ''}
+        selectedTableLabel={selectedBuildTable?.label}
+        onClose={closeBuildModal}
+        onCreateRecord={createRecord}
+        onOpenRecord={openBuildRecord}
+        onRenderRecordInput={renderRecordInput}
+        onSelectedRecordChange={updateSelectedRecord}
+        onUpdateRecordDraft={updateRecordDraft}
+      />
     )
   }
 
