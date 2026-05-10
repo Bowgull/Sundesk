@@ -942,6 +942,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   const originalTitle = 'Backup restore seed'
   const changedTitle = 'Backup restore changed'
   const fakeRecordId = 'tasks_backup_restore_seed'
+  const todayRouteDate = '2026-05-10'
   const firebaseSetupText = 'Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.'
   const writeGateText = 'Write gate. Disabled. No Firestore writes can run in this build.'
   const backupNoteText = 'Backup controls are local commands. They do not change Firebase setup or write remote data.'
@@ -953,11 +954,25 @@ test('Settings exports and imports a local backup without changing Firebase writ
   const modal = page.getByTestId('record-modal')
 
   await modal.getByLabel('Title').fill(originalTitle)
-  await modal.getByLabel('Status').selectOption('Waiting')
-  await modal.getByLabel('Due date').fill('2026-05-21')
+  await modal.getByLabel('Status').selectOption('Blocked')
+  await modal.getByLabel('Due date').fill(todayRouteDate)
   await modal.getByRole('button', { name: 'Add record' }).click()
   await modal.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
+
+  const communityCell = page.getByTestId(`grid-cell-${fakeRecordId}-community`)
+
+  await communityCell.click()
+  await communityCell.press('Enter')
+  await page.getByLabel('Community editor').getByPlaceholder('Search records').fill('halifax')
+  await page.getByLabel('Community editor').getByRole('button', { name: /Halifax · At risk · 2026-05-22/ }).click()
+  await page.getByLabel('Community editor').getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Halifax')
+
+  await page.goto('/#today')
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
+  await expect(page.getByTestId('today-lane-now').getByText(originalTitle)).toBeVisible()
 
   await page.goto('/#settings')
   await expect(page.getByText(backupNoteText)).toBeVisible()
@@ -990,7 +1005,9 @@ test('Settings exports and imports a local backup without changing Firebase writ
   expect(backup.appName).toBe('Sundesk')
   expect(backup.version).toBe(1)
   expect(exportedRecord?.values?.title).toBe(originalTitle)
-  expect(exportedRecord?.values?.status).toBe('Waiting')
+  expect(exportedRecord?.values?.status).toBe('Blocked')
+  expect(exportedRecord?.values?.dueDate).toBe(todayRouteDate)
+  expect(exportedRecord?.values?.community).toEqual(['community_halifax'])
 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -1024,9 +1041,11 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Halifax')
   await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeHidden()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByTestId('today-lane-now').getByText(originalTitle)).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
   expect(firebaseWriteRequests).toEqual([])

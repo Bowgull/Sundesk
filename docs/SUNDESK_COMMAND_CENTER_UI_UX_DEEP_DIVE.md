@@ -307,6 +307,7 @@ Current resolved alignment:
 - The twenty-fourth install path block verifies the PWA manifest, icon links, install metadata, service worker shell, Today as home, and Build in the sidebar. The documented user path is hosted URL, mobile Add to Home Screen, and desktop bookmark with the Sundesk icon or favicon. Settings now shows the same install/bookmark path.
 - The twenty-fifth command-send preview block wires the Today summary preview as local-only. Preview summary opens a no-send command preview with Now, Waiting, Next, focus, why, and meeting prep context.
 - The twenty-sixth Build CSV export block wires a local CSV download for the current visible Build table or saved view. The E2E confirms headers, a visible row, Today as home, and Build in the sidebar.
+- The twenty-seventh docs closure block closes stale local-polish framing after the deck-aligned local pass. Remaining work is approval-gated setup and smoke work: Firebase Console setup, hosted preview smoke, and production auth/write smoke with fake data only.
 
 Current local state:
 
@@ -320,11 +321,11 @@ Current local state:
 - Meetings source records route with table-aware section decisions and visible route reasons.
 - Kanban, Calendar, Timeline, and Graph have mode receipts and first-pass interaction polish.
 - PWA shell, manifest, icon links, service worker shell, install copy, Today as home, and Build in the sidebar are verified for the local build path.
+- Local polish closure now treats hierarchy, focus, accessibility, fake-data boundaries, Today as home, and Build sidebar visibility as the local QA baseline.
 
 Remaining work:
 
-- Run deeper hierarchy QA with fake data before Lindsay-facing smoke work. No real Lindsay, SALTXC, permit, COI, contract, contact, or company data.
-- Continue whole-product visual QA for active, hover, mobile, pinned-view density, and individual surface polish.
+- Re-run fake-data hierarchy, focus, accessibility, mobile, pinned-view density, and state QA when a new code block changes visible surfaces.
 - Actual Firebase Console setup requires explicit approval and must happen outside this local-only doc pass.
 - Hosted preview smoke work requires deploy approval.
 - Production auth and write-gate smoke work requires separate Firestore write approval and fake data only.

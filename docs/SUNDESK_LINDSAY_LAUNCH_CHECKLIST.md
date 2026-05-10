@@ -129,21 +129,24 @@ Then test the preview URL with fake data only. No private emails, real records, 
 4. Confirm an unapproved Google account is blocked.
 5. Open Build.
 6. Create a fake table or fake record.
-7. Refresh.
-8. Confirm local state remains usable.
-9. Open Settings.
-10. Confirm the quiet data-boundary note is there.
-11. Confirm Settings shows the actual Export backup and Import backup controls.
-12. Confirm the Settings Launch readiness panel is visible.
-13. Confirm Settings shows the install/bookmark path.
-14. Confirm Firestore writes are shown as disabled unless approval has been given.
-15. Open Today and click Preview summary.
-16. Confirm the command-send preview says no send happened.
-17. Confirm the preview includes Now, Waiting, Next, and meeting prep context.
-18. Open Build and choose a table or saved view with visible rows.
-19. Use Export CSV only as a local browser download for that current visible table or view.
-20. Confirm the CSV has headers and at least one visible row from the selected table.
-21. Confirm this export does not change Firebase setup, does not sync remotely, and does not write remote data.
+7. Confirm the fake data proves hierarchy: Today first read, Build grid, record drawer, linked rows, and saved views.
+8. Confirm visible focus states work through sidebar, Today controls, Build grid, menus, modals, and drawer.
+9. Confirm keyboard access covers Tab, Shift Tab, Enter, Escape, arrow-key grid movement, and icon-only button labels.
+10. Refresh.
+11. Confirm local state remains usable.
+12. Open Settings.
+13. Confirm the quiet data-boundary note is there.
+14. Confirm Settings shows the actual Export backup and Import backup controls.
+15. Confirm the Settings Launch readiness panel is visible.
+16. Confirm Settings shows the install/bookmark path.
+17. Confirm Firestore writes are shown as disabled unless approval has been given.
+18. Open Today and click Preview summary.
+19. Confirm the command-send preview says no send happened.
+20. Confirm the preview includes Now, Waiting, Next, and meeting prep context.
+21. Open Build and choose a table or saved view with visible rows.
+22. Use Export CSV only as a local browser download for that current visible table or view.
+23. Confirm the CSV has headers and at least one visible row from the selected table.
+24. Confirm this export does not change Firebase setup, does not sync remotely, and does not write remote data.
 
 If write approval has not been given, stop here. No remote write test should run.
 
@@ -218,9 +221,10 @@ After deploy:
 4. Confirm Today remains home.
 5. Confirm Build remains visible in the sidebar.
 6. Confirm Settings contains the quiet data-boundary note.
-7. Create one fake table or fake record only if write approval has been given.
-8. Refresh and confirm the fake data state matches the approved write mode.
-9. Confirm no real Lindsay or SALTXC data is present.
+7. Confirm fake-data hierarchy, focus states, keyboard access, mobile navigation, and icon labels still match the local QA baseline.
+8. Create one fake table or fake record only if write approval has been given.
+9. Refresh and confirm the fake data state matches the approved write mode.
+10. Confirm no real Lindsay or SALTXC data is present.
 
 Firestore writes require separate explicit write approval after the local fake-data backup/import rehearsal. Deploy approval is not write approval. Deploying Hosting and rules is not write approval.
 

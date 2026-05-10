@@ -711,11 +711,13 @@ Current local pass:
 - Today remains home.
 - Build remains visible.
 - Shell and sidebar have mobile and pinned-view density work in place.
+- The local deck-aligned pass has a closed QA baseline for fake-data hierarchy, visible focus, accessibility checks, mobile navigation, and pinned-view density.
 
 Remaining QA:
 
-- Verify active, hover, focus, and pinned-view density across the real surfaces with fake data.
-- Verify mobile navigation keeps Today first and Build reachable.
+- Re-run active, hover, focus, accessibility, fake-data hierarchy, mobile navigation, and pinned-view density checks after any visible surface changes.
+- Keep Today first and Build reachable on every local and hosted smoke pass.
+- Do not use real Lindsay, SALTXC, permit, COI, contract, contact, or company data for QA.
 
 ## Accessibility
 
