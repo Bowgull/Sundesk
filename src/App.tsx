@@ -33,6 +33,7 @@ import {
   type SundeskEducationState,
   writeSundeskEducationState,
 } from './data/educationState'
+import { type CopyEntryId, getCopyModeText } from './data/copyMode'
 import {
   buildMeetingAgendaPdfExport,
   buildMeetingNotePdfExport,
@@ -41,6 +42,8 @@ import {
   advanceOnboarding,
   dismissOnboarding,
   getOnboardingStep,
+  getOnboardingStepProgress,
+  goBackOnboarding,
   restartOnboarding,
   startOnboarding,
 } from './data/onboarding'
@@ -97,6 +100,7 @@ import {
   workbaseStorageKey,
 } from './data/localStorage'
 import {
+  completeSundeskLabModuleStep,
   resetSundeskLabModuleProgress,
   resetSundeskLabProgress,
   startSundeskLabModule,
@@ -705,6 +709,22 @@ function App() {
   const firestoreReadShadowComparison = compareFirestoreReadShadowCounts(localEngineStats, firestoreReadShadowState.collections)
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
   const activeOnboardingStep = getOnboardingStep(educationState.onboarding.currentStepId)
+  const activeOnboardingProgress = getOnboardingStepProgress(activeOnboardingStep?.id)
+  const rupaulMode = educationState.copyMode.rupaulMode
+
+  function getCopy(id: CopyEntryId) {
+    return getCopyModeText(id, rupaulMode)
+  }
+
+  function getNavCopyId(screenId: AppScreen): CopyEntryId | null {
+    if (screenId === 'today') return 'nav.today'
+    if (screenId === 'build') return 'nav.build'
+    if (screenId === 'meetings') return 'nav.meetings'
+    if (screenId === 'settings') return 'nav.settings'
+    if (screenId === 'lab') return 'nav.lab'
+
+    return null
+  }
 
   function writeWorkbaseState(nextBase: StoredWorkbaseState['base']) {
     const workbaseState: StoredWorkbaseState = {
@@ -756,6 +776,11 @@ function App() {
   function startLabModuleOver(moduleId: string) {
     updateEducationState((current) => resetSundeskLabModuleProgress(current, moduleId))
     showToast('Lab module reset.')
+  }
+
+  function completeLabModuleStep(moduleId: string) {
+    updateEducationState((current) => completeSundeskLabModuleStep(current, sundeskLabModules, moduleId))
+    showToast('Lab step marked done.')
   }
 
   function resetLabProgress() {
@@ -983,6 +1008,10 @@ function App() {
     }
 
     updateEducationState((current) => advanceOnboarding(current, activeOnboardingStep.id, activeOnboardingStep.actionId))
+  }
+
+  function goBackOnboardingTourStep() {
+    updateEducationState((current) => goBackOnboarding(current))
   }
 
   function closeBuildModal() {
@@ -3049,6 +3078,7 @@ function App() {
         onSetActiveDigestPreviewMeetingId={setActiveDigestPreviewMeetingId}
         onUpdateRecordField={updateRecordField}
         prep={prep}
+        rupaulMode={rupaulMode}
         updateWeeklyNoteSection={updateWeeklyNoteSection}
       />
     )
@@ -3535,9 +3565,12 @@ function App() {
         </div>
       )}
       <OnboardingTour
+        canGoBack={activeOnboardingProgress.current > 1}
+        progressLabel={activeOnboardingProgress.label}
         status={educationState.onboarding.status}
         step={activeOnboardingStep}
         onAdvance={advanceOnboardingTourStep}
+        onBack={goBackOnboardingTourStep}
         onDismiss={dismissOnboardingTour}
         onSkip={dismissOnboardingTour}
         onStart={startOnboardingTour}
@@ -3555,33 +3588,49 @@ function App() {
           <span>Work</span>
           {mainScreens
             .filter((screen) => screen.group === 'Work')
-            .map((screen) => (
-              <a
-                aria-current={activeScreen === screen.id ? 'page' : undefined}
-                className={activeScreen === screen.id ? 'active' : ''}
-                data-onboarding-target={screen.id === 'lab' ? 'nav-sundesk-lab' : `nav-${screen.id}`}
-                data-short={screen.shortLabel}
-                href={`#${screen.id}`}
-                key={screen.id}
-              >
-                {screen.label}
-              </a>
-            ))}
+            .map((screen) => {
+              const copyId = getNavCopyId(screen.id)
+              const label = copyId ? getCopy(copyId) : screen.label
+
+              return (
+                <a
+                  aria-current={activeScreen === screen.id ? 'page' : undefined}
+                  aria-label={screen.label}
+                  className={activeScreen === screen.id ? 'active' : ''}
+                  data-copy-plain={screen.label}
+                  data-onboarding-target={screen.id === 'lab' ? 'nav-sundesk-lab' : `nav-${screen.id}`}
+                  data-short={screen.shortLabel}
+                  href={`#${screen.id}`}
+                  key={screen.id}
+                  title={screen.label}
+                >
+                  {label}
+                </a>
+              )
+            })}
           <span>System</span>
           {mainScreens
             .filter((screen) => screen.group === 'System')
-            .map((screen) => (
-              <a
-                aria-current={activeScreen === screen.id ? 'page' : undefined}
-                className={activeScreen === screen.id ? 'active' : ''}
-                data-onboarding-target={`nav-${screen.id}`}
-                data-short={screen.shortLabel}
-                href={`#${screen.id}`}
-                key={screen.id}
-              >
-                {screen.label}
-              </a>
-            ))}
+            .map((screen) => {
+              const copyId = getNavCopyId(screen.id)
+              const label = copyId ? getCopy(copyId) : screen.label
+
+              return (
+                <a
+                  aria-current={activeScreen === screen.id ? 'page' : undefined}
+                  aria-label={screen.label}
+                  className={activeScreen === screen.id ? 'active' : ''}
+                  data-copy-plain={screen.label}
+                  data-onboarding-target={`nav-${screen.id}`}
+                  data-short={screen.shortLabel}
+                  href={`#${screen.id}`}
+                  key={screen.id}
+                  title={screen.label}
+                >
+                  {label}
+                </a>
+              )
+            })}
         </nav>
 
         {pinnedGridViews.length > 0 && (
@@ -3863,6 +3912,7 @@ function App() {
           <SundeskLabScreen
             educationState={educationState}
             modules={sundeskLabModules}
+            onCompleteStep={completeLabModuleStep}
             onContinueModule={continueLabModule}
             onResetLabProgress={resetLabProgress}
             onStartModuleOver={startLabModuleOver}
@@ -4081,7 +4131,7 @@ function App() {
             onRestartTour={restartOnboardingTour}
             onRupaulModeChange={updateRupaulMode}
             openScreen={openScreen}
-            rupaulMode={educationState.copyMode.rupaulMode}
+            rupaulMode={rupaulMode}
             ruleDestinationStats={ruleDestinationStats}
             selectedTheme={selectedTheme}
             themes={themes}

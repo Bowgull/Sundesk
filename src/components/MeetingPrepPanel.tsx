@@ -1,4 +1,5 @@
 import { getFirstDateValue, getStringValue } from '../data/rules'
+import { getCopyModeText } from '../data/copyMode'
 import {
   type BaseRecord,
   type RecordValue,
@@ -33,6 +34,7 @@ type MeetingPrepPanelProps = {
   onOpenRecord: (tableId: string, recordId: string) => void
   onSetActiveDigestPreviewMeetingId: (updater: (current: string) => string) => void
   onUpdateRecordField: (recordId: string, fieldId: string, value: RecordValue) => void
+  rupaulMode: boolean
   updateWeeklyNoteSection: (note: string, heading: string, value: string) => string
 }
 
@@ -52,6 +54,7 @@ export function MeetingPrepPanel({
   onOpenRecord,
   onSetActiveDigestPreviewMeetingId,
   onUpdateRecordField,
+  rupaulMode,
   updateWeeklyNoteSection,
 }: MeetingPrepPanelProps) {
   const weeklyNoteDraft = getStringValue(prep.meeting, 'weeklyNote') || getMeetingWeeklyNoteText(base, prep)
@@ -84,8 +87,25 @@ export function MeetingPrepPanel({
             <strong>{getRecordTitle(base, prep.meeting)}</strong>
             <small>Edit this note here. It stays local to this screen until copied or exported.</small>
             <div className="meeting-note-actions" aria-label="Weekly note actions">
-              <button type="button" onClick={() => void onCopyMeetingNote(prep)}>Copy note</button>
-              <button data-onboarding-target="meeting-export-pdf" type="button" onClick={() => onExportMeetingNote(prep)}>Export PDF</button>
+              <button
+                aria-label="Copy note"
+                data-copy-plain="Copy note"
+                title="Copy note"
+                type="button"
+                onClick={() => void onCopyMeetingNote(prep)}
+              >
+                {getCopyModeText('button.copyNote', rupaulMode)}
+              </button>
+              <button
+                aria-label="Export PDF"
+                data-copy-plain="Export PDF"
+                data-onboarding-target="meeting-export-pdf"
+                title="Export PDF"
+                type="button"
+                onClick={() => onExportMeetingNote(prep)}
+              >
+                {getCopyModeText('button.exportPdf', rupaulMode)}
+              </button>
             </div>
           </div>
           <div className="meeting-note-summary">

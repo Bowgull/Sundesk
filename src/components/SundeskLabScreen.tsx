@@ -1,9 +1,10 @@
 import type { SundeskEducationState } from '../data/educationState'
-import type { SundeskLabModule } from '../data/sundeskLab'
+import { getSundeskLabCurrentStep, type SundeskLabModule } from '../data/sundeskLab'
 
 type SundeskLabScreenProps = {
   educationState: SundeskEducationState
   modules: SundeskLabModule[]
+  onCompleteStep: (moduleId: string) => void
   onContinueModule: (moduleId: string) => void
   onResetLabProgress: () => void
   onStartModuleOver: (moduleId: string) => void
@@ -18,12 +19,16 @@ const progressLabels = {
 export function SundeskLabScreen({
   educationState,
   modules,
+  onCompleteStep,
   onContinueModule,
   onResetLabProgress,
   onStartModuleOver,
 }: SundeskLabScreenProps) {
   const activeModule = modules.find((module) => module.id === educationState.lab.activeModuleId)
   const activeProgress = activeModule ? educationState.lab.modules[activeModule.id] : null
+  const activeStep = activeModule ? getSundeskLabCurrentStep(modules, activeModule.id, activeProgress || undefined) : null
+  const completedStepCount = activeProgress?.completedStepIds.length || 0
+  const totalStepCount = activeModule?.steps.length || 0
 
   return (
     <section className="sundesk-lab-screen" data-testid="sundesk-lab-screen" id="lab">
@@ -50,12 +55,26 @@ export function SundeskLabScreen({
             <h2>{activeModule.title}</h2>
             <p>{activeModule.requiredPractice}</p>
           </div>
+          <section className="lab-current-step" aria-label="Current Lab step">
+            <span>{activeProgress?.status === 'completed' ? 'Module complete' : 'Where you left off'}</span>
+            <strong>{activeStep?.title || 'Complete.'}</strong>
+            <p>{activeStep?.guidance || 'This module is done. Start over to practice it again.'}</p>
+            <small>{activeStep?.scenario || activeModule.sampleData}</small>
+            <div className="lab-progress-meter" aria-label={`${completedStepCount} of ${totalStepCount} steps complete`}>
+              <span style={{ width: `${totalStepCount ? (completedStepCount / totalStepCount) * 100 : 0}%` }} />
+            </div>
+            <em>{completedStepCount} of {totalStepCount} done</em>
+          </section>
           <div className="lab-step-list">
             {activeModule.steps.map((step) => (
-              <span key={step}>{step}</span>
+              <span className={activeProgress?.completedStepIds.includes(step.id) ? 'done' : ''} key={step.id}>
+                {step.title}
+              </span>
             ))}
           </div>
-          <small>{activeProgress?.currentStepId || `${activeModule.id}-start`}</small>
+          <button disabled={activeProgress?.status === 'completed'} type="button" onClick={() => onCompleteStep(activeModule.id)}>
+            Mark step done
+          </button>
         </article>
       )}
 

@@ -9,18 +9,24 @@ type TargetRect = {
 }
 
 type OnboardingTourProps = {
+  canGoBack: boolean
+  progressLabel: string
   step: OnboardingStep | undefined
   status: 'notStarted' | 'inProgress' | 'completed' | 'dismissed'
   onAdvance: (step: OnboardingStep) => void
+  onBack: () => void
   onDismiss: () => void
   onSkip: () => void
   onStart: () => void
 }
 
 export function OnboardingTour({
+  canGoBack,
+  progressLabel,
   step,
   status,
   onAdvance,
+  onBack,
   onDismiss,
   onSkip,
   onStart,
@@ -123,9 +129,14 @@ export function OnboardingTour({
         />
       )}
       <article className="onboarding-annotation-card">
-        <span>{step.title}</span>
+        <div className="onboarding-card-top">
+          <span>{step.title}</span>
+          <small>{progressLabel}</small>
+        </div>
         <p>{step.body}</p>
+        {step.actionHint && <small className="onboarding-action-hint">{step.actionHint}</small>}
         <div className="onboarding-actions">
+          {canGoBack && <button className="ghost" type="button" onClick={onBack}>Back</button>}
           {canAdvanceManually && (
             <button type="button" onClick={() => onAdvance(step)}>
               {step.primaryLabel || 'Next'}

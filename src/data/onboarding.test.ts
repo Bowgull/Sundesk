@@ -3,6 +3,8 @@ import {
   advanceOnboarding,
   dismissOnboarding,
   getOnboardingStep,
+  getOnboardingStepProgress,
+  goBackOnboarding,
   restartOnboarding,
   startOnboarding,
 } from './onboarding'
@@ -48,5 +50,36 @@ describe('onboarding flow', () => {
       requiredAction: 'targetClick',
       screen: 'build',
     })
+  })
+
+  it('reports progress and can move back to the previous step', () => {
+    const initialState = getDefaultSundeskEducationState()
+    const started = startOnboarding(initialState, '2026-05-10T17:00:00.000Z')
+    const advanced = advanceOnboarding(started, 'today', 'view-today', '2026-05-10T17:01:00.000Z')
+    const backedUp = goBackOnboarding(advanced, '2026-05-10T17:02:00.000Z')
+
+    expect(getOnboardingStepProgress('build-nav')).toMatchObject({
+      current: 2,
+      total: expect.any(Number),
+      label: expect.stringMatching(/^2 of \d+$/),
+    })
+    expect(backedUp.onboarding.currentStepId).toBe('today')
+    expect(backedUp.onboarding.completedStepIds).not.toContain('today')
+    expect(backedUp.onboarding.completedActionIds).not.toContain('view-today')
+  })
+
+  it('teaches every field type in the field-types step', () => {
+    const fieldTypesStep = getOnboardingStep('field-types')
+
+    expect(fieldTypesStep?.body).toContain('Text: Short labels, names, titles, and quick details.')
+    expect(fieldTypesStep?.body).toContain('Long text: Notes, context, updates, and anything that needs room.')
+    expect(fieldTypesStep?.body).toContain('Number: Counts, amounts, percentages, square footage, budget numbers, and scores.')
+    expect(fieldTypesStep?.body).toContain('Date: Due dates, meetings, follow-ups, expiry dates, renewal dates, and timelines.')
+    expect(fieldTypesStep?.body).toContain('Status: One current stage, like Not started, Waiting, In review, or Done.')
+    expect(fieldTypesStep?.body).toContain('Checkbox: Yes or no tracking, like sent, approved, received, urgent, or needs follow-up.')
+    expect(fieldTypesStep?.body).toContain('Tags: Multiple labels on one record, so a task can be Waiting, COI, Steph, and Friday all at once.')
+    expect(fieldTypesStep?.body).toContain('Link: A connection to another table, like a task connected to a community, person, meeting, or document.')
+    expect(fieldTypesStep?.body).toContain('Lookup: Information pulled from a linked record so she does not retype it.')
+    expect(fieldTypesStep?.body).toContain('Rollup: A calculated summary from linked records, like count, total, earliest date, latest date, or open items.')
   })
 })

@@ -144,6 +144,8 @@ test('Onboarding tour advances only from exact highlighted target clicks', async
 
   await page.getByRole('button', { name: 'Start the tour' }).click()
   await expect(page.getByTestId('onboarding-tour')).toContainText('Build is where tables live.')
+  await expect(page.getByTestId('onboarding-tour')).toContainText(/2 of \d+/)
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Click Build in the sidebar.')
 
   await page.mouse.click(520, 520)
 
@@ -159,6 +161,66 @@ test('Onboarding tour advances only from exact highlighted target clicks', async
 
   expect(educationState.onboarding.currentStepId).toBe('table-tabs')
   expect(educationState.onboarding.completedActionIds).toContain('click-build')
+
+  await page.getByRole('button', { name: 'Back' }).click()
+
+  educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(educationState.onboarding.currentStepId).toBe('build-nav')
+  expect(educationState.onboarding.completedActionIds).not.toContain('click-build')
+  await expect(page.getByTestId('onboarding-tour')).toContainText(/2 of \d+/)
+})
+
+test('Onboarding field type step teaches each field type', async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem('sundesk-education-state-v1', JSON.stringify({
+      version: 1,
+      onboarding: {
+        status: 'inProgress',
+        currentStepId: 'field-types',
+        completedStepIds: ['welcome', 'today', 'build-nav', 'table-tabs', 'table-meaning', 'record-meaning', 'field-meaning'],
+        completedActionIds: ['start-tour', 'view-today', 'click-build', 'select-table', 'view-active-table', 'open-record', 'open-field-controls'],
+        startedAt: '2026-05-10T17:00:00.000Z',
+        completedAt: null,
+        lastSeenAt: '2026-05-10T17:00:00.000Z',
+      },
+      lab: {
+        activeModuleId: null,
+        sampleWorkspaceVersion: 1,
+        sampleWorkspaceResetAt: null,
+        modules: {},
+      },
+      help: {
+        recentQueries: [],
+        dismissedCardIds: [],
+        lastArticleId: null,
+      },
+      copyMode: {
+        rupaulMode: false,
+        updatedAt: null,
+      },
+      meetingPdf: {
+        templateVersion: 1,
+        lastExportedMeetingId: null,
+      },
+    }))
+  })
+  await page.goto('/?onboarding-field-types=1#build')
+  await page.locator('[data-onboarding-target="build-add-field"]').first().click()
+
+  const tour = page.getByTestId('onboarding-tour')
+
+  await expect(tour).toContainText(/7 of \d+/)
+  await expect(tour).toContainText('Text: Short labels, names, titles, and quick details.')
+  await expect(tour).toContainText('Long text: Notes, context, updates, and anything that needs room.')
+  await expect(tour).toContainText('Number: Counts, amounts, percentages, square footage, budget numbers, and scores.')
+  await expect(tour).toContainText('Date: Due dates, meetings, follow-ups, expiry dates, renewal dates, and timelines.')
+  await expect(tour).toContainText('Status: One current stage, like Not started, Waiting, In review, or Done.')
+  await expect(tour).toContainText('Checkbox: Yes or no tracking, like sent, approved, received, urgent, or needs follow-up.')
+  await expect(tour).toContainText('Tags: Multiple labels on one record, so a task can be Waiting, COI, Steph, and Friday all at once.')
+  await expect(tour).toContainText('Link: A connection to another table, like a task connected to a community, person, meeting, or document.')
+  await expect(tour).toContainText('Lookup: Information pulled from a linked record so she does not retype it.')
+  await expect(tour).toContainText('Rollup: A calculated summary from linked records, like count, total, earliest date, latest date, or open items.')
 })
 
 test('Settings install surface is covered when present', async ({ page }) => {
@@ -289,13 +351,35 @@ test('Sundesk Lab is a real nav screen and persists module progress locally', as
 
   await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByTestId('lab-active-module')).toContainText('Tags')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Open a tag cell')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Tag Steph, vendor, waiting, and needs-eyes')
   await expect(page.getByTestId('lab-module-tags')).toContainText('In progress')
 
   const storedAfterContinue = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
   expect(storedAfterContinue.lab.activeModuleId).toBe('tags')
   expect(storedAfterContinue.lab.modules.tags.status).toBe('inProgress')
-  expect(storedAfterContinue.lab.modules.tags.currentStepId).toBe('tags-start')
+  expect(storedAfterContinue.lab.modules.tags.currentStepId).toBe('tags-open-cell')
+
+  await page.getByRole('button', { name: 'Mark step done' }).click()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Add 2 tags')
+
+  const storedAfterStepOne = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(storedAfterStepOne.lab.modules.tags.completedStepIds).toEqual(['tags-open-cell'])
+  expect(storedAfterStepOne.lab.modules.tags.completedActionIds).toEqual(['open-tag-cell'])
+  expect(storedAfterStepOne.lab.modules.tags.currentStepId).toBe('tags-add-two')
+
+  await page.reload()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Add 2 tags')
+  await page.getByRole('button', { name: 'Mark step done' }).click()
+  await page.getByRole('button', { name: 'Mark step done' }).click()
+
+  const storedAfterCompletion = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(storedAfterCompletion.lab.modules.tags.status).toBe('completed')
+  expect(storedAfterCompletion.lab.modules.tags.currentStepId).toBeNull()
+  expect(storedAfterCompletion.lab.modules.tags.completedAt).toEqual(expect.any(String))
 
   await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Start over' }).click()
   const storedAfterModuleReset = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
@@ -1152,6 +1236,12 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await page.getByLabel('RuPaul Mode').check()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
   await expect(page.getByText('Put sensitive things in here at your own risk, my pookie. The system can organize the mess, but it cannot make a secret less secret')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toContainText('Today. The mess has been called to the stage')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toContainText('Build. Give the chaos a backbone')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' })).toContainText('Meetings. Bring receipts')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' })).toContainText('Settings. Touch things with intention')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('title', 'Build')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('data-copy-plain', 'Build')
 
   const storedCopyMode = await page.evaluate(() => {
     const rawState = window.localStorage.getItem('sundesk-education-state-v1')
@@ -1163,6 +1253,7 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
 
   await page.reload()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Sundesk Lab' })).toContainText('Sundesk Lab. Practice the drama safely')
   await page.getByLabel('Search Help').fill('unknown')
   await expect(page.getByLabel('Help results')).toContainText('No help found for that. Try a messier word')
 })
@@ -1309,4 +1400,47 @@ test('Mobile keeps navigation and touch targets usable', async ({ page }) => {
   await expect(page.getByTestId('build-screen')).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Build' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+
+  const onboardingChoice = page.getByTestId('onboarding-choice')
+  const onboardingCard = onboardingChoice.locator('.onboarding-choice-card')
+
+  await expect(onboardingChoice).toBeVisible()
+  await expect(onboardingCard).toBeVisible()
+
+  const cardBox = await onboardingCard.boundingBox()
+
+  expect(cardBox?.x).toBeGreaterThanOrEqual(0)
+  expect(cardBox?.y).toBeGreaterThanOrEqual(0)
+  expect(cardBox ? cardBox.x + cardBox.width : 0).toBeLessThanOrEqual(390)
+  expect(cardBox ? cardBox.y + cardBox.height : 0).toBeLessThanOrEqual(844)
+
+  await page.getByRole('button', { name: 'Start on my own' }).click()
+  await expect(onboardingChoice).toHaveCount(0)
+
+  const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
+
+  await navigation.getByRole('link', { name: 'Sundesk Lab' }).click()
+  await expect(page.getByTestId('sundesk-lab-screen')).toBeVisible()
+  await expect(page.getByTestId('lab-module-list')).toBeVisible()
+  await expect(page.getByTestId('lab-module-list').getByRole('button', { name: 'Continue' }).first()).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Settings' }).click()
+  await expect(page.getByTestId('settings-screen')).toBeVisible()
+  await page.getByLabel('Search Help').fill('iPhone')
+  await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
+  await page.getByLabel('RuPaul Mode').check()
+  await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
+  await expect(page.getByText('Long hover shows plain version')).toBeVisible()
+
+  await navigation.getByRole('link', { name: 'Meetings' }).click()
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toContainText('Copy the receipts')
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toHaveAttribute('data-copy-plain', 'Copy note')
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toBeVisible()
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toContainText('Export the PDF, darling')
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toHaveAttribute('title', 'Export PDF')
 })

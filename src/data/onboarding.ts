@@ -11,7 +11,14 @@ export type OnboardingStep = {
   requiredAction: OnboardingRequiredAction
   screen?: AppScreen
   actionId: string
+  actionHint?: string
   primaryLabel?: string
+}
+
+type OnboardingStepProgress = {
+  current: number
+  total: number
+  label: string
 }
 
 export const onboardingSteps: readonly OnboardingStep[] = [
@@ -23,6 +30,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'routeMounted',
     screen: 'today',
     actionId: 'view-today',
+    actionHint: 'Opening Today confirms this step.',
   },
   {
     id: 'build-nav',
@@ -32,6 +40,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'click-build',
+    actionHint: 'Click Build in the sidebar.',
   },
   {
     id: 'table-tabs',
@@ -41,6 +50,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'select-table',
+    actionHint: 'Click a table tab.',
   },
   {
     id: 'table-meaning',
@@ -50,6 +60,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'routeMounted',
     screen: 'build',
     actionId: 'view-active-table',
+    actionHint: 'The active table is mounted.',
   },
   {
     id: 'record-meaning',
@@ -59,6 +70,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'open-record',
+    actionHint: 'Click a record row.',
   },
   {
     id: 'field-meaning',
@@ -68,15 +80,28 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'open-field-controls',
+    actionHint: 'Click Add field.',
   },
   {
     id: 'field-types',
     title: 'Field types',
-    body: 'Text, dates, statuses, checkboxes, tags, links, lookups, and rollups each teach Sundesk what the value means.',
+    body: [
+      'Text: Short labels, names, titles, and quick details.',
+      'Long text: Notes, context, updates, and anything that needs room.',
+      'Number: Counts, amounts, percentages, square footage, budget numbers, and scores.',
+      'Date: Due dates, meetings, follow-ups, expiry dates, renewal dates, and timelines.',
+      'Status: One current stage, like Not started, Waiting, In review, or Done.',
+      'Checkbox: Yes or no tracking, like sent, approved, received, urgent, or needs follow-up.',
+      'Tags: Multiple labels on one record, so a task can be Waiting, COI, Steph, and Friday all at once.',
+      'Link: A connection to another table, like a task connected to a community, person, meeting, or document.',
+      'Lookup: Information pulled from a linked record so she does not retype it.',
+      'Rollup: A calculated summary from linked records, like count, total, earliest date, latest date, or open items.',
+    ].join('\n'),
     targetId: 'field-type-menu',
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'open-type-menu',
+    actionHint: 'Open or change the type menu.',
   },
   {
     id: 'tags',
@@ -86,6 +111,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'inspect-tags',
+    actionHint: 'Click a tags cell or picker.',
   },
   {
     id: 'linked-records',
@@ -95,6 +121,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'inspect-linked-records',
+    actionHint: 'Click a linked-record cell or picker.',
   },
   {
     id: 'views',
@@ -104,6 +131,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'build',
     actionId: 'open-view-controls',
+    actionHint: 'Click the view controls.',
   },
   {
     id: 'meetings',
@@ -113,6 +141,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'meetings',
     actionId: 'open-meetings',
+    actionHint: 'Click Meetings in the sidebar.',
   },
   {
     id: 'meeting-pdf',
@@ -122,6 +151,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'meetings',
     actionId: 'export-meeting-pdf',
+    actionHint: 'Click Export PDF.',
   },
   {
     id: 'lab',
@@ -131,6 +161,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     requiredAction: 'targetClick',
     screen: 'lab',
     actionId: 'view-lab-placeholder',
+    actionHint: 'Click Sundesk Lab in the sidebar.',
   },
   {
     id: 'done',
@@ -139,6 +170,7 @@ export const onboardingSteps: readonly OnboardingStep[] = [
     targetId: 'lab-module-list',
     requiredAction: 'manual',
     actionId: 'finish-tour',
+    actionHint: 'Finish when the Lab list is visible.',
     primaryLabel: 'Finish',
   },
 ]
@@ -155,6 +187,24 @@ export function getNextOnboardingStep(stepId: string) {
   const index = onboardingSteps.findIndex((step) => step.id === stepId)
 
   return index >= 0 ? onboardingSteps[index + 1] : undefined
+}
+
+export function getPreviousOnboardingStep(stepId: string) {
+  const index = onboardingSteps.findIndex((step) => step.id === stepId)
+
+  return index > 0 ? onboardingSteps[index - 1] : undefined
+}
+
+export function getOnboardingStepProgress(stepId: string | null | undefined): OnboardingStepProgress {
+  const index = onboardingSteps.findIndex((step) => step.id === stepId)
+  const current = index >= 0 ? index + 1 : 0
+  const total = onboardingSteps.length
+
+  return {
+    current,
+    total,
+    label: `${current} of ${total}`,
+  }
 }
 
 export function startOnboarding(state: SundeskEducationState, timestamp = new Date().toISOString()): SundeskEducationState {
@@ -211,6 +261,32 @@ export function advanceOnboarding(
       completedStepIds,
       completedActionIds,
       completedAt: nextStep ? null : timestamp,
+      lastSeenAt: timestamp,
+    },
+  }
+}
+
+export function goBackOnboarding(
+  state: SundeskEducationState,
+  timestamp = new Date().toISOString(),
+): SundeskEducationState {
+  if (state.onboarding.status !== 'inProgress' || !state.onboarding.currentStepId) {
+    return state
+  }
+
+  const previousStep = getPreviousOnboardingStep(state.onboarding.currentStepId)
+
+  if (!previousStep) {
+    return state
+  }
+
+  return {
+    ...state,
+    onboarding: {
+      ...state.onboarding,
+      currentStepId: previousStep.id,
+      completedStepIds: state.onboarding.completedStepIds.filter((stepId) => stepId !== previousStep.id),
+      completedActionIds: state.onboarding.completedActionIds.filter((actionId) => actionId !== previousStep.actionId),
       lastSeenAt: timestamp,
     },
   }

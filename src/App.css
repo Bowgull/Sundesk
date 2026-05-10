@@ -1785,6 +1785,20 @@ h2 {
   text-transform: uppercase;
 }
 
+.onboarding-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.onboarding-card-top small,
+.onboarding-action-hint {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .onboarding-choice-card h2 {
   margin: 8px 0 0;
   color: var(--ink);
@@ -1800,6 +1814,12 @@ h2 {
   font-size: 14px;
   font-weight: 760;
   line-height: 1.45;
+  white-space: pre-line;
+}
+
+.onboarding-action-hint {
+  display: block;
+  margin-top: 10px;
 }
 
 .onboarding-choice-card > div,
@@ -5313,7 +5333,7 @@ h2 {
 
 .lab-active-module {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr) auto;
+  grid-template-columns: minmax(0, 0.55fr) minmax(260px, 1fr) minmax(180px, 0.55fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px;
@@ -5340,6 +5360,55 @@ h2 {
   color: var(--ink-2);
   font-size: 11px;
   font-weight: 850;
+}
+
+.lab-step-list span.done {
+  border-color: color-mix(in srgb, var(--accent), transparent 45%);
+  background: color-mix(in srgb, var(--accent), transparent 88%);
+  color: var(--ink);
+}
+
+.lab-current-step {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.lab-current-step span,
+.lab-current-step em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.lab-current-step strong {
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.lab-current-step p,
+.lab-current-step small {
+  margin: 0;
+}
+
+.lab-progress-meter {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-wash);
+}
+
+.lab-progress-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
 }
 
 .lab-module-list {
