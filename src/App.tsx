@@ -8,6 +8,8 @@ import { BuildToolbar } from './components/BuildToolbar'
 import { BuildViewsPanel } from './components/BuildViewsPanel'
 import { CommunitiesScreen } from './components/CommunitiesScreen'
 import { MeetingsScreen } from './components/MeetingsScreen'
+import { RecordDrawer } from './components/RecordDrawer'
+import { TasksScreen } from './components/TasksScreen'
 import { TimelineScreen } from './components/TimelineScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WaitingOnScreen } from './components/WaitingOnScreen'
@@ -16,7 +18,6 @@ import {
 } from './data/demoData'
 import {
   type DependencyRelationship,
-  getDependencyLabel,
   getDependencySummary as getDependencySummaryForBase,
   getUniqueDependencyId,
   hasDuplicateDependency,
@@ -4087,47 +4088,17 @@ function App() {
         )}
 
         {activeScreen === 'tasks' && (
-        <section className="screen-grid" id="tasks">
-          <article className="screen-panel wide">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Work</span>
-                <h2>Open work.</h2>
-              </div>
-              <button className="primary" type="button" onClick={() => openCreateRecordForTable('tasks')}>New work item</button>
-            </div>
-            <div className="record-card-grid">
-              {openTaskRecords.map((record) => (
-                <button className="work-record-card" key={record.id} type="button" onClick={() => openDailyRecord(record)}>
-                  <span>{getStringValue(record, 'status') || 'No status'}</span>
-                  <strong>{getRecordTitle(base, record)}</strong>
-                  <small>{getStringValue(record, 'priority') || 'No priority'}. Due {getStringValue(record, 'dueDate') || 'not set'}.</small>
-                </button>
-              ))}
-            </div>
-          </article>
-
-          <article className="screen-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Dependencies</span>
-                <h2>What blocks what.</h2>
-              </div>
-              <button disabled={!selectedTask} type="button" onClick={() => selectedTask && openDailyRecord(selectedTask)}>
-                Open dependency editor
-              </button>
-            </div>
-            <div className="dependency-list">
-              {selectedTaskDependencies.map((dependency) => (
-                <article key={dependency.id}>
-                  <strong>{getDependencyLabel(dependency, 'task_coi_halifax')} {dependency.record.title}</strong>
-                  <span>{dependency.record.tableLabel}</span>
-                  <small>{dependency.reason}</small>
-                </article>
-              ))}
-            </div>
-          </article>
-        </section>
+          <TasksScreen
+            base={base}
+            getDueDate={(record) => getStringValue(record, 'dueDate')}
+            getPriority={(record) => getStringValue(record, 'priority')}
+            getStatus={(record) => getStringValue(record, 'status')}
+            onCreateTask={() => openCreateRecordForTable('tasks')}
+            onOpenRecord={openDailyRecord}
+            openTaskRecords={openTaskRecords}
+            selectedTask={selectedTask}
+            selectedTaskDependencies={selectedTaskDependencies}
+          />
         )}
 
         {activeScreen === 'followups' && (
@@ -4157,254 +4128,43 @@ function App() {
           />
         )}
 
-        <section className={`record-drawer ${isRecordDrawerOpen ? 'active-record-drawer' : ''} ${activeScreen !== 'build' && isRecordDrawerOpen ? 'floating-record-drawer' : ''}`} data-testid="record-drawer" id="record">
-          <div className="drawer-header">
-            <div>
-              <span className="eyebrow">{selectedBuildTable?.label || 'Record'}</span>
-              <h2>{selectedBuildRecord ? getRecordTitle(base, selectedBuildRecord) : 'Select a record'}</h2>
-            </div>
-            <div className="drawer-actions">
-              <span className="metric-pill">{drawerBacklinks.length} backlinks</span>
-              <span className="metric-pill">{drawerLinkedRecords.length} links out</span>
-              {activeScreen !== 'build' && (
-                <button className="ghost" type="button" onClick={() => setIsRecordDrawerOpen(false)}>Close</button>
-              )}
-            </div>
-          </div>
-
-          {selectedBuildRecord ? (
-            <>
-              <div className="drawer-status-strip" aria-label="Record status">
-                <span>{drawerStatusText}</span>
-                <strong>{drawerDateText}</strong>
-                <small>{drawerLinkedRecords.length} linked. {drawerBacklinks.length} backlinks. {drawerDependencies.length} dependencies.</small>
-              </div>
-
-              {selectedBuildRecord.tableId === 'communities' && (
-                <section className="community-detail-command" data-testid="community-detail-command">
-                  <div className="community-detail-readiness">
-                    <span>Readiness</span>
-                    <strong>{getNumberValue(selectedBuildRecord, 'readiness')}%</strong>
-                    <i aria-hidden="true"><b style={{ width: `${Math.max(8, getNumberValue(selectedBuildRecord, 'readiness'))}%` }} /></i>
-                  </div>
-                  <div className="community-detail-metrics">
-                    <article>
-                      <span>Blockers</span>
-                      <strong>{drawerCommunityBlockers.length}</strong>
-                    </article>
-                    <article>
-                      <span>Waiting</span>
-                      <strong>{drawerCommunityWaiting.length}</strong>
-                    </article>
-                    <article>
-                      <span>Meetings</span>
-                      <strong>{drawerCommunityMeetings.length}</strong>
-                    </article>
-                  </div>
-                  <div className="community-detail-next">
-                    <span>Next action</span>
-                    {drawerCommunityNextAction ? (
-                      <button type="button" onClick={() => openBuildRecord(drawerCommunityNextAction.tableId, drawerCommunityNextAction.id)}>
-                        <strong>{getRecordTitle(base, drawerCommunityNextAction)}</strong>
-                        <small>{getPickerRecordMeta(drawerCommunityNextAction)}</small>
-                      </button>
-                    ) : (
-                      <p className="empty-line">Add linked work, waiting, risk, or meeting rows.</p>
-                    )}
-                  </div>
-                </section>
-              )}
-
-              <div className="drawer-grid">
-                {drawerKeyFields.map((field) => (
-                  <article className="field-strip" key={field.id}>
-                    <span>{field.label}</span>
-                    <strong>{getFieldDisplayValue(selectedBuildRecord, field)}</strong>
-                    <small className="field-type-chip">{field.type}</small>
-                  </article>
-                ))}
-              </div>
-
-              {drawerMeetingPrep && renderMeetingPrep(drawerMeetingPrep)}
-
-              <div className="record-section-grid">
-                <section>
-                  <div className="mini-title">
-                    <strong>Fields</strong>
-                  </div>
-                  <div className="record-form">
-                    {editableFieldsForSelectedTable.map((field) =>
-                      renderRecordInput(field, selectedBuildRecord.values[field.id], updateSelectedRecord),
-                    )}
-                  </div>
-                </section>
-
-                <section>
-                  <div className="mini-title">
-                    <strong>Linked records</strong>
-                  </div>
-                  <div className="linked-list">
-                    {drawerLinkedRecords.length === 0 && <p className="empty-line">No linked records selected.</p>}
-                    {drawerLinkedRecords.map((link) => (
-                      <button
-                        className="linked-record-card"
-                        key={`${link.fieldId}-${link.record.id}`}
-                        type="button"
-                        onClick={() => openBuildRecord(link.record.tableId, link.record.id)}
-                      >
-                        <span className="pill waiting">{link.record.tableLabel}</span>
-                        <strong>{link.record.title}</strong>
-                        <small>{link.fieldLabel}. {link.record.context}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              <div className="record-section-grid">
-                <section>
-                  <div className="mini-title">
-                    <strong>Backlinks</strong>
-                  </div>
-                  <div className="linked-list">
-                    {drawerBacklinks.length === 0 && <p className="empty-line">No records point here.</p>}
-                    {drawerBacklinks.map((backlink) => (
-                      <button
-                        className="linked-record-card"
-                        key={`${backlink.fromRecord.id}-${backlink.fieldId}`}
-                        type="button"
-                        onClick={() => openBuildRecord(backlink.fromRecord.tableId, backlink.fromRecord.id)}
-                      >
-                        <span className="pill prep">{backlink.fromRecord.tableLabel}</span>
-                        <strong>{backlink.fromRecord.title}</strong>
-                        <small>{backlink.fieldLabel}. {backlink.fromRecord.context}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="why-card">
-                  <div className="mini-title">
-                    <strong>Dependencies</strong>
-                  </div>
-                  <div className="dependency-editor" data-testid="dependency-editor">
-                    <label>
-                      <span>Relationship</span>
-                      <select
-                        value={dependencyDraft.relationship}
-                        onChange={(event) =>
-                          setDependencyDraft((current) => ({
-                            ...current,
-                            relationship: event.target.value as DependencyRelationship,
-                          }))
-                        }
-                      >
-                        <option value="dependsOn">Depends on</option>
-                        <option value="blocks">Blocks</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Find record</span>
-                      <input
-                        placeholder="Search records"
-                        type="search"
-                        value={dependencySearch}
-                        onChange={(event) => setDependencySearch(event.target.value)}
-                      />
-                    </label>
-                    {selectedDependencyTargetRecord && (
-                      <button
-                        className="selected-dependency-target"
-                        type="button"
-                        onClick={() => setDependencyDraft((current) => ({ ...current, toRecordId: '' }))}
-                      >
-                        <strong>{getRecordTitle(base, selectedDependencyTargetRecord)}</strong>
-                        <small>Clear selected record</small>
-                      </button>
-                    )}
-                    <div className="dependency-picker-list">
-                      {dependencyPickerRecords.length === 0 && <p className="empty-note">No records match. Change the search.</p>}
-                      {dependencyPickerRecords.slice(0, 6).map((record) => {
-                        const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
-                        const isSelected = dependencyDraft.toRecordId === record.id
-
-                        return (
-                          <button
-                            className={isSelected ? 'selected' : ''}
-                            key={record.id}
-                            type="button"
-                            onClick={() => setDependencyDraft((current) => ({ ...current, toRecordId: record.id }))}
-                          >
-                            <strong>{getRecordTitle(base, record)}</strong>
-                            <small>{table?.label || record.tableId}. {getRecordContext(record)}</small>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    <label className="full-row">
-                      <span>Reason</span>
-                      <textarea
-                        rows={3}
-                        value={dependencyDraft.reason}
-                        onChange={(event) => setDependencyDraft((current) => ({ ...current, reason: event.target.value }))}
-                        placeholder="Why this link matters"
-                      />
-                    </label>
-                    <button className="primary" disabled={!dependencyDraft.toRecordId} type="button" onClick={createDependency}>
-                      Add dependency
-                    </button>
-                  </div>
-                  {drawerDependencies.length > 0 ? (
-                    <ol className="editable-dependency-list">
-                      {drawerDependencies.map((dependency) => (
-                        <li key={dependency.id}>
-                          <div>
-                            <button
-                              className="dependency-record-link"
-                              type="button"
-                              onClick={() => openBuildRecord(dependency.record.tableId, dependency.record.id)}
-                            >
-                              {getDependencyLabel(dependency, selectedBuildRecord.id)} {dependency.record.title}.
-                            </button>
-                            <span>{dependency.record.tableLabel}</span>
-                          </div>
-                          <label>
-                            <span>Type</span>
-                            <select
-                              value={dependency.relationship}
-                              onChange={(event) =>
-                                updateDependency(dependency.id, { relationship: event.target.value as DependencyRelationship })
-                              }
-                            >
-                              <option value="dependsOn">Depends on</option>
-                              <option value="blocks">Blocks</option>
-                            </select>
-                          </label>
-                          <label>
-                            <span>Reason</span>
-                            <textarea
-                              rows={2}
-                              value={dependency.reason}
-                              onChange={(event) => updateDependency(dependency.id, { reason: event.target.value })}
-                            />
-                          </label>
-                          <div className="dependency-row-actions">
-                            <button type="button" onClick={() => flipDependencyDirection(dependency.id)}>Flip direction</button>
-                            <button className="danger" type="button" onClick={() => deleteDependency(dependency.id)}>Remove</button>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className="empty-line">No dependency links for this record.</p>
-                  )}
-                </section>
-              </div>
-            </>
-          ) : (
-            <p className="empty-note">Create a record in Build to edit it here.</p>
-          )}
-        </section>
+        <RecordDrawer
+          activeScreenIsBuild={activeScreen === 'build'}
+          base={base}
+          dependencyDraft={dependencyDraft}
+          dependencyPickerRecords={dependencyPickerRecords}
+          dependencySearch={dependencySearch}
+          drawerBacklinks={drawerBacklinks}
+          drawerCommunityBlockers={drawerCommunityBlockers}
+          drawerCommunityMeetings={drawerCommunityMeetings}
+          drawerCommunityNextAction={drawerCommunityNextAction}
+          drawerCommunityReadiness={selectedBuildRecord ? getNumberValue(selectedBuildRecord, 'readiness') : 0}
+          drawerCommunityWaiting={drawerCommunityWaiting}
+          drawerDateText={drawerDateText}
+          drawerDependencies={drawerDependencies}
+          drawerKeyFields={drawerKeyFields}
+          drawerLinkedRecords={drawerLinkedRecords}
+          drawerMeetingPrep={drawerMeetingPrep}
+          drawerStatusText={drawerStatusText}
+          editableFieldsForSelectedTable={editableFieldsForSelectedTable}
+          getFieldDisplayValue={getFieldDisplayValue}
+          getPickerRecordMeta={getPickerRecordMeta}
+          isRecordDrawerOpen={isRecordDrawerOpen}
+          onClose={() => setIsRecordDrawerOpen(false)}
+          onCreateDependency={createDependency}
+          onDeleteDependency={deleteDependency}
+          onFlipDependencyDirection={flipDependencyDirection}
+          onOpenRecord={openBuildRecord}
+          onRenderMeetingPrep={renderMeetingPrep}
+          onRenderRecordInput={renderRecordInput}
+          onSelectedRecordChange={updateSelectedRecord}
+          onSetDependencyDraft={setDependencyDraft}
+          onSetDependencySearch={setDependencySearch}
+          onUpdateDependency={updateDependency}
+          selectedDependencyTargetRecord={selectedDependencyTargetRecord}
+          selectedRecord={selectedBuildRecord}
+          selectedTableLabel={selectedBuildTable?.label || 'Record'}
+        />
 
         <section className="connection-zone" id="connections">
           <article className="connection-panel">

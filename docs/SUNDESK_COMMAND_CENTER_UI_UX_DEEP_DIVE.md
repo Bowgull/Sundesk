@@ -279,6 +279,7 @@ Current resolved alignment:
 - The fourth parallel block extracted the Timeline shell into `src/components/TimelineScreen.tsx`, moved Communities CSS into `src/styles/communities.css`, and tightened Build toolbar/paste helper internals without visible behavior changes.
 - The fifth parallel block extracted Communities into `src/components/CommunitiesScreen.tsx`, moved Meetings CSS into `src/styles/meetings.css`, and tightened TimelineScreen internals without visible behavior changes.
 - The sixth parallel block extracted Build saved views, Build rules, and Meetings into dedicated components while keeping App as the state coordinator.
+- The seventh parallel block extracted the universal record drawer and Work screen into dedicated components while preserving drawer editing, backlinks, dependency editing, and daily route behavior.
 
 Remaining gaps:
 
@@ -290,7 +291,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: record drawer, Build grid internals, meeting prep internals.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Build grid internals, record input internals, meeting prep internals.
 
 ## UI/UX Audit Checklist
 
