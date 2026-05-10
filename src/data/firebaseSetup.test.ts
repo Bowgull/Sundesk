@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getFirebaseSetupState } from './firebaseSetup'
+import { getFirebaseLaunchReadinessSummary, getFirebaseSetupState } from './firebaseSetup'
 
 const completeEnv = {
   VITE_FIREBASE_API_KEY: 'key',
@@ -108,5 +108,124 @@ describe('firebase setup state', () => {
       statusLabel: 'Setup incomplete',
       writeGateEnabled: true,
     })
+  })
+})
+
+describe('firebase launch readiness summary', () => {
+  it('marks local work ready while Firebase config still needs setup', () => {
+    const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState({}), {
+      backupRehearsed: true,
+      deployApproved: false,
+      writeApproved: false,
+    })
+
+    expect(summary.items).toEqual([
+      {
+        id: 'local-backup',
+        label: 'Local backup rehearsal',
+        detail: 'Backup export and import rehearsal is done.',
+        status: 'local-ready',
+      },
+      {
+        id: 'firebase-config',
+        label: 'Firebase config',
+        detail: '6 config fields missing. Add Firebase config before hosted use.',
+        status: 'config-needed',
+      },
+      {
+        id: 'deploy-approval',
+        label: 'Deploy approval',
+        detail: 'Deploy approval is needed before hosting this build.',
+        status: 'deploy-approval-needed',
+      },
+      {
+        id: 'write-approval',
+        label: 'Firestore writes',
+        detail: 'Write approval is needed before enabling remote writes.',
+        status: 'write-approval-needed',
+      },
+      {
+        id: 'no-firebase-writes',
+        label: 'No Firebase writes',
+        detail: 'Write gate is disabled. No remote writes can run in this build.',
+        status: 'local-ready',
+      },
+    ])
+    expect(summary.readyForLaunch).toBe(false)
+  })
+
+  it('keeps deploy approval separate from write approval', () => {
+    const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState(completeEnv), {
+      backupRehearsed: true,
+      deployApproved: true,
+      writeApproved: false,
+    })
+
+    expect(summary.items.map((item) => [item.id, item.status])).toEqual([
+      ['local-backup', 'local-ready'],
+      ['firebase-config', 'local-ready'],
+      ['deploy-approval', 'local-ready'],
+      ['write-approval', 'write-approval-needed'],
+      ['no-firebase-writes', 'local-ready'],
+    ])
+    expect(summary.readyForLaunch).toBe(false)
+  })
+
+  it('marks missing approved accounts as config needed', () => {
+    const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_ALLOWED_EMAILS: '',
+    }), {
+      backupRehearsed: true,
+      deployApproved: true,
+      writeApproved: true,
+    })
+
+    expect(summary.items.find((item) => item.id === 'firebase-config')).toMatchObject({
+      detail: 'Add approved Google accounts before hosted use.',
+      status: 'config-needed',
+    })
+    expect(summary.readyForLaunch).toBe(false)
+  })
+
+  it('requires explicit write approval even when the write gate is enabled', () => {
+    const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    }), {
+      backupRehearsed: true,
+      deployApproved: true,
+      writeApproved: false,
+    })
+
+    expect(summary.items.find((item) => item.id === 'write-approval')).toMatchObject({
+      detail: 'Write gate is enabled. Write approval is still needed before remote writes.',
+      status: 'write-approval-needed',
+    })
+    expect(summary.items.find((item) => item.id === 'no-firebase-writes')).toMatchObject({
+      detail: 'Write gate is enabled. Confirm write approval before using hosted data.',
+      status: 'write-approval-needed',
+    })
+    expect(summary.readyForLaunch).toBe(false)
+  })
+
+  it('keeps launch blocked when the write gate is enabled before remote write use', () => {
+    const summary = getFirebaseLaunchReadinessSummary(getFirebaseSetupState({
+      ...completeEnv,
+      VITE_SUNDESK_FIRESTORE_WRITES: 'enabled',
+    }), {
+      backupRehearsed: true,
+      deployApproved: true,
+      writeApproved: true,
+    })
+
+    expect(summary.items.map((item) => [item.id, item.status])).toEqual([
+      ['local-backup', 'local-ready'],
+      ['firebase-config', 'local-ready'],
+      ['deploy-approval', 'local-ready'],
+      ['write-approval', 'local-ready'],
+      ['no-firebase-writes', 'write-approval-needed'],
+    ])
+    expect(summary.readyForLaunch).toBe(false)
   })
 })

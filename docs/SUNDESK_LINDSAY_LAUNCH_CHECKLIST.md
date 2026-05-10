@@ -122,9 +122,24 @@ Then test the preview URL with fake data only. No private emails, real records, 
 9. Open Settings.
 10. Confirm the quiet data-boundary note is there.
 11. Confirm Settings shows the actual Export backup and Import backup controls.
-12. Confirm Firestore writes are shown as disabled unless approval has been given.
+12. Confirm the Settings Launch readiness panel is visible when wired.
+13. Confirm Firestore writes are shown as disabled unless approval has been given.
 
 If write approval has not been given, stop here. No remote write test should run.
+
+## 6A. Settings Launch Readiness Panel
+
+Settings should show one manual launch readiness panel before deploy.
+
+The panel should confirm:
+
+- Local backup rehearsal. Complete only after the fake-data Export backup and Import backup round trip has been rehearsed locally.
+- Firebase config status. Local, partial, sign-in-ready, or write-ready from the private environment config.
+- Deploy approval. Pending until explicit deploy approval is given.
+- Write approval. Pending until explicit Firestore write approval is given.
+- No Firebase writes. Confirmed while `VITE_SUNDESK_FIRESTORE_WRITES` is blank and Settings shows writes disabled.
+
+If the panel shows any pending item, stop at the local build. Deploy approval is not write approval. A backup rehearsal is not write approval. No Firebase write is implied by any other check.
 
 ## 7. Local Fake-Data Backup And Import Rehearsal
 

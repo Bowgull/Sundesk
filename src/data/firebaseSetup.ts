@@ -19,6 +19,30 @@ export type FirebaseSetupState = {
   writeGateEnabled: boolean
 }
 
+export type FirebaseLaunchReadinessStatus =
+  | 'local-ready'
+  | 'config-needed'
+  | 'deploy-approval-needed'
+  | 'write-approval-needed'
+
+export type FirebaseLaunchReadinessInputs = {
+  backupRehearsed: boolean
+  deployApproved: boolean
+  writeApproved: boolean
+}
+
+export type FirebaseLaunchReadinessItem = {
+  detail: string
+  id: 'local-backup' | 'firebase-config' | 'deploy-approval' | 'write-approval' | 'no-firebase-writes'
+  label: string
+  status: FirebaseLaunchReadinessStatus
+}
+
+export type FirebaseLaunchReadinessSummary = {
+  items: FirebaseLaunchReadinessItem[]
+  readyForLaunch: boolean
+}
+
 const requiredConfigKeys: Array<keyof FirebaseSetupEnv> = [
   'VITE_FIREBASE_API_KEY',
   'VITE_FIREBASE_AUTH_DOMAIN',
@@ -76,4 +100,69 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
     statusLabel: writeGateEnabled ? 'Write ready' : 'Sign-in ready',
     writeGateEnabled,
   }
+}
+
+export function getFirebaseLaunchReadinessSummary(
+  setupState: FirebaseSetupState,
+  inputs: FirebaseLaunchReadinessInputs,
+): FirebaseLaunchReadinessSummary {
+  const items: FirebaseLaunchReadinessItem[] = [
+    {
+      id: 'local-backup',
+      label: 'Local backup rehearsal',
+      detail: inputs.backupRehearsed
+        ? 'Backup export and import rehearsal is done.'
+        : 'Run a local backup export and import rehearsal before launch.',
+      status: inputs.backupRehearsed ? 'local-ready' : 'config-needed',
+    },
+    {
+      id: 'firebase-config',
+      label: 'Firebase config',
+      detail: getFirebaseConfigReadinessDetail(setupState),
+      status: setupState.configComplete && setupState.allowlistCount > 0 ? 'local-ready' : 'config-needed',
+    },
+    {
+      id: 'deploy-approval',
+      label: 'Deploy approval',
+      detail: inputs.deployApproved
+        ? 'Deploy approval is recorded.'
+        : 'Deploy approval is needed before hosting this build.',
+      status: inputs.deployApproved ? 'local-ready' : 'deploy-approval-needed',
+    },
+    {
+      id: 'write-approval',
+      label: 'Firestore writes',
+      detail: inputs.writeApproved
+        ? 'Write approval is recorded.'
+        : setupState.writeGateEnabled
+          ? 'Write gate is enabled. Write approval is still needed before remote writes.'
+          : 'Write approval is needed before enabling remote writes.',
+      status: inputs.writeApproved ? 'local-ready' : 'write-approval-needed',
+    },
+    {
+      id: 'no-firebase-writes',
+      label: 'No Firebase writes',
+      detail: setupState.writeGateEnabled
+        ? 'Write gate is enabled. Confirm write approval before using hosted data.'
+        : 'Write gate is disabled. No remote writes can run in this build.',
+      status: setupState.writeGateEnabled ? 'write-approval-needed' : 'local-ready',
+    },
+  ]
+
+  return {
+    items,
+    readyForLaunch: items.every((item) => item.status === 'local-ready'),
+  }
+}
+
+function getFirebaseConfigReadinessDetail(setupState: FirebaseSetupState): string {
+  if (!setupState.configComplete) {
+    return `${setupState.missingConfigKeys.length} config fields missing. Add Firebase config before hosted use.`
+  }
+
+  if (setupState.allowlistCount === 0) {
+    return 'Add approved Google accounts before hosted use.'
+  }
+
+  return `${setupState.allowlistCount} approved accounts in local config.`
 }

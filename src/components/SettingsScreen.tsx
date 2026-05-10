@@ -34,6 +34,12 @@ export type SettingsRuleDestinationStat = {
   matches: number
 }
 
+export type SettingsLaunchReadinessItem = {
+  label: string
+  status: string
+  detail: string
+}
+
 export type SettingsScreenProps = {
   authAllowed: boolean
   authRequired: boolean
@@ -42,6 +48,7 @@ export type SettingsScreenProps = {
   firestoreReadShadowComparison: readonly FirestoreReadShadowComparison[]
   firestoreReadShadowState: FirestoreReadShadowState
   firestoreWriteGateState: FirestoreWriteGateState
+  launchReadinessItems?: readonly SettingsLaunchReadinessItem[]
   localEngineStats: readonly SettingsLocalEngineStat[]
   localRules: readonly LocalRule[]
   migrationMessages: readonly string[]
@@ -64,6 +71,7 @@ export function SettingsScreen({
   firestoreReadShadowComparison,
   firestoreReadShadowState,
   firestoreWriteGateState,
+  launchReadinessItems = [],
   localEngineStats,
   localRules,
   migrationMessages,
@@ -97,6 +105,10 @@ export function SettingsScreen({
     }
 
     event.currentTarget.value = ''
+  }
+
+  function getReadinessStatusLabel(status: string) {
+    return status.replace(/-/g, ' ')
   }
 
   return (
@@ -222,6 +234,28 @@ export function SettingsScreen({
           </div>
           <p className="settings-detail-note">{localRules.length} rules route records into command surfaces.</p>
         </details>
+      </article>
+
+      <article className="settings-panel settings-launch-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Launch</span>
+            <h2>Readiness.</h2>
+          </div>
+          <span className="metric-pill">{launchReadinessItems.length} checks</span>
+        </div>
+        <div className="launch-readiness-list" aria-label="Launch readiness checks">
+          {launchReadinessItems.length > 0 ? launchReadinessItems.map((item) => (
+            <div className="launch-readiness-item" data-status={item.status.toLowerCase()} key={`${item.label}-${item.status}`}>
+              <span className="launch-readiness-mark" aria-hidden="true" />
+              <strong>{item.label}</strong>
+              <span className="launch-readiness-status">{getReadinessStatusLabel(item.status)}</span>
+              <p>{item.detail}</p>
+            </div>
+          )) : (
+            <p className="launch-readiness-empty">No launch readiness items connected.</p>
+          )}
+        </div>
       </article>
 
       <article className="settings-panel settings-backup-panel">

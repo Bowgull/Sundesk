@@ -294,6 +294,7 @@ Current resolved alignment:
 - The nineteenth parallel block added `npm run preflight`, launch-preflight docs, stronger auth-gate E2E coverage for protected Settings routes, and removed the hardcoded digest bridge recipient.
 - The twentieth backup block added local JSON backup/import helpers, a quiet Settings backup panel, and the local fake-data backup/import rehearsal gate before any Firestore write approval, with no deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data.
 - The twenty-first docs block clarified that Settings has the actual Export backup and Import backup controls, and that launch rehearsal must round-trip a tiny fake dataset locally before any Firestore write approval.
+- The twenty-second readiness block added the Settings Launch readiness panel, wired it to the Firebase setup summary, and made local backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes visible in the app.
 
 Remaining gaps:
 

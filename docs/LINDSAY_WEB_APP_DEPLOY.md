@@ -67,6 +67,16 @@ The rehearsal proves the local backup and restore path before the shared workspa
 
 This rehearsal is not migration. It does not move Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
 
+Before deploy, Settings should also expose a Launch readiness panel. Treat it as a manual gate. It should show:
+
+- Local backup rehearsal status.
+- Firebase config status.
+- Deploy approval status.
+- Write approval status.
+- No Firebase writes status.
+
+The panel should read from the same visible boundaries as the rest of Settings. Firebase setup comes from the config state. Firestore write status comes from the write gate. Deploy and write approvals stay manual. No deploy runs from the app. No Firebase write runs from the panel.
+
 ## Persistence Caveats
 
 Current runtime persistence is local browser storage when Firebase is not configured.
@@ -169,6 +179,7 @@ Then smoke test the preview URL with fake data only:
 - Open Settings.
 - Confirm the data boundary note is present.
 - Confirm Settings shows the actual Export backup and Import backup controls.
+- Confirm Settings shows the Launch readiness panel with backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes status.
 - Confirm the app icon appears for browser bookmark and Add to Home Screen.
 - Run the local fake-data backup/import rehearsal from Settings.
 - Confirm Firestore writes remain disabled.
