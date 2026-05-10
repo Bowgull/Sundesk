@@ -1,9 +1,11 @@
 import './App.css'
 import './styles/themes.css'
 import { useEffect, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent } from 'react'
-import { mainScreens, themes, type AppScreen, type TimelineView } from './appConfig'
+import { mainScreens, themes, type AppScreen, type ThemeId, type TimelineView } from './appConfig'
 import { BuildGrid } from './components/BuildGrid'
 import { BuildGridCell } from './components/BuildGridCell'
+import { BuildGridHeader } from './components/BuildGridHeader'
+import { BuildModals } from './components/BuildModals'
 import { BuildPasteHelper } from './components/BuildPasteHelper'
 import { BuildRulesPanel } from './components/BuildRulesPanel'
 import { BuildToolbar } from './components/BuildToolbar'
@@ -13,6 +15,7 @@ import { MeetingPrepPanel } from './components/MeetingPrepPanel'
 import { MeetingsScreen } from './components/MeetingsScreen'
 import { RecordFieldInput } from './components/RecordFieldInput'
 import { RecordDrawer } from './components/RecordDrawer'
+import { SettingsScreen } from './components/SettingsScreen'
 import { TasksScreen } from './components/TasksScreen'
 import { TimelineScreen } from './components/TimelineScreen'
 import { TodayScreen } from './components/TodayScreen'
@@ -305,10 +308,10 @@ function renderCheckboxIcon(icon: CheckboxIcon = 'check') {
 
 function App() {
   const [initialBuildViewState] = useState(() => readStoredBuildViewState())
-  const [selectedTheme, setSelectedTheme] = useState(
+  const [selectedTheme, setSelectedTheme] = useState<ThemeId>(
     () => {
       const storedTheme = localStorage.getItem('sundesk-theme')
-      const legacyThemeMap: Record<string, string> = {
+      const legacyThemeMap: Record<string, ThemeId> = {
         light: 'command-center',
         'paper-light': 'graphite',
         'sunrise-soft': 'command-center',
@@ -318,7 +321,7 @@ function App() {
       }
       const themeValue = storedTheme ? legacyThemeMap[storedTheme] || storedTheme : 'command-center'
 
-      return themes.some((theme) => theme.value === themeValue) ? themeValue : 'command-center'
+      return themes.some((theme) => theme.value === themeValue) ? themeValue as ThemeId : 'command-center'
     },
   )
   const [activeScreen, setActiveScreen] = useState<AppScreen>(() => getScreenFromHash())
@@ -2596,54 +2599,21 @@ function App() {
   }
 
   function renderGridHeader(field: FieldDefinition, menuKey: string) {
-    const isPrimaryField = selectedBuildTable?.primaryFieldId === field.id
-    const menuId = `grid-field-menu-${field.tableId}-${field.id}-${menuKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`
-
     return (
-      <div className="grid-header-cell">
-        <button
-          aria-controls={openFieldMenuId === menuKey ? menuId : undefined}
-          aria-expanded={openFieldMenuId === menuKey}
-          aria-haspopup="menu"
-          className="grid-field-menu-trigger"
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation()
-            setOpenFieldMenuId(openFieldMenuId === menuKey ? '' : menuKey)
-          }}
-        >
-          <span>{field.label}</span>
-          {isPrimaryField && <small>Name field</small>}
-          <strong>⌄</strong>
-        </button>
-        {openFieldMenuId === menuKey && (
-          <div className="grid-field-menu" id={menuId} role="menu" aria-label={`${field.label} field actions`}>
-            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Edit field</button>
-            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Rename</button>
-            <button role="menuitem" type="button" onClick={() => openFieldSettings(field)}>Change type</button>
-            <button role="menuitem" type="button" onClick={() => toggleVisibleField(field.id)}>Hide from view</button>
-            <button role="menuitem" type="button" onClick={() => sortGridByField(field.id, 'asc')}>Sort ascending</button>
-            <button role="menuitem" type="button" onClick={() => sortGridByField(field.id, 'desc')}>Sort descending</button>
-            <button role="menuitem" type="button" onClick={() => groupGridByField(field.id)}>Group by this field</button>
-            <button role="menuitem" type="button" onClick={() => duplicateField(field)}>Duplicate field</button>
-            <button
-              className="danger menu-danger"
-              disabled={isPrimaryField}
-              role="menuitem"
-              type="button"
-              onClick={() => requestDeleteField(field)}
-            >
-              Delete field
-            </button>
-          </div>
-        )}
-        <button
-          aria-label={`Resize ${field.label}`}
-          className="column-resizer"
-          type="button"
-          onPointerDown={(event) => resizeColumn(field.id, event)}
-        />
-      </div>
+      <BuildGridHeader
+        field={field}
+        isPrimaryField={selectedBuildTable?.primaryFieldId === field.id}
+        menuKey={menuKey}
+        openFieldMenuId={openFieldMenuId}
+        onDuplicateField={duplicateField}
+        onGroupGridByField={groupGridByField}
+        onOpenFieldMenuIdChange={setOpenFieldMenuId}
+        onOpenFieldSettings={openFieldSettings}
+        onRequestDeleteField={requestDeleteField}
+        onResizeColumn={resizeColumn}
+        onSortGridByField={sortGridByField}
+        onToggleVisibleField={toggleVisibleField}
+      />
     )
   }
 
@@ -3845,574 +3815,56 @@ function App() {
             openBuildRecord={openBuildRecord}
           />
 
-          {buildModal === 'table' && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add table">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Table</span>
-                    <h2>Add table.</h2>
-                  </div>
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
-                </div>
-                <div className="build-form table-builder-form">
-                  <label>
-                    <span>Table name</span>
-                    <input
-                      value={tableDraft.label}
-                      onChange={(event) => setTableDraft((current) => ({ ...current, label: event.target.value }))}
-                      placeholder="Partners"
-                    />
-                  </label>
-                  <label>
-                    <span>Purpose</span>
-                    <input
-                      value={tableDraft.description}
-                      onChange={(event) => setTableDraft((current) => ({ ...current, description: event.target.value }))}
-                      placeholder="People or groups tied to the work."
-                    />
-                  </label>
-                </div>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="primary" type="button" onClick={createTable}>Add table</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'tableSettings' && selectedBuildTable && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Table settings">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Table</span>
-                    <h2>Rename table.</h2>
-                  </div>
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
-                </div>
-                <div className="build-form table-builder-form">
-                  <label>
-                    <span>Table name</span>
-                    <input
-                      value={tableSettingsDraft.label}
-                      onChange={(event) => setTableSettingsDraft((current) => ({ ...current, label: event.target.value }))}
-                    />
-                  </label>
-                  <label>
-                    <span>Purpose</span>
-                    <input
-                      value={tableSettingsDraft.description}
-                      onChange={(event) => setTableSettingsDraft((current) => ({ ...current, description: event.target.value }))}
-                    />
-                  </label>
-                </div>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="primary" type="button" onClick={renameTable}>Save table</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'deleteTable' && pendingDeleteTable && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete table">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Delete</span>
-                    <h2>Delete {pendingDeleteTable.label}.</h2>
-                  </div>
-                </div>
-                <p>This removes the table, its fields, its records, its saved views, and any links pointing to those records.</p>
-                <p>This cannot be undone in this local build.</p>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="danger" type="button" onClick={() => deleteTable(pendingDeleteTable.id)}>Delete table</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'resetLocalData' && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Reset local data">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Reset</span>
-                    <h2>Reset local data.</h2>
-                  </div>
-                </div>
-                <p>This restores the starter workbase in this browser.</p>
-                <p>Saved views and rules stay local. Record, table, and field edits return to the starter set.</p>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="danger" type="button" onClick={resetLocalWorkbase}>Reset local data</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'field' && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add field">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Column behavior</span>
-                    <h2>Choose what this column does.</h2>
-                    <p className="modal-lede">Start with the behavior. Sundesk handles the field type underneath.</p>
-                  </div>
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
-                </div>
-                <div className="field-behavior-grid" aria-label="Column behavior choices">
-                  {fieldBehaviorOptions.map((option) => (
-                    <button
-                      aria-pressed={fieldDraft.type === option.value}
-                      className={fieldDraft.type === option.value ? 'selected' : ''}
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFieldDraft((current) => ({
-                        ...current,
-                        type: option.value,
-                        sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
-                        sourceFieldId: '',
-                      }))}
-                    >
-                      <strong>{option.label}</strong>
-                      <span>{option.description}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="build-form field-builder-form">
-                  <label>
-                    <span>Column name</span>
-                    <input
-                      aria-label="Field name"
-                      value={fieldDraft.label}
-                      onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
-                      placeholder="COI status"
-                    />
-                  </label>
-                  <label>
-                    <span>Behavior type</span>
-                    <select
-                      aria-label="Type"
-                      value={fieldDraft.type}
-                      onChange={(event) => {
-                        const type = event.target.value as FieldType
-                        setFieldDraft((current) => ({
-                          ...current,
-                          type,
-                          sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
-                          sourceFieldId: '',
-                        }))
-                      }}
-                    >
-                      {fieldTypeOptions.map((fieldType) => (
-                        <option key={fieldType.value} value={fieldType.value}>
-                          {fieldType.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {optionFieldTypes.includes(fieldDraft.type) && (
-                    <label className="full-row">
-                      <span>Options</span>
-                      <textarea
-                        value={fieldDraft.options}
-                        onChange={(event) => setFieldDraft((current) => ({ ...current, options: event.target.value }))}
-                        rows={3}
-                      />
-                    </label>
-                  )}
-                  {fieldDraft.type === 'checkbox' && (
-                    <>
-                      <label className="full-row">
-                        <span>Icon</span>
-                        <div className="checkbox-style-grid">
-                          {checkboxIconOptions.map((option) => (
-                            <button
-                              aria-label={option.label}
-                              className={fieldDraft.checkboxIcon === option.value ? 'selected' : ''}
-                              key={option.value}
-                              type="button"
-                              onClick={() => setFieldDraft((current) => ({ ...current, checkboxIcon: option.value }))}
-                            >
-                              {renderCheckboxIcon(option.value)}
-                            </button>
-                          ))}
-                        </div>
-                      </label>
-                      <label className="full-row">
-                        <span>Colour</span>
-                        <div className="checkbox-color-grid">
-                          {checkboxColorOptions.map((option) => (
-                            <button
-                              aria-label={option.label}
-                              className={`check-${option.value} ${fieldDraft.checkboxColor === option.value ? 'selected' : ''}`}
-                              key={option.value}
-                              type="button"
-                              onClick={() => setFieldDraft((current) => ({ ...current, checkboxColor: option.value }))}
-                            />
-                          ))}
-                        </div>
-                      </label>
-                    </>
-                  )}
-                  {fieldDraft.type === 'linkedRecord' && (
-                    <>
-                      <label>
-                        <span>Linked table</span>
-                        <select
-                          value={fieldDraft.linkedTableId}
-                          onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
-                        >
-                          {base.tables
-                            .filter((table) => table.id !== selectedBuildTable?.id)
-                            .map((table) => (
-                              <option key={table.id} value={table.id}>
-                                {table.label}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                      <label className="checkbox-row">
-                        <span>Allow multiple linked records</span>
-                        <input
-                          checked={fieldDraft.allowMultiple}
-                          type="checkbox"
-                          onChange={(event) => setFieldDraft((current) => ({ ...current, allowMultiple: event.target.checked }))}
-                        />
-                      </label>
-                    </>
-                  )}
-                  {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count') && (
-                    <label>
-                      <span>Source link</span>
-                      <select
-                        value={effectiveSourceLinkedFieldId}
-                        onChange={(event) => setFieldDraft((current) => ({ ...current, sourceLinkedFieldId: event.target.value, sourceFieldId: '' }))}
-                      >
-                        {linkedFieldsForSelectedTable.map((field) => (
-                          <option key={field.id} value={field.id}>
-                            {field.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') && (
-                    <label>
-                      <span>Source field</span>
-                      <select
-                        value={fieldDraft.sourceFieldId || sourceFields[0]?.id || ''}
-                        onChange={(event) => setFieldDraft((current) => ({ ...current, sourceFieldId: event.target.value }))}
-                      >
-                        {sourceFields.map((field) => (
-                          <option key={field.id} value={field.id}>
-                            {field.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="primary" type="button" onClick={createField}>Add field</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'fieldSettings' && settingsField && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal" role="dialog" aria-modal="true" aria-label="Field settings">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Column behavior</span>
-                    <h2>{settingsField.label}</h2>
-                    <p className="modal-lede">Change what this column does without leaving the grid.</p>
-                  </div>
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Close</button>
-                </div>
-                <div className="field-behavior-grid" aria-label="Column behavior choices">
-                  {fieldBehaviorOptions.map((option) => (
-                    <button
-                      aria-pressed={settingsField.type === option.value}
-                      className={settingsField.type === option.value ? 'selected' : ''}
-                      key={option.value}
-                      type="button"
-                      onClick={() => updateField(settingsField.id, {
-                        type: option.value,
-                        sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
-                        sourceFieldId: '',
-                      })}
-                    >
-                      <strong>{option.label}</strong>
-                      <span>{option.description}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="build-form field-builder-form">
-                  <label>
-                    <span>Column name</span>
-                    <input
-                      aria-label="Field name"
-                      value={settingsField.label}
-                      onChange={(event) => updateField(settingsField.id, { label: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <span>Behavior type</span>
-                    <select
-                      aria-label="Type"
-                      value={settingsField.type}
-                      onChange={(event) => updateField(settingsField.id, { type: event.target.value as FieldType })}
-                    >
-                      {fieldTypeOptions.map((fieldType) => (
-                        <option key={fieldType.value} value={fieldType.value}>
-                          {fieldType.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {optionFieldTypes.includes(settingsField.type) && (
-                    <label className="full-row">
-                      <span>Options</span>
-                      <textarea
-                        value={(settingsField.options || []).join(', ')}
-                        rows={3}
-                        onChange={(event) => updateField(settingsField.id, { options: parseOptions(event.target.value) })}
-                      />
-                    </label>
-                  )}
-                  {settingsField.type === 'checkbox' && (
-                    <>
-                      <label className="full-row">
-                        <span>Icon</span>
-                        <div className="checkbox-style-grid">
-                          {checkboxIconOptions.map((option) => (
-                            <button
-                              aria-label={option.label}
-                              className={(settingsField.checkboxIcon || 'check') === option.value ? 'selected' : ''}
-                              key={option.value}
-                              type="button"
-                              onClick={() => updateField(settingsField.id, { checkboxIcon: option.value })}
-                            >
-                              {renderCheckboxIcon(option.value)}
-                            </button>
-                          ))}
-                        </div>
-                      </label>
-                      <label className="full-row">
-                        <span>Colour</span>
-                        <div className="checkbox-color-grid">
-                          {checkboxColorOptions.map((option) => (
-                            <button
-                              aria-label={option.label}
-                              className={`check-${option.value} ${(settingsField.checkboxColor || 'lime') === option.value ? 'selected' : ''}`}
-                              key={option.value}
-                              type="button"
-                              onClick={() => updateField(settingsField.id, { checkboxColor: option.value })}
-                            />
-                          ))}
-                        </div>
-                      </label>
-                    </>
-                  )}
-                  {settingsField.type === 'linkedRecord' && (
-                    <>
-                      <label>
-                        <span>Linked table</span>
-                        <select
-                          value={settingsField.linkedTableId || ''}
-                          onChange={(event) => updateField(settingsField.id, { linkedTableId: event.target.value })}
-                        >
-                          {base.tables
-                            .filter((table) => table.id !== selectedBuildTable?.id)
-                            .map((table) => (
-                              <option key={table.id} value={table.id}>
-                                {table.label}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                      <label className="checkbox-row">
-                        <span>Allow multiple linked records</span>
-                        <input
-                          checked={settingsField.allowMultiple ?? true}
-                          type="checkbox"
-                          onChange={(event) => updateField(settingsField.id, { allowMultiple: event.target.checked })}
-                        />
-                      </label>
-                    </>
-                  )}
-                </div>
-                <div className="modal-actions">
-                  <button className="primary" type="button" onClick={closeBuildModal}>Done</button>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {buildModal === 'deleteField' && pendingDeleteField && (
-            <div className="modal-backdrop" role="presentation">
-              <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete field">
-                <div className="modal-header">
-                  <div>
-                    <span className="eyebrow">Delete</span>
-                    <h2>Delete field.</h2>
-                  </div>
-                </div>
-                <p>This removes the field from every record in this table.</p>
-                <p>This cannot be undone in this local build.</p>
-                <div className="modal-actions">
-                  <button className="ghost" type="button" onClick={closeBuildModal}>Cancel</button>
-                  <button className="danger" type="button" onClick={() => deleteField(pendingDeleteField)}>Delete field</button>
-                </div>
-              </section>
-            </div>
-          )}
+          <BuildModals
+            base={base}
+            buildModal={buildModal}
+            checkboxColorOptions={checkboxColorOptions}
+            checkboxIconOptions={checkboxIconOptions}
+            closeBuildModal={closeBuildModal}
+            createField={createField}
+            createTable={createTable}
+            deleteField={deleteField}
+            deleteTable={deleteTable}
+            effectiveSourceLinkedFieldId={effectiveSourceLinkedFieldId}
+            fieldBehaviorOptions={fieldBehaviorOptions}
+            fieldDraft={fieldDraft}
+            fieldTypeOptions={fieldTypeOptions}
+            linkedFieldsForSelectedTable={linkedFieldsForSelectedTable}
+            optionFieldTypes={optionFieldTypes}
+            parseOptions={parseOptions}
+            pendingDeleteField={pendingDeleteField}
+            pendingDeleteTable={pendingDeleteTable}
+            renameTable={renameTable}
+            renderCheckboxIcon={renderCheckboxIcon}
+            resetLocalWorkbase={resetLocalWorkbase}
+            selectedBuildTable={selectedBuildTable}
+            setFieldDraft={setFieldDraft}
+            setTableDraft={setTableDraft}
+            setTableSettingsDraft={setTableSettingsDraft}
+            settingsField={settingsField}
+            sourceFields={sourceFields}
+            tableDraft={tableDraft}
+            tableSettingsDraft={tableSettingsDraft}
+            updateField={updateField}
+          />
 
         </section>
         )}
 
         {activeScreen === 'settings' && (
-        <section className="settings-zone" data-testid="settings-screen" id="settings">
-          <article className="settings-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Settings</span>
-                <h2>Appearance.</h2>
-              </div>
-            </div>
-            <div className="theme-grid">
-              {themes.map((theme) => (
-                <button
-                  key={theme.value}
-                  aria-pressed={theme.value === selectedTheme}
-                  className={`theme-swatch ${theme.value === selectedTheme ? 'selected' : ''}`}
-                  onClick={() => setSelectedTheme(theme.value)}
-                >
-                  <span className="theme-swatch-preview" aria-hidden="true" style={{ background: theme.swatch.background }}>
-                    <span className="theme-swatch-panel" style={{ background: theme.swatch.panel }}>
-                      <i style={{ color: theme.swatch.text }} />
-                      <b style={{ background: theme.swatch.accent }} />
-                    </span>
-                    <span className="theme-swatch-row">
-                      <i style={{ background: theme.swatch.status, borderColor: theme.swatch.accent }} />
-                      <b style={{ background: theme.swatch.primary }} />
-                    </span>
-                    {theme.value === selectedTheme && <span className="theme-check">✓</span>}
-                  </span>
-                  <strong>{theme.label}</strong>
-                </button>
-              ))}
-            </div>
-          </article>
-
-          <article className="settings-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Command send</span>
-                <h2>Morning summary.</h2>
-              </div>
-            </div>
-            <div className="settings-list">
-              <p><strong>Status.</strong> On</p>
-              <p><strong>Recipient.</strong> lindsaybelldesign@gmail.com</p>
-              <p><strong>Time.</strong> 7:30 AM</p>
-              <p><strong>Timezone.</strong> America/Toronto</p>
-              <p><strong>Includes.</strong> Today queue, waiting items, at-risk communities, meeting prep.</p>
-              <p><strong>Actions.</strong> Preview command send. Send test summary.</p>
-            </div>
-          </article>
-
-          <article className="settings-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Privacy</span>
-                <h2>Upload at your own risk.</h2>
-              </div>
-            </div>
-            <div className="settings-list">
-              <p><strong>Boundary.</strong> Sundesk is for status, dates, owners, links, and short notes.</p>
-              <p><strong>Sensitive information.</strong> Files, document contents, private numbers, permits, COI files, and contract text are your responsibility if added.</p>
-              <p><strong>Build notes.</strong> Obsidian is for session memory only. No product data goes there.</p>
-            </div>
-          </article>
-
-          <article className="settings-panel data-access-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Data and access</span>
-                <h2>Local workspace.</h2>
-              </div>
-              <span className="metric-pill">Local only</span>
-            </div>
-            <div className="settings-list">
-              <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved in this browser.</p>
-              <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
-              <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
-              <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
-            </div>
-            <details className="settings-details">
-              <summary>Show workspace counts</summary>
-              <div className="engine-stat-grid">
-                {localEngineStats.map((stat) => (
-                  <div key={stat.label}>
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                  </div>
-                ))}
-              </div>
-              {firestoreReadShadowState.collections && (
-                <>
-                  <p className="settings-detail-note"><strong>Remote counts.</strong> {firestoreReadShadowState.collections.map((item) => `${item.name}: ${item.count}`).join('. ')}.</p>
-                  <div className="read-shadow-compare" aria-label="Read shadow comparison">
-                    {firestoreReadShadowComparison.map((item) => (
-                      <div className={item.status} key={item.name}>
-                        <span>{item.name}</span>
-                        <strong>{item.local} local / {item.remote} remote</strong>
-                        <small>{item.delta === 0 ? 'Matched' : `${item.delta > 0 ? '+' : ''}${item.delta} remote delta`}</small>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </details>
-            <details className="settings-details">
-              <summary>Show command routing</summary>
-              <div className="rule-destination-grid" data-testid="rule-destination-grid">
-                {ruleDestinationStats.map((stat) => (
-                  <div key={stat.label}>
-                    <span>{stat.label}</span>
-                    <strong>{stat.matches}</strong>
-                    <small>{stat.rules} rules</small>
-                  </div>
-                ))}
-              </div>
-              <p className="settings-detail-note">{localRules.length} rules route records into command surfaces.</p>
-            </details>
-          </article>
-
-          <article className="settings-panel">
-            <div className="panel-title">
-              <div>
-                <span className="eyebrow">Setup</span>
-                <h2>Run setup again.</h2>
-              </div>
-              <button type="button" onClick={() => openScreen('today')}>Review setup prompt</button>
-            </div>
-            <div className="settings-list">
-              <p><strong>Review privacy.</strong> Show the warning again.</p>
-              <p><strong>Choose theme.</strong> Keep or change the saved theme.</p>
-              <p><strong>Check summary.</strong> Recipient, time, timezone, and included items.</p>
-              <p><strong>Review starter tables.</strong> No data will be deleted.</p>
-            </div>
-          </article>
-        </section>
+          <SettingsScreen
+            firestoreReadShadowComparison={firestoreReadShadowComparison}
+            firestoreReadShadowState={firestoreReadShadowState}
+            firestoreWriteGateState={firestoreWriteGateState}
+            localEngineStats={localEngineStats}
+            localRules={localRules}
+            migrationMessages={migrationMessages}
+            openScreen={openScreen}
+            ruleDestinationStats={ruleDestinationStats}
+            selectedTheme={selectedTheme}
+            themes={themes}
+            onThemeChange={setSelectedTheme}
+          />
         )}
         {renderRecordModal()}
       </section>

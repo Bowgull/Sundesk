@@ -282,6 +282,7 @@ Current resolved alignment:
 - The seventh parallel block extracted the universal record drawer and Work screen into dedicated components while preserving drawer editing, backlinks, dependency editing, and daily route behavior.
 - The eighth parallel block extracted the Build grid table shell into `src/components/BuildGrid.tsx` while preserving paste, inline edit, keyboard movement, field menus, and row actions.
 - The ninth parallel block used workers to extract Build grid cells, record field inputs, and meeting prep into dedicated components while preserving the same tested behavior.
+- The tenth parallel block used workers to extract Build field headers, Build modals, and Settings into dedicated components while preserving all tested modal, menu, theme, and settings behavior.
 
 Remaining gaps:
 
@@ -293,7 +294,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Build modal internals, table/field mutation controllers, settings shell.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: record modal, table/field mutation controllers, timeline mode internals.
 
 ## UI/UX Audit Checklist
 
