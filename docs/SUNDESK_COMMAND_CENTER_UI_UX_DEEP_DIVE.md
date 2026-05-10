@@ -229,6 +229,7 @@ Current resolved alignment:
 - Build is visible in the sidebar.
 - Timeline has the five deck view modes: Grid, Kanban, Calendar, Timeline, Graph.
 - Visible digest wording has been replaced by command-send and summary language.
+- Today command-send is a local-only preview in this build. External send is not connected without private deploy setup and separate send-channel approval.
 - Settings now puts engine counts and rule-routing details behind manual disclosure.
 - Today now puts rule receipts behind manual disclosure.
 - Build now keeps constructive actions visible and moves table admin actions behind `Table options`.
@@ -297,6 +298,7 @@ Current resolved alignment:
 - The twenty-second readiness block added the Settings Launch readiness panel, wired it to the Firebase setup summary, and made local backup rehearsal, Firebase config, deploy approval, write approval, and no Firebase writes visible in the app.
 - The twenty-third backup readiness block updates the E2E and docs contract so Launch readiness starts with local backup rehearsal pending, then marks it complete only after a successful fake-data Export backup and Import backup round trip. No deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data are part of that check.
 - The twenty-fourth install path block verifies the PWA manifest, icon links, install metadata, service worker shell, Today as home, and Build in the sidebar. The documented user path is hosted URL, mobile Add to Home Screen, and desktop bookmark with the Sundesk icon or favicon. Settings now shows the same install/bookmark path.
+- The twenty-fifth command-send preview block wires the Today summary preview as local-only. Preview summary opens a no-send command preview with Now, Waiting, Next, focus, why, and meeting prep context.
 
 Remaining gaps:
 

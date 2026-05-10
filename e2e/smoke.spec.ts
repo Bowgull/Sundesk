@@ -98,7 +98,7 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
   await expect(page.getByTestId('rail-workspace-card')).not.toHaveAttribute('open', '')
   await expect(page.getByTestId('rail-system-read-card')).not.toHaveAttribute('open', '')
   await expect(page.getByTestId('today-counts')).not.toHaveAttribute('open', '')
-  await expect(page.getByRole('button', { name: 'Preview summary' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Preview summary' })).toBeEnabled()
   await expect(page.getByTestId('today-first-read')).toContainText('Now')
   await expect(page.getByTestId('today-first-read')).toContainText('Waiting')
   await expect(page.getByTestId('today-first-read')).toContainText('Next')
@@ -121,6 +121,25 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
   await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
   await expect(page.getByRole('row', { name: /Send permit nudge/ })).toBeHidden()
   await expect(page.getByRole('status')).toContainText('Tag route opened: COI.')
+})
+
+test('Today command-send preview is local-only and keeps Today as home', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
+
+  const previewSummary = page.getByRole('button', { name: 'Preview summary' })
+
+  await expect(previewSummary).toBeEnabled()
+  await previewSummary.click()
+
+  const preview = page.getByTestId('today-command-send-preview')
+
+  await expect(preview.getByText('Command send preview.', { exact: true })).toBeVisible()
+  await expect(preview).toContainText(/No send happened/i)
+  await expect(preview).toContainText(/Now/i)
+  await expect(preview).toContainText(/Waiting/i)
+  await expect(preview).toContainText(/Next/i)
+  await expect(preview).toContainText(/meeting prep/i)
 })
 
 test('Build renders table workshop, record drawer, dependency editor, and Rules panel', async ({ page }) => {
@@ -794,7 +813,11 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
   await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
   await expect(page.getByText('Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.')).toBeVisible()
-  await expect(page.getByText('Recipient. Configure in the private deploy environment.')).toBeVisible()
+  await expect(page.getByLabel('Command send local status')).toContainText('Local only.')
+  await expect(page.getByLabel('Command send local status')).toContainText('No email is sent from Settings.')
+  await expect(page.getByLabel('Command send local status')).toContainText('Private deploy environment.')
+  await expect(page.getByLabel('Command send local status')).toContainText('7:30 AM')
+  await expect(page.getByLabel('Command send local status')).toContainText('America/Toronto.')
   await expect(page.getByText('Next setup step. Add Firebase config and approved accounts before hosted use.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toHaveAttribute('aria-pressed', 'true')

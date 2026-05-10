@@ -32,6 +32,7 @@ import {
   getUniqueDependencyId,
   hasDuplicateDependency,
 } from './data/dependencies'
+import { buildCommandSendPreview } from './data/commandSend'
 import {
   compareFirestoreReadShadowCounts,
   createFirestoreReadShadowReader,
@@ -430,6 +431,7 @@ function App() {
   })
   const [dependencySearch, setDependencySearch] = useState('')
   const [activeDigestPreviewMeetingId, setActiveDigestPreviewMeetingId] = useState('')
+  const [isTodayCommandPreviewOpen, setIsTodayCommandPreviewOpen] = useState(false)
   const [firestoreReadShadowState, setFirestoreReadShadowState] = useState<FirestoreReadShadowState>(() => getFirestoreReadShadowState())
   const [authSession, setAuthSession] = useState<FirebaseAuthSession | null>(null)
   const [authLoading, setAuthLoading] = useState(authRequired)
@@ -482,6 +484,15 @@ function App() {
   const todaySlipRecord = todayNowLane?.records[0]
   const todayChangedRecord = todayChangedRecords[0]
   const todayFocusRecord = todaySlipRecord || todayWaitingLane?.records[0] || todayNextLane?.records[0] || todayChangedRecord
+  const todayCommandPreview = buildCommandSendPreview({
+    base,
+    lanes: todayLanes,
+    firstFocusRecord: todayFocusRecord,
+    ruleReceipts: todayFocusRecord
+      ? getTodayRuleMatchesForRecord(todayFocusRecord.id).slice(0, 1).map((match) => getRulePreviewForBase(base, match.rule))
+      : todayRuleMatches.slice(0, 1).map((match) => getRulePreviewForBase(base, match.rule)),
+    meetingPrepCount: nextMeetingPrep?.agenda.length ?? nextMeetingLinkedTasks.length,
+  })
   const screenStats = getScreenStats(base)
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
@@ -3461,12 +3472,15 @@ function App() {
             getRecordTitle={(record) => getRecordTitle(base, record)}
             getRecordWorkflowTags={getRecordWorkflowTags}
             getTodayRuleMatchesForRecord={getTodayRuleMatchesForRecord}
+            isCommandSendPreviewOpen={isTodayCommandPreviewOpen}
             nextMeetingLinkedTasks={nextMeetingLinkedTasks}
             nextMeetingRecord={nextMeetingRecord}
             onOpenBuild={openBuildScreen}
             onOpenDailyRecord={openDailyRecord}
             onOpenWorkflowTagRoute={openWorkflowTagRoute}
+            onToggleCommandSendPreview={() => setIsTodayCommandPreviewOpen((isOpen) => !isOpen)}
             screenStats={screenStats}
+            todayCommandPreview={todayCommandPreview}
             todayChangedRecord={todayChangedRecord}
             todayChangedRecords={todayChangedRecords}
             todayFocusRecord={todayFocusRecord}

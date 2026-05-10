@@ -122,6 +122,73 @@
   margin-right: 6px;
 }
 
+.command-send-status {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.command-send-row,
+.command-send-includes {
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: baseline;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-glass);
+}
+
+.command-send-row span,
+.command-send-includes > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.command-send-row strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.command-send-row p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.command-send-schedule strong {
+  font-size: 16px;
+}
+
+.command-send-includes {
+  align-items: start;
+}
+
+.command-send-includes ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.command-send-includes li {
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-raised) 74%, transparent);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
 .settings-privacy-panel {
   align-self: start;
 }
@@ -591,6 +658,15 @@
   .settings-web-app-icon img {
     width: 34px;
     height: 34px;
+  }
+
+  .command-send-row,
+  .command-send-includes {
+    grid-template-columns: 1fr;
+  }
+
+  .command-send-row p {
+    grid-column: auto;
   }
 
   .launch-readiness-item {

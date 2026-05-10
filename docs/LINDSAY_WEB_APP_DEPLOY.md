@@ -10,6 +10,19 @@ Deploy approval and Firestore write approval are separate. A hosted app can be a
 
 Use [Sundesk Lindsay Launch Checklist](./SUNDESK_LINDSAY_LAUNCH_CHECKLIST.md) for the remaining setup path.
 
+## Command-Send Preview Boundary
+
+The Today `Preview summary` action is a local-only command-send preview in this build.
+
+Expected behavior:
+
+- It opens a preview of the summary that would be sent.
+- It includes Now, Waiting, Next, and meeting prep context.
+- It states that no send happened.
+- It does not email, text, post, sync, schedule, or call an external sender.
+
+External command send is not connected here. It requires private deploy setup, explicit send-channel configuration, and separate approval. Firebase Hosting, Auth, and Firestore setup do not imply external send.
+
 ## Recommended Path
 
 Use Firebase Hosting, Firebase Auth, and Firestore for the first Lindsay web app.
@@ -204,6 +217,9 @@ Then smoke test the preview URL with fake data only:
 - Run the local fake-data backup/import rehearsal from Settings.
 - Confirm backup rehearsal becomes complete after the fake-data import succeeds.
 - Confirm Firestore writes remain disabled.
+- Open Today and use Preview summary.
+- Confirm the command-send preview is local-only.
+- Confirm the preview states that no send happened.
 
 Hosted smoke test order after deploy approval:
 

@@ -31,14 +31,17 @@ type TodayScreenProps = {
   getRecordTitle: (record: BaseRecord) => string
   getRecordWorkflowTags: (record: BaseRecord) => readonly string[]
   getTodayRuleMatchesForRecord: (recordId: string) => readonly RuleMatch[]
+  isCommandSendPreviewOpen: boolean
   nextMeetingLinkedTasks: readonly unknown[]
   nextMeetingRecord: BaseRecord | undefined
   onOpenBuild: () => void
   onOpenDailyRecord: (record: BaseRecord) => void
   onOpenWorkflowTagRoute: (record: BaseRecord, tag: string) => void
+  onToggleCommandSendPreview: () => void
   screenStats: readonly ScreenStat[]
   todayChangedRecord: BaseRecord | undefined
   todayChangedRecords: readonly BaseRecord[]
+  todayCommandPreview: string
   todayFocusRecord: BaseRecord | undefined
   todayLanes: readonly TodayLane[]
   todayNextLane: TodayLane | undefined
@@ -58,14 +61,17 @@ export function TodayScreen({
   getRecordTitle,
   getRecordWorkflowTags,
   getTodayRuleMatchesForRecord,
+  isCommandSendPreviewOpen,
   nextMeetingLinkedTasks,
   nextMeetingRecord,
   onOpenBuild,
   onOpenDailyRecord,
   onOpenWorkflowTagRoute,
+  onToggleCommandSendPreview,
   screenStats,
   todayChangedRecord,
   todayChangedRecords,
+  todayCommandPreview,
   todayFocusRecord,
   todayLanes,
   todayNextLane,
@@ -100,7 +106,20 @@ export function TodayScreen({
           <span>Command send</span>
           <strong>7:30 AM</strong>
           <p>Recipient and timezone stay visible before anything leaves the browser.</p>
-          <button disabled title="Command send bridge is not connected yet." type="button">Preview summary</button>
+          <button
+            aria-controls="today-command-send-preview"
+            aria-expanded={isCommandSendPreviewOpen}
+            type="button"
+            onClick={onToggleCommandSendPreview}
+          >
+            Preview summary
+          </button>
+          {isCommandSendPreviewOpen && (
+            <div className="command-send-preview" data-testid="today-command-send-preview" id="today-command-send-preview">
+              <strong>Command send preview.</strong>
+              <pre>{todayCommandPreview}</pre>
+            </div>
+          )}
         </article>
       </header>
 

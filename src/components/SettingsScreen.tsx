@@ -145,20 +145,39 @@ export function SettingsScreen({
         </div>
       </article>
 
-      <article className="settings-panel">
+      <article className="settings-panel settings-command-send-panel">
         <div className="panel-title">
           <div>
             <span className="eyebrow">Command send</span>
             <h2>Morning summary.</h2>
           </div>
+          <span className="metric-pill">Local only</span>
         </div>
-        <div className="settings-list">
-          <p><strong>Status.</strong> On</p>
-          <p><strong>Recipient.</strong> Configure in the private deploy environment.</p>
-          <p><strong>Time.</strong> 7:30 AM</p>
-          <p><strong>Timezone.</strong> America/Toronto</p>
-          <p><strong>Includes.</strong> Today queue, waiting items, at-risk communities, meeting prep.</p>
-          <p><strong>Actions.</strong> Preview command send. Send test summary.</p>
+        <div className="command-send-status" aria-label="Command send local status">
+          <div className="command-send-row">
+            <span>Preview</span>
+            <strong>Local only.</strong>
+            <p>No email is sent from Settings.</p>
+          </div>
+          <div className="command-send-row">
+            <span>Recipient</span>
+            <strong>Private deploy environment.</strong>
+            <p>Settings shows the boundary. It does not store or send the address.</p>
+          </div>
+          <div className="command-send-row command-send-schedule">
+            <span>Schedule</span>
+            <strong>7:30 AM</strong>
+            <p>America/Toronto.</p>
+          </div>
+          <div className="command-send-includes">
+            <span>Included</span>
+            <ul>
+              <li>Today queue</li>
+              <li>Waiting items</li>
+              <li>At-risk communities</li>
+              <li>Meeting prep</li>
+            </ul>
+          </div>
         </div>
       </article>
 

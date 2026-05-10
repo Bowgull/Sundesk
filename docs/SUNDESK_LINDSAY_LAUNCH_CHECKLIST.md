@@ -4,6 +4,18 @@ Status: local-only. No deploy has run. Firestore writes require separate explici
 
 This checklist is the remaining path from local build to Lindsay-ready hosted web app. Do not paste private emails, secrets, screenshots with private values, real records, SALTXC data, permit contents, COI files, or contract text into this repo.
 
+## Command-Send Preview Boundary
+
+The Today summary control is local-only in this build.
+
+- `Preview summary` should be enabled on Today.
+- Clicking it should show a command-send preview only.
+- The preview should include Now, Waiting, Next, and meeting prep context.
+- The preview should state that no send happened.
+- No email, text, webhook, scheduled job, Firebase write, or external sender is connected by this control.
+
+External send requires private deploy setup, explicit send-channel configuration, and separate approval. Do not treat the local preview as a send path.
+
 ## 1. Firebase Console
 
 Create or confirm one Firebase project for Sundesk.
@@ -122,9 +134,12 @@ Then test the preview URL with fake data only. No private emails, real records, 
 9. Open Settings.
 10. Confirm the quiet data-boundary note is there.
 11. Confirm Settings shows the actual Export backup and Import backup controls.
-12. Confirm the Settings Launch readiness panel is visible when wired.
-13. Confirm Settings shows the install/bookmark path when wired.
+12. Confirm the Settings Launch readiness panel is visible.
+13. Confirm Settings shows the install/bookmark path.
 14. Confirm Firestore writes are shown as disabled unless approval has been given.
+15. Open Today and click Preview summary.
+16. Confirm the command-send preview says no send happened.
+17. Confirm the preview includes Now, Waiting, Next, and meeting prep context.
 
 If write approval has not been given, stop here. No remote write test should run.
 
