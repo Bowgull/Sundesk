@@ -34,28 +34,28 @@ describe('auth access helpers', () => {
   it('labels loading, signed-out, denied, and signed-in states', () => {
     expect(getAuthStateLabel({ loading: true, userEmail: null, allowed: false })).toEqual({
       actionLabel: 'Checking access',
-      detail: 'Checking the current browser session.',
+      detail: 'Reading the current browser session.',
       eyebrow: 'Sundesk access',
       state: 'loading',
       title: 'Checking sign-in.',
     })
     expect(getAuthStateLabel({ loading: false, userEmail: null, allowed: false })).toEqual({
       actionLabel: 'Continue with Google',
-      detail: 'Sign in with an approved Google account. This browser will remember the session.',
+      detail: 'Use the Google account approved for this build. The browser can keep the session.',
       eyebrow: 'Sundesk access',
       state: 'signedOut',
       title: 'Sign in required.',
     })
     expect(getAuthStateLabel({ loading: false, userEmail: 'guest@example.com', allowed: false })).toEqual({
       actionLabel: 'Use another account',
-      detail: 'Access is limited to approved Sundesk users.',
+      detail: 'This Google account is signed in, but it is not on the Sundesk allowlist.',
       eyebrow: 'Access limited',
       state: 'denied',
       title: 'This account is not approved.',
     })
     expect(getAuthStateLabel({ loading: false, userEmail: 'owner@example.com', allowed: true })).toEqual({
       actionLabel: 'Open Sundesk',
-      detail: 'Signed in with an approved account.',
+      detail: 'Approved account connected. Firestore is ready for the workspace.',
       eyebrow: 'Signed in',
       state: 'signedIn',
       title: 'Ready to continue.',

@@ -57,25 +57,42 @@
 .auth-gate {
   display: grid;
   min-height: 100vh;
-  padding: 28px;
+  padding: clamp(16px, 5vw, 28px);
   place-items: center;
   background: var(--background);
 }
 
 .auth-gate-panel {
   width: min(100%, 520px);
-  padding: 22px;
+  padding: clamp(18px, 4vw, 24px);
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--brand-shadow);
 }
 
+.auth-gate-panel .panel-title {
+  align-items: start;
+  gap: 14px;
+}
+
+.auth-gate-panel .panel-title h2 {
+  overflow-wrap: anywhere;
+}
+
 .auth-gate-panel .panel-lede {
   margin: 12px 0 0;
   color: var(--ink-2);
   font-size: 14px;
-  font-weight: 680;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.auth-disclaimer {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
   line-height: 1.45;
 }
 
@@ -137,6 +154,41 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
+}
+
+.auth-actions button {
+  min-height: 42px;
+  white-space: normal;
+}
+
+.auth-gate-signedOut .metric-pill,
+.auth-gate-loading .metric-pill {
+  background: var(--surface-soft);
+}
+
+.auth-gate-denied .metric-pill {
+  background: color-mix(in srgb, var(--sun) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--sun) 45%, var(--line));
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .auth-gate {
+    align-items: start;
+    min-height: 100svh;
+  }
+
+  .auth-gate-panel {
+    margin-top: 12px;
+  }
+
+  .auth-actions {
+    display: grid;
+  }
+
+  .auth-actions button {
+    width: 100%;
+  }
 }
 
 .onboarding-callout,

@@ -8,11 +8,18 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5175',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5175',
-    reuseExistingServer: true,
-    url: 'http://127.0.0.1:5175',
-  },
+  webServer: [
+    {
+      command: 'npm run dev -- --host 127.0.0.1 --port 5175',
+      reuseExistingServer: true,
+      url: 'http://127.0.0.1:5175',
+    },
+    {
+      command: 'VITE_SUNDESK_ALLOWED_EMAILS=approved@example.invalid npm run dev -- --host 127.0.0.1 --port 5176',
+      reuseExistingServer: true,
+      url: 'http://127.0.0.1:5176',
+    },
+  ],
   projects: [
     {
       name: 'chromium',

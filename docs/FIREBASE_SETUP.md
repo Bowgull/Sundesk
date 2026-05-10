@@ -6,6 +6,8 @@ Do not enable billing. Do not use Cloud Functions.
 
 No deploy has run from this task. No Firebase writes should run without explicit approval.
 
+Use [Sundesk Lindsay Launch Checklist](./SUNDESK_LINDSAY_LAUNCH_CHECKLIST.md) as the final setup order.
+
 ## Create Project
 
 1. Open Firebase Console.

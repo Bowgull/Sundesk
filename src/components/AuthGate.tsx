@@ -27,6 +27,7 @@ export function AuthGate({
   const isSignedIn = label.state === 'signedIn'
   const isDenied = label.state === 'denied'
   const isSignedOut = label.state === 'signedOut'
+  const accessStatus = loading ? 'Checking' : isSignedIn ? 'Approved' : isDenied ? 'Blocked' : 'Google'
 
   return (
     <section className={`auth-gate auth-gate-${label.state}`} data-testid="auth-gate" aria-busy={loading}>
@@ -36,10 +37,11 @@ export function AuthGate({
             <span className="eyebrow">{label.eyebrow}</span>
             <h2>{label.title}</h2>
           </div>
-          <span className="metric-pill">{loading ? 'Checking' : allowed ? 'Approved' : 'Limited'}</span>
+          <span className="metric-pill">{accessStatus}</span>
         </div>
 
         <p className="panel-lede">{label.detail}</p>
+        <p className="auth-disclaimer">Google handles sign-in. Firestore opens after access is approved.</p>
 
         {showAccount && (
           <div className="auth-account" aria-label="Signed-in account">

@@ -40,7 +40,7 @@ export function getAuthStateLabel({
   if (loading) {
     return {
       actionLabel: 'Checking access',
-      detail: 'Checking the current browser session.',
+      detail: 'Reading the current browser session.',
       eyebrow: 'Sundesk access',
       state: 'loading',
       title: 'Checking sign-in.',
@@ -50,7 +50,7 @@ export function getAuthStateLabel({
   if (!normalizeEmail(userEmail)) {
     return {
       actionLabel: 'Continue with Google',
-      detail: 'Sign in with an approved Google account. This browser will remember the session.',
+      detail: 'Use the Google account approved for this build. The browser can keep the session.',
       eyebrow: 'Sundesk access',
       state: 'signedOut',
       title: 'Sign in required.',
@@ -60,7 +60,7 @@ export function getAuthStateLabel({
   if (!allowed) {
     return {
       actionLabel: 'Use another account',
-      detail: 'Access is limited to approved Sundesk users.',
+      detail: 'This Google account is signed in, but it is not on the Sundesk allowlist.',
       eyebrow: 'Access limited',
       state: 'denied',
       title: 'This account is not approved.',
@@ -69,7 +69,7 @@ export function getAuthStateLabel({
 
   return {
     actionLabel: 'Open Sundesk',
-    detail: 'Signed in with an approved account.',
+    detail: 'Approved account connected. Firestore is ready for the workspace.',
     eyebrow: 'Signed in',
     state: 'signedIn',
     title: 'Ready to continue.',

@@ -287,6 +287,7 @@ Current resolved alignment:
 - The twelfth parallel block added the Firestore workspace snapshot layer, Google-login access helpers, the Auth gate surface, PWA bookmark assets, and the quiet Settings data-boundary disclaimer for the Lindsay-ready web app path.
 - The thirteenth parallel block added Firebase Auth service helpers, a Firestore workspace client, tighter Firestore rules for `workspaces/lindsay-sundesk`, and Auth gate styling for the hosted app path.
 - The fourteenth block wired the Auth gate into `App`, added Firebase Auth subscription, hydrated the shared Firestore workspace after approved sign-in, saved snapshots behind the explicit write gate, and removed the private email from `.env.example`.
+- The fifteenth parallel block added auth-gated E2E coverage, a Lindsay launch checklist, Auth gate copy polish, and mobile-safe Auth gate spacing.
 
 Remaining gaps:
 
@@ -298,7 +299,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Firebase setup QA, hosted preview smoke test, auth-gated E2E coverage, and first-run shared workspace creation flow.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: first-run shared workspace creation flow, Firebase setup QA, and hosted preview smoke test after explicit approval.
 
 ## UI/UX Audit Checklist
 

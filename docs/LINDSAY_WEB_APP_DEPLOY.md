@@ -6,6 +6,8 @@ Sundesk is a Vite React app. The near-term path is a real hosted web app for Jos
 
 No deploy has run in this step. No Firebase writes. No remote data changes.
 
+Use [Sundesk Lindsay Launch Checklist](./SUNDESK_LINDSAY_LAUNCH_CHECKLIST.md) for the remaining setup path.
+
 ## Recommended Path
 
 Use Firebase Hosting, Firebase Auth, and Firestore for the first Lindsay web app.
