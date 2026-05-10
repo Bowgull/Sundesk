@@ -33,6 +33,9 @@ export type SettingsRuleDestinationStat = {
 }
 
 export type SettingsScreenProps = {
+  authAllowed: boolean
+  authRequired: boolean
+  authUserEmail?: string | null
   firestoreReadShadowComparison: readonly FirestoreReadShadowComparison[]
   firestoreReadShadowState: FirestoreReadShadowState
   firestoreWriteGateState: FirestoreWriteGateState
@@ -44,9 +47,14 @@ export type SettingsScreenProps = {
   ruleDestinationStats: readonly SettingsRuleDestinationStat[]
   selectedTheme: ThemeId
   themes: readonly SettingsThemeOption[]
+  workspaceHydrated: boolean
+  workspaceStatus: string
 }
 
 export function SettingsScreen({
+  authAllowed,
+  authRequired,
+  authUserEmail,
   firestoreReadShadowComparison,
   firestoreReadShadowState,
   firestoreWriteGateState,
@@ -58,7 +66,18 @@ export function SettingsScreen({
   ruleDestinationStats,
   selectedTheme,
   themes,
+  workspaceHydrated,
+  workspaceStatus,
 }: SettingsScreenProps) {
+  const dataAccessTitle = authRequired ? 'Shared workspace.' : 'Local workspace.'
+  const dataAccessPill = authRequired
+    ? authAllowed && workspaceHydrated ? 'Shared ready' : 'Sign-in gated'
+    : 'Local only'
+  const accessLine = authRequired
+    ? authAllowed ? `Approved${authUserEmail ? ` as ${authUserEmail}` : ''}.` : 'Waiting for an approved Google account.'
+    : 'Local browser mode. No sign-in required.'
+  const workspaceLine = workspaceStatus || (authRequired ? 'Shared workspace status is pending.' : 'Local workspace active.')
+
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
       <article className="settings-panel">
@@ -129,12 +148,14 @@ export function SettingsScreen({
         <div className="panel-title">
           <div>
             <span className="eyebrow">Data and access</span>
-            <h2>Local workspace.</h2>
+            <h2>{dataAccessTitle}</h2>
           </div>
-          <span className="metric-pill">Local only</span>
+          <span className="metric-pill">{dataAccessPill}</span>
         </div>
         <div className="settings-list">
-          <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved in this browser.</p>
+          <p><strong>Access.</strong> {accessLine}</p>
+          <p><strong>Workspace.</strong> {workspaceLine}</p>
+          <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore when the write gate is enabled.</p>
           <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
           <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
           <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>

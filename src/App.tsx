@@ -3805,6 +3805,9 @@ function App() {
 
         {activeScreen === 'settings' && (
           <SettingsScreen
+            authAllowed={authAllowed}
+            authRequired={authRequired}
+            authUserEmail={authSession?.email}
             firestoreReadShadowComparison={firestoreReadShadowComparison}
             firestoreReadShadowState={firestoreReadShadowState}
             firestoreWriteGateState={firestoreWriteGateState}
@@ -3815,6 +3818,8 @@ function App() {
             ruleDestinationStats={ruleDestinationStats}
             selectedTheme={selectedTheme}
             themes={themes}
+            workspaceHydrated={workspaceHydrated}
+            workspaceStatus={workspaceStatus}
             onThemeChange={setSelectedTheme}
           />
         )}

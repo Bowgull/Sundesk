@@ -691,6 +691,8 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await page.goto('/#settings')
 
   await expect(page.getByRole('heading', { name: 'Local workspace.' })).toBeVisible()
+  await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
+  await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Graphite' }).click()
