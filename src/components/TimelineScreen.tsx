@@ -5,17 +5,17 @@ import { getRecordContext, getRecordTitle } from '../data/workbase'
 
 type TimelineScreenProps = {
   base: Workbase
-  dailyTimelineRecords: BaseRecord[]
+  dailyTimelineRecords: readonly BaseRecord[]
   renderTimelineView: () => ReactNode
   timelineDatedRecordCount: number
   timelineDependencyRecordCount: number
   timelineFilter: string
-  timelineRecords: BaseRecord[]
+  timelineRecords: readonly BaseRecord[]
   timelineRuleReadCount: number
   timelineStatus: string
-  timelineStatusOptions: string[]
+  timelineStatusOptions: readonly string[]
   timelineTableId: string
-  timelineTagRouteOptions: [string, BaseRecord][]
+  timelineTagRouteOptions: readonly (readonly [string, BaseRecord])[]
   timelineView: TimelineView
   timelineViewQuestion: string
   getChipColorClass: (value: string) => string
@@ -24,6 +24,28 @@ type TimelineScreenProps = {
   onTimelineTableChange: (value: string) => void
   onTimelineViewChange: (value: TimelineView) => void
   onWorkflowTagRouteOpen: (record: BaseRecord, tag: string) => void
+}
+
+type TimelineViewHelper = {
+  readonly label: string
+  readonly description: string
+  readonly value: TimelineView
+}
+
+const timelineViewHelpers: readonly TimelineViewHelper[] = [
+  { value: 'grid', label: 'Grid', description: 'Clean or edit rows.' },
+  { value: 'kanban', label: 'Kanban', description: 'Move work by state.' },
+  { value: 'calendar', label: 'Calendar', description: 'See date pressure.' },
+  { value: 'timeline', label: 'Timeline', description: 'Read readiness before event day.' },
+  { value: 'graph', label: 'Graph', description: 'Explain why a place is at risk.' },
+]
+
+function getTimelineSourceLabel(base: Workbase, timelineTableId: string) {
+  if (timelineTableId === 'all') {
+    return 'All source tables.'
+  }
+
+  return `${base.tables.find((table) => table.id === timelineTableId)?.label || timelineTableId}.`
 }
 
 export function TimelineScreen({
@@ -48,6 +70,10 @@ export function TimelineScreen({
   onTimelineViewChange,
   onWorkflowTagRouteOpen,
 }: TimelineScreenProps) {
+  const timelineRecordCount = timelineRecords.length
+  const timelineSourceLabel = getTimelineSourceLabel(base, timelineTableId)
+  const timelineViewLabel = timelineViewOptions.find((option) => option.value === timelineView)?.label
+
   return (
     <section className="screen-grid" data-testid="timeline-screen" id="timeline">
       <article className="screen-panel wide">
@@ -56,7 +82,7 @@ export function TimelineScreen({
             <span className="eyebrow">Views · Timeline</span>
             <h2>Timeline has 5 ways to look.</h2>
           </div>
-          <span className="metric-pill">{timelineRecords.length} shown</span>
+          <span className="metric-pill">{timelineRecordCount} shown</span>
         </div>
         <p className="panel-lede">The main header is the view type. Controls like fields, filter, sort, and group sit underneath.</p>
         <div className="view-mode-tabs" role="tablist" aria-label="Timeline views">
@@ -80,8 +106,8 @@ export function TimelineScreen({
           </article>
           <article>
             <span>Records</span>
-            <strong>{timelineRecords.length}</strong>
-            <small>{timelineTableId === 'all' ? 'All source tables.' : `${base.tables.find((table) => table.id === timelineTableId)?.label || timelineTableId}.`}</small>
+            <strong>{timelineRecordCount}</strong>
+            <small>{timelineSourceLabel}</small>
           </article>
           <article>
             <span>Dates</span>
@@ -155,15 +181,16 @@ export function TimelineScreen({
         <div className="panel-title compact">
           <div>
             <span className="eyebrow">Sub controls</span>
-            <h2>{timelineViewOptions.find((option) => option.value === timelineView)?.label} answers one question.</h2>
+            <h2>{timelineViewLabel} answers one question.</h2>
           </div>
         </div>
         <div className="view-helper-list">
-          <button type="button" onClick={() => onTimelineViewChange('grid')}><strong>Grid</strong><span>Clean or edit rows.</span></button>
-          <button type="button" onClick={() => onTimelineViewChange('kanban')}><strong>Kanban</strong><span>Move work by state.</span></button>
-          <button type="button" onClick={() => onTimelineViewChange('calendar')}><strong>Calendar</strong><span>See date pressure.</span></button>
-          <button type="button" onClick={() => onTimelineViewChange('timeline')}><strong>Timeline</strong><span>Read readiness before event day.</span></button>
-          <button type="button" onClick={() => onTimelineViewChange('graph')}><strong>Graph</strong><span>Explain why a place is at risk.</span></button>
+          {timelineViewHelpers.map((helper) => (
+            <button key={helper.value} type="button" onClick={() => onTimelineViewChange(helper.value)}>
+              <strong>{helper.label}</strong>
+              <span>{helper.description}</span>
+            </button>
+          ))}
         </div>
 
         <div className="panel-title compact timeline-panel-gap">

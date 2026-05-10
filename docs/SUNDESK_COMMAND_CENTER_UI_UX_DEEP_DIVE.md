@@ -277,6 +277,7 @@ Current resolved alignment:
 - The second parallel block extracted Today into `src/components/TodayScreen.tsx`, moved Settings CSS into `src/styles/settings.css`, and added theme/config guardrails for longer worker runs.
 - The third parallel block extracted Build toolbar/view controls into `src/components/BuildToolbar.tsx`, moved Timeline CSS into `src/styles/timeline.css`, and tightened TodayScreen internals without visible behavior changes.
 - The fourth parallel block extracted the Timeline shell into `src/components/TimelineScreen.tsx`, moved Communities CSS into `src/styles/communities.css`, and tightened Build toolbar/paste helper internals without visible behavior changes.
+- The fifth parallel block extracted Communities into `src/components/CommunitiesScreen.tsx`, moved Meetings CSS into `src/styles/meetings.css`, and tightened TimelineScreen internals without visible behavior changes.
 
 Remaining gaps:
 
@@ -288,7 +289,7 @@ Remaining gaps:
 - Today has the stricter first read, touch-first focus band, and quieter count summary. It still needs deeper real-data hierarchy QA.
 - App shell and sidebar have a first-pass deck audit. Continue surface QA for active, hover, mobile, and pinned-view density.
 - The CSS mood has a first-pass deck calm layer. Continue tightening individual surfaces during later visual QA.
-- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Communities screen, Build sidecars, Meetings screen.
+- Continue extracting screens/components so 3 long-running workers can build without colliding in `App.tsx` and `App.css`. Next likely seams: Build sidecars, Meetings screen, record drawer.
 
 ## UI/UX Audit Checklist
 
