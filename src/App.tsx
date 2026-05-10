@@ -3026,7 +3026,9 @@ function App() {
           : 'Shared workspace loaded.'
       }
 
-      return 'No shared workspace found yet. Local workspace remains active.'
+      return firestoreWritesEnabled
+        ? 'No shared workspace found yet. The next approved save will create it.'
+        : 'No shared workspace found yet. Local workspace remains active until writes are approved.'
     })().then((message) => {
       if (!cancelled) {
         workspaceHydrationRef.current = true

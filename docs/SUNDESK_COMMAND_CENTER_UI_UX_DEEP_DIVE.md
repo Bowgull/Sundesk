@@ -288,7 +288,7 @@ Current resolved alignment:
 - The thirteenth parallel block added Firebase Auth service helpers, a Firestore workspace client, tighter Firestore rules for `workspaces/lindsay-sundesk`, and Auth gate styling for the hosted app path.
 - The fourteenth block wired the Auth gate into `App`, added Firebase Auth subscription, hydrated the shared Firestore workspace after approved sign-in, saved snapshots behind the explicit write gate, and removed the private email from `.env.example`.
 - The fifteenth parallel block added auth-gated E2E coverage, a Lindsay launch checklist, Auth gate copy polish, and mobile-safe Auth gate spacing.
-- The sixteenth block surfaced shared-workspace access and hydration status inside Settings while keeping the local fallback visible.
+- The sixteenth block surfaced shared-workspace access and hydration status inside Settings, kept the local fallback visible, and clarified the empty-workspace first-save path.
 
 Remaining gaps:
 
