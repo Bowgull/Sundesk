@@ -290,6 +290,7 @@ Current resolved alignment:
 - The fifteenth parallel block added auth-gated E2E coverage, a Lindsay launch checklist, Auth gate copy polish, and mobile-safe Auth gate spacing.
 - The sixteenth block surfaced shared-workspace access and hydration status inside Settings, kept the local fallback visible, and clarified the empty-workspace first-save path.
 - The seventeenth block added Firebase setup state detection with tests and surfaced local, partial, sign-in-ready, and write-ready states in Settings.
+- The eighteenth block added next setup-step guidance, removed the hardcoded summary recipient email from Settings, and verified the launch-safe Settings copy.
 
 Remaining gaps:
 

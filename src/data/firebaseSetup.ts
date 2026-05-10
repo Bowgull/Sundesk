@@ -13,6 +13,7 @@ export type FirebaseSetupState = {
   allowlistCount: number
   configComplete: boolean
   missingConfigKeys: string[]
+  nextAction: string
   status: 'local' | 'partial' | 'ready' | 'write-ready'
   statusLabel: string
   writeGateEnabled: boolean
@@ -47,6 +48,7 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
       allowlistCount,
       configComplete,
       missingConfigKeys,
+      nextAction: 'Add Firebase config and approved accounts before hosted use.',
       status: 'local',
       statusLabel: 'Local mode',
       writeGateEnabled,
@@ -58,6 +60,7 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
       allowlistCount,
       configComplete,
       missingConfigKeys,
+      nextAction: configComplete ? 'Add approved Google accounts in private config.' : 'Finish Firebase config in the private environment.',
       status: 'partial',
       statusLabel: 'Setup incomplete',
       writeGateEnabled,
@@ -68,6 +71,7 @@ export function getFirebaseSetupState(env: FirebaseSetupEnv = getDefaultFirebase
     allowlistCount,
     configComplete,
     missingConfigKeys,
+    nextAction: writeGateEnabled ? 'Run a fake-data write smoke test after approval.' : 'Verify Google sign-in before enabling writes.',
     status: writeGateEnabled ? 'write-ready' : 'ready',
     statusLabel: writeGateEnabled ? 'Write ready' : 'Sign-in ready',
     writeGateEnabled,

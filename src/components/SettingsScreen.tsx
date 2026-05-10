@@ -124,7 +124,7 @@ export function SettingsScreen({
         </div>
         <div className="settings-list">
           <p><strong>Status.</strong> On</p>
-          <p><strong>Recipient.</strong> lindsaybelldesign@gmail.com</p>
+          <p><strong>Recipient.</strong> Configure in the private deploy environment.</p>
           <p><strong>Time.</strong> 7:30 AM</p>
           <p><strong>Timezone.</strong> America/Toronto</p>
           <p><strong>Includes.</strong> Today queue, waiting items, at-risk communities, meeting prep.</p>
@@ -159,6 +159,7 @@ export function SettingsScreen({
           <p><strong>Access.</strong> {accessLine}</p>
           <p><strong>Workspace.</strong> {workspaceLine}</p>
           <p><strong>Firebase setup.</strong> {firebaseSetupState.statusLabel}. {firebaseSetupState.configComplete ? 'Config present.' : `${firebaseSetupState.missingConfigKeys.length} config fields missing.`} {firebaseSetupState.allowlistCount} approved accounts in local config.</p>
+          <p><strong>Next setup step.</strong> {firebaseSetupState.nextAction}</p>
           <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore when the write gate is enabled.</p>
           <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
           <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>

@@ -16,6 +16,7 @@ describe('firebase setup state', () => {
     expect(getFirebaseSetupState({})).toMatchObject({
       allowlistCount: 0,
       configComplete: false,
+      nextAction: 'Add Firebase config and approved accounts before hosted use.',
       status: 'local',
       statusLabel: 'Local mode',
       writeGateEnabled: false,
@@ -26,6 +27,7 @@ describe('firebase setup state', () => {
     expect(getFirebaseSetupState({ VITE_FIREBASE_PROJECT_ID: 'sundesk' })).toMatchObject({
       allowlistCount: 0,
       configComplete: false,
+      nextAction: 'Finish Firebase config in the private environment.',
       status: 'partial',
       statusLabel: 'Setup incomplete',
     })
@@ -40,6 +42,7 @@ describe('firebase setup state', () => {
     expect(getFirebaseSetupState(completeEnv)).toMatchObject({
       allowlistCount: 2,
       configComplete: true,
+      nextAction: 'Verify Google sign-in before enabling writes.',
       status: 'ready',
       statusLabel: 'Sign-in ready',
       writeGateEnabled: false,
@@ -53,6 +56,7 @@ describe('firebase setup state', () => {
     })).toMatchObject({
       status: 'write-ready',
       statusLabel: 'Write ready',
+      nextAction: 'Run a fake-data write smoke test after approval.',
       writeGateEnabled: true,
     })
   })

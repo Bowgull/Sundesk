@@ -694,6 +694,8 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByText('Access. Local browser mode. No sign-in required.')).toBeVisible()
   await expect(page.getByText('Workspace. Local workspace active.')).toBeVisible()
   await expect(page.getByText('Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.')).toBeVisible()
+  await expect(page.getByText('Recipient. Configure in the private deploy environment.')).toBeVisible()
+  await expect(page.getByText('Next setup step. Add Firebase config and approved accounts before hosted use.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Command Center' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Graphite' }).click()
