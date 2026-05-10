@@ -47,6 +47,26 @@ For Josh and Lindsay use, the first deploy should stay simple:
 
 Before any public URL is shared, confirm the app has no real SALTXC records, document contents, private contact data, permit contents, COI contents, or contract text baked into source, demo data, screenshots, or local export files.
 
+Before any Firestore write approval is requested, run a local fake-data backup/import rehearsal.
+
+Scope:
+
+- Local browser data only.
+- Fake verification data only.
+- No real Lindsay records.
+- No SALTXC data.
+- No private contact data.
+- No permit contents.
+- No COI contents.
+- No contract text.
+- No setup screenshots with private values.
+- No deploy.
+- No Firebase writes.
+
+The rehearsal proves the local backup and restore path before the shared workspace can receive writes. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank. Use the local preview or browser build. Create a tiny fake dataset, use Settings to export a backup JSON file, import that backup locally, and confirm Today, Build, Settings, and the data boundary still read correctly.
+
+This rehearsal is not migration. It does not move Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
+
 ## Persistence Caveats
 
 Current runtime persistence is local browser storage when Firebase is not configured.
@@ -113,6 +133,8 @@ This readiness path does not include:
 
 - Firebase deployment.
 - Firebase write activation in production.
+- Remote backup or import.
+- Real data migration.
 - Boss or broader team account management.
 - File uploads.
 - Document imports.
@@ -147,6 +169,8 @@ Then smoke test the preview URL with fake data only:
 - Open Settings.
 - Confirm the data boundary note is present.
 - Confirm the app icon appears for browser bookmark and Add to Home Screen.
+- Run the local fake-data backup/import rehearsal.
+- Confirm Firestore writes remain disabled.
 
 Hosted smoke test order after deploy approval:
 
@@ -175,6 +199,7 @@ npm run test:e2e
 - Build remains visible in the sidebar.
 - Today remains home.
 - No real Lindsay or SALTXC data is committed.
+- Local fake-data backup/import rehearsal is complete before write approval is requested.
 - No Firebase writes are enabled before explicit write approval.
 - No Firebase deploy has run without explicit approval.
 - Google login is wired with browser session persistence.

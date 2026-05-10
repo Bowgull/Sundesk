@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   cloneWorkbase,
   buildViewStateStorageKey,
+  createSundeskLocalBackup,
+  defaultVisibleFieldIdsByTable,
   getEmptyFieldValue,
   getEmptyRecordValues,
+  normalizeSundeskLocalBackupImport,
   readStoredBuildViewState,
   readStoredRules,
   readStoredWorkbase,
@@ -11,6 +14,9 @@ import {
   storedMigrationReport,
   workbaseStorageKey,
 } from './localStorage'
+import {
+  getDefaultLocalRules,
+} from './rules'
 import {
   workbase,
 } from './workbase'
@@ -210,5 +216,181 @@ describe('local storage helpers', () => {
     expect(state.viewRenameDrafts).toEqual({ tasks_view_1: 'Tasks view 1' })
     expect(state.columnWidths).toEqual({ title: 220 })
     expect(storedMigrationReport.buildViewReset).toBe(false)
+  })
+
+  it('creates a JSON backup object without touching localStorage', () => {
+    const getItem = vi.fn()
+    const setItem = vi.fn()
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem,
+        setItem,
+      },
+    })
+
+    const backup = createSundeskLocalBackup({
+      workbase,
+      rules: getDefaultLocalRules(),
+      buildViewState: {
+        version: 1,
+        selectedBuildTableId: 'tasks',
+        visibleFieldIdsByTable: defaultVisibleFieldIdsByTable,
+        gridFilter: 'permit',
+        gridSortFieldId: 'dueDate',
+        gridSortDirection: 'desc',
+        gridGroupFieldId: 'status',
+        gridColorFieldId: '',
+        gridDensity: 'compact',
+        localGridViews: [],
+        viewRenameDrafts: {},
+        activeGridViewId: '',
+        columnWidths: {},
+      },
+      createdAt: '2026-05-10T12:00:00.000Z',
+    })
+
+    backup.workbase.records[0].values.name = 'Changed in backup'
+
+    expect(backup).toMatchObject({
+      appName: 'Sundesk',
+      version: 1,
+      createdAt: '2026-05-10T12:00:00.000Z',
+      metadata: {
+        schemaVersion: 1,
+        appName: 'Sundesk',
+        backupVersion: 1,
+      },
+      buildViewState: {
+        selectedBuildTableId: 'tasks',
+        gridFilter: 'permit',
+      },
+    })
+    expect(workbase.records[0].values.name).toBe('Halifax')
+    expect(getItem).not.toHaveBeenCalled()
+    expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('normalizes imported backup slices through existing repair paths without touching localStorage', () => {
+    const getItem = vi.fn()
+    const setItem = vi.fn()
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem,
+        setItem,
+      },
+    })
+    const importedBase = cloneWorkbase(workbase)
+    const importedTask = importedBase.records.find((record) => record.id === 'task_coi_halifax')
+
+    importedBase.fields.push({ id: 'bad_type', tableId: 'tasks', label: 'Bad type', type: 'bad' as never })
+    if (importedTask) {
+      delete importedTask.values.status
+      importedTask.values.community = ['community_halifax', 7] as unknown as string[]
+    }
+
+    const result = normalizeSundeskLocalBackupImport({
+      appName: 'Sundesk',
+      version: 1,
+      createdAt: '2026-05-10T12:00:00.000Z',
+      metadata: {
+        schemaVersion: 1,
+        appName: 'Sundesk',
+        backupVersion: 1,
+      },
+      workbase: importedBase,
+      rules: [{ id: 'bad-rule' }],
+      buildViewState: {
+        version: 1,
+        selectedBuildTableId: 'tasks',
+        visibleFieldIdsByTable: {
+          tasks: ['title'],
+          bad: [false],
+        },
+        gridFilter: 7,
+        gridSortFieldId: 'dueDate',
+        gridSortDirection: 'desc',
+        gridGroupFieldId: 'status',
+        gridDensity: 'expanded',
+        localGridViews: [{ id: 'bad-view' }],
+        viewRenameDrafts: {
+          tasks_view_1: 'Tasks view 1',
+          bad: false,
+        },
+        activeGridViewId: 'tasks_view_1',
+        columnWidths: {
+          title: 220,
+          bad: 'wide',
+        },
+      },
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      throw new Error(result.reason)
+    }
+
+    const repairedTask = result.workbase.records.find((record) => record.id === 'task_coi_halifax')
+
+    expect(result.backup.appName).toBe('Sundesk')
+    expect(result.workbase.fields.map((field) => field.id)).not.toContain('bad_type')
+    expect(repairedTask?.values.status).toBe('')
+    expect(repairedTask?.values.community).toEqual([])
+    expect(result.rules.map((rule) => rule.id)).toContain('rule-blocked-status')
+    expect(result.buildViewState).toMatchObject({
+      version: 1,
+      selectedBuildTableId: 'tasks',
+      visibleFieldIdsByTable: {
+        tasks: ['title'],
+      },
+      gridFilter: '',
+      gridSortDirection: 'desc',
+      gridDensity: 'expanded',
+      viewRenameDrafts: {
+        tasks_view_1: 'Tasks view 1',
+      },
+      columnWidths: {
+        title: 220,
+      },
+    })
+    expect(result.usedFallbacks).toEqual({
+      workbase: false,
+      rules: true,
+      buildViewState: false,
+    })
+    expect(getItem).not.toHaveBeenCalled()
+    expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('rejects backups for other apps or versions', () => {
+    expect(normalizeSundeskLocalBackupImport({
+      appName: 'Other',
+      version: 1,
+      createdAt: '2026-05-10T12:00:00.000Z',
+      metadata: {
+        schemaVersion: 1,
+        appName: 'Other',
+        backupVersion: 1,
+      },
+      workbase,
+      rules: getDefaultLocalRules(),
+      buildViewState: {
+        version: 1,
+        selectedBuildTableId: 'tasks',
+        visibleFieldIdsByTable: defaultVisibleFieldIdsByTable,
+        gridFilter: '',
+        gridSortFieldId: 'title',
+        gridSortDirection: 'asc',
+        gridGroupFieldId: 'level',
+        gridColorFieldId: '',
+        gridDensity: 'comfortable',
+        localGridViews: [],
+        viewRenameDrafts: {},
+        activeGridViewId: '',
+        columnWidths: {},
+      },
+    })).toEqual({
+      ok: false,
+      reason: 'Unsupported Sundesk backup.',
+    })
   })
 })

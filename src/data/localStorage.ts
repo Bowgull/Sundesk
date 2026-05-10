@@ -17,6 +17,8 @@ import {
 export const workbaseStorageKey = 'sundesk-local-workbase-v1'
 export const buildViewStateStorageKey = 'sundesk-build-view-state-v1'
 export const rulesStorageKey = 'sundesk-local-rules-v1'
+export const sundeskLocalBackupAppName = 'Sundesk'
+export const sundeskLocalBackupVersion = 1
 
 export const computedFieldTypes: FieldType[] = ['lookup', 'rollup', 'count', 'systemFormula', 'createdTime', 'lastUpdatedTime']
 export const defaultVisibleFieldIdsByTable: Record<string, string[]> = {
@@ -83,6 +85,43 @@ export type StoredWorkbaseState = {
   base: Workbase
 }
 
+export type SundeskLocalBackup = {
+  appName: typeof sundeskLocalBackupAppName
+  version: typeof sundeskLocalBackupVersion
+  createdAt: string
+  metadata: {
+    schemaVersion: typeof sundeskLocalBackupVersion
+    appName: typeof sundeskLocalBackupAppName
+    backupVersion: typeof sundeskLocalBackupVersion
+  }
+  workbase: Workbase
+  rules: LocalRule[]
+  buildViewState: StoredBuildViewState
+}
+
+export type SundeskLocalBackupInput = {
+  workbase: Workbase
+  rules: LocalRule[]
+  buildViewState: StoredBuildViewState
+  createdAt?: string
+}
+
+export type NormalizedSundeskLocalBackupImport = {
+  ok: true
+  backup: SundeskLocalBackup
+  workbase: Workbase
+  rules: LocalRule[]
+  buildViewState: StoredBuildViewState
+  usedFallbacks: {
+    workbase: boolean
+    rules: boolean
+    buildViewState: boolean
+  }
+} | {
+  ok: false
+  reason: string
+}
+
 export type StoredMigrationReport = {
   workbaseReset: boolean
   rulesReset: boolean
@@ -137,6 +176,10 @@ function isStoredWorkbaseState(value: unknown): value is StoredWorkbaseState {
     Array.isArray(base?.fields) &&
     Array.isArray(base?.records) &&
     Array.isArray(base?.dependencies)
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
 function isRecordValue(value: unknown): value is RecordValue {
@@ -205,6 +248,133 @@ function isLocalGridView(value: unknown): value is LocalGridView {
     (!view.density || view.density === 'compact' || view.density === 'comfortable' || view.density === 'expanded') &&
     Array.isArray(view.visibleFieldIds) &&
     view.visibleFieldIds.every((fieldId) => typeof fieldId === 'string')
+}
+
+function cloneLocalGridView(view: LocalGridView): LocalGridView {
+  return {
+    ...view,
+    visibleFieldIds: [...view.visibleFieldIds],
+  }
+}
+
+function cloneStringArrayRecord(value: Record<string, string[]>): Record<string, string[]> {
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, [...item]]))
+}
+
+function cloneBuildViewState(state: StoredBuildViewState): StoredBuildViewState {
+  return {
+    ...state,
+    visibleFieldIdsByTable: cloneStringArrayRecord(state.visibleFieldIdsByTable),
+    localGridViews: state.localGridViews.map(cloneLocalGridView),
+    viewRenameDrafts: { ...state.viewRenameDrafts },
+    columnWidths: { ...state.columnWidths },
+  }
+}
+
+function getDefaultBuildViewState(): StoredBuildViewState {
+  return {
+    version: 1,
+    selectedBuildTableId: 'risks',
+    visibleFieldIdsByTable: cloneStringArrayRecord(defaultVisibleFieldIdsByTable),
+    gridFilter: '',
+    gridSortFieldId: 'title',
+    gridSortDirection: 'asc',
+    gridGroupFieldId: 'level',
+    gridColorFieldId: '',
+    gridDensity: 'comfortable',
+    localGridViews: [],
+    viewRenameDrafts: {},
+    activeGridViewId: '',
+    columnWidths: {},
+  }
+}
+
+function normalizeStringArrayRecord(value: unknown): Record<string, string[]> {
+  if (!isObjectRecord(value)) {
+    return {}
+  }
+
+  const normalized: Record<string, string[]> = {}
+
+  Object.entries(value).forEach(([key, item]) => {
+    if (Array.isArray(item) && item.every((child) => typeof child === 'string')) {
+      normalized[key] = item
+    }
+  })
+
+  return normalized
+}
+
+function normalizeStringRecord(value: unknown): Record<string, string> {
+  if (!isObjectRecord(value)) {
+    return {}
+  }
+
+  const normalized: Record<string, string> = {}
+
+  Object.entries(value).forEach(([key, item]) => {
+    if (typeof item === 'string') {
+      normalized[key] = item
+    }
+  })
+
+  return normalized
+}
+
+function normalizeNumberRecord(value: unknown): Record<string, number> {
+  if (!isObjectRecord(value)) {
+    return {}
+  }
+
+  const normalized: Record<string, number> = {}
+
+  Object.entries(value).forEach(([key, item]) => {
+    if (typeof item === 'number') {
+      normalized[key] = item
+    }
+  })
+
+  return normalized
+}
+
+function normalizeStoredRules(value: unknown) {
+  if (!Array.isArray(value)) {
+    return { rules: getDefaultLocalRules(), reset: true }
+  }
+
+  const validRules = value.filter(isLocalRule)
+
+  return {
+    rules: validRules.length > 0 ? mergeDefaultLocalRules(validRules) : getDefaultLocalRules(),
+    reset: validRules.length !== value.length || validRules.length === 0,
+  }
+}
+
+function normalizeStoredBuildViewState(value: unknown): { buildViewState: StoredBuildViewState, reset: boolean } {
+  if (!isObjectRecord(value) || value.version !== 1) {
+    return { buildViewState: getDefaultBuildViewState(), reset: true }
+  }
+
+  const buildViewState: StoredBuildViewState = {
+    version: 1,
+    selectedBuildTableId: typeof value.selectedBuildTableId === 'string' ? value.selectedBuildTableId : 'risks',
+    visibleFieldIdsByTable: normalizeStringArrayRecord(value.visibleFieldIdsByTable),
+    gridFilter: typeof value.gridFilter === 'string' ? value.gridFilter : '',
+    gridSortFieldId: typeof value.gridSortFieldId === 'string' ? value.gridSortFieldId : 'title',
+    gridSortDirection: value.gridSortDirection === 'desc' ? 'desc' : 'asc',
+    gridGroupFieldId: typeof value.gridGroupFieldId === 'string' ? value.gridGroupFieldId : 'level',
+    gridColorFieldId: typeof value.gridColorFieldId === 'string' ? value.gridColorFieldId : '',
+    gridDensity: value.gridDensity === 'compact' || value.gridDensity === 'expanded' ? value.gridDensity : 'comfortable',
+    localGridViews: Array.isArray(value.localGridViews) ? value.localGridViews.filter(isLocalGridView) : [],
+    viewRenameDrafts: normalizeStringRecord(value.viewRenameDrafts),
+    activeGridViewId: typeof value.activeGridViewId === 'string' ? value.activeGridViewId : '',
+    columnWidths: normalizeNumberRecord(value.columnWidths),
+  }
+
+  return {
+    buildViewState,
+    reset: false,
+  }
 }
 
 function normalizeStoredWorkbase(base: Workbase) {
@@ -297,6 +467,74 @@ export function getDefaultVisibleFieldIds(fields: FieldDefinition[]) {
   return fields.slice(0, 5).map((field) => field.id)
 }
 
+export function createSundeskLocalBackup(state: SundeskLocalBackupInput): SundeskLocalBackup {
+  const createdAt = state.createdAt || new Date().toISOString()
+
+  return {
+    appName: sundeskLocalBackupAppName,
+    version: sundeskLocalBackupVersion,
+    createdAt,
+    metadata: {
+      schemaVersion: sundeskLocalBackupVersion,
+      appName: sundeskLocalBackupAppName,
+      backupVersion: sundeskLocalBackupVersion,
+    },
+    workbase: cloneWorkbase(state.workbase),
+    rules: state.rules.map((rule) => ({ ...rule })),
+    buildViewState: cloneBuildViewState(state.buildViewState),
+  }
+}
+
+export function normalizeSundeskLocalBackupImport(value: unknown): NormalizedSundeskLocalBackupImport {
+  if (!isObjectRecord(value)) {
+    return {
+      ok: false,
+      reason: 'Unsupported Sundesk backup.',
+    }
+  }
+
+  const metadata = isObjectRecord(value.metadata) ? value.metadata : {}
+  const isSupportedBackup = value.appName === sundeskLocalBackupAppName &&
+    value.version === sundeskLocalBackupVersion &&
+    metadata.appName === sundeskLocalBackupAppName &&
+    metadata.schemaVersion === sundeskLocalBackupVersion &&
+    metadata.backupVersion === sundeskLocalBackupVersion
+
+  if (!isSupportedBackup) {
+    return {
+      ok: false,
+      reason: 'Unsupported Sundesk backup.',
+    }
+  }
+
+  const workbaseCandidate = { version: 1, base: value.workbase }
+  const normalizedWorkbase = isStoredWorkbaseState(workbaseCandidate)
+    ? normalizeStoredWorkbase(workbaseCandidate.base)
+    : { base: cloneWorkbase(workbase), reset: true }
+  const normalizedRules = normalizeStoredRules(value.rules)
+  const normalizedBuildViewState = normalizeStoredBuildViewState(value.buildViewState)
+  const createdAt = typeof value.createdAt === 'string' ? value.createdAt : new Date().toISOString()
+  const backup = createSundeskLocalBackup({
+    workbase: normalizedWorkbase.base,
+    rules: normalizedRules.rules,
+    buildViewState: normalizedBuildViewState.buildViewState,
+    createdAt,
+  })
+
+  return {
+    ok: true,
+    backup,
+    workbase: backup.workbase,
+    rules: backup.rules,
+    buildViewState: backup.buildViewState,
+    usedFallbacks: {
+      workbase: normalizedWorkbase.reset,
+      rules: normalizedRules.reset,
+      buildViewState: normalizedBuildViewState.reset,
+    },
+  }
+}
+
 export function readStoredBuildViewState(): Partial<StoredBuildViewState> {
   if (typeof window === 'undefined') {
     return {}
@@ -309,56 +547,14 @@ export function readStoredBuildViewState(): Partial<StoredBuildViewState> {
       return {}
     }
 
-    const state = JSON.parse(rawState) as Partial<StoredBuildViewState>
+    const state = JSON.parse(rawState) as unknown
 
-    if (state.version !== 1) {
+    if (!isObjectRecord(state) || state.version !== 1) {
       storedMigrationReport.buildViewReset = true
       return {}
     }
 
-    const localGridViews = Array.isArray(state.localGridViews)
-      ? state.localGridViews.filter(isLocalGridView)
-      : []
-    const visibleFieldIdsByTable = state.visibleFieldIdsByTable && typeof state.visibleFieldIdsByTable === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.visibleFieldIdsByTable).filter(
-            ([tableId, fieldIds]) =>
-              typeof tableId === 'string' &&
-              Array.isArray(fieldIds) &&
-              fieldIds.every((fieldId) => typeof fieldId === 'string'),
-          ),
-        )
-      : {}
-    const viewRenameDrafts = state.viewRenameDrafts && typeof state.viewRenameDrafts === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.viewRenameDrafts).filter(
-            ([viewId, draft]) => typeof viewId === 'string' && typeof draft === 'string',
-          ),
-        )
-      : {}
-    const columnWidths = state.columnWidths && typeof state.columnWidths === 'object'
-      ? Object.fromEntries(
-          Object.entries(state.columnWidths).filter(
-            ([fieldId, width]) => typeof fieldId === 'string' && typeof width === 'number',
-          ),
-        )
-      : {}
-
-    return {
-      version: 1,
-      selectedBuildTableId: typeof state.selectedBuildTableId === 'string' ? state.selectedBuildTableId : 'risks',
-      visibleFieldIdsByTable,
-      gridFilter: typeof state.gridFilter === 'string' ? state.gridFilter : '',
-      gridSortFieldId: typeof state.gridSortFieldId === 'string' ? state.gridSortFieldId : 'title',
-      gridSortDirection: state.gridSortDirection === 'desc' ? 'desc' : 'asc',
-      gridGroupFieldId: typeof state.gridGroupFieldId === 'string' ? state.gridGroupFieldId : 'level',
-      gridColorFieldId: typeof state.gridColorFieldId === 'string' ? state.gridColorFieldId : '',
-      gridDensity: state.gridDensity === 'compact' || state.gridDensity === 'expanded' ? state.gridDensity : 'comfortable',
-      localGridViews,
-      viewRenameDrafts,
-      activeGridViewId: typeof state.activeGridViewId === 'string' ? state.activeGridViewId : '',
-      columnWidths,
-    }
+    return normalizeStoredBuildViewState(state).buildViewState
   } catch {
     storedMigrationReport.buildViewReset = true
     return {}
@@ -408,18 +604,10 @@ export function readStoredRules(): LocalRule[] {
 
     const rules = JSON.parse(rawRules) as unknown
 
-    if (!Array.isArray(rules)) {
-      storedMigrationReport.rulesReset = true
-      return getDefaultLocalRules()
-    }
+    const normalizedRules = normalizeStoredRules(rules)
+    storedMigrationReport.rulesReset = normalizedRules.reset
 
-    const validRules = rules.filter(isLocalRule)
-
-    if (validRules.length !== rules.length) {
-      storedMigrationReport.rulesReset = true
-    }
-
-    return validRules.length > 0 ? mergeDefaultLocalRules(validRules) : getDefaultLocalRules()
+    return normalizedRules.rules
   } catch {
     storedMigrationReport.rulesReset = true
     return getDefaultLocalRules()

@@ -44,6 +44,8 @@ export type SettingsScreenProps = {
   localEngineStats: readonly SettingsLocalEngineStat[]
   localRules: readonly LocalRule[]
   migrationMessages: readonly string[]
+  onExportBackup?: () => void
+  onImportBackup?: () => void
   onThemeChange: (theme: ThemeId) => void
   openScreen: (screen: AppScreen) => void
   ruleDestinationStats: readonly SettingsRuleDestinationStat[]
@@ -64,6 +66,8 @@ export function SettingsScreen({
   localEngineStats,
   localRules,
   migrationMessages,
+  onExportBackup,
+  onImportBackup,
   onThemeChange,
   openScreen,
   ruleDestinationStats,
@@ -80,6 +84,8 @@ export function SettingsScreen({
     ? authAllowed ? `Approved${authUserEmail ? ` as ${authUserEmail}` : ''}.` : 'Waiting for an approved Google account.'
     : 'Local browser mode. No sign-in required.'
   const workspaceLine = workspaceStatus || (authRequired ? 'Shared workspace status is pending.' : 'Local workspace active.')
+  const canExportBackup = Boolean(onExportBackup)
+  const canImportBackup = Boolean(onImportBackup)
 
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
@@ -204,6 +210,39 @@ export function SettingsScreen({
           </div>
           <p className="settings-detail-note">{localRules.length} rules route records into command surfaces.</p>
         </details>
+      </article>
+
+      <article className="settings-panel settings-backup-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Backup</span>
+            <h2>Local copy.</h2>
+          </div>
+          <span className="metric-pill">Manual</span>
+        </div>
+        <div className="settings-backup-layout">
+          <div className="settings-backup-copy">
+            <p>
+              Export a backup before large edits. Import only from a Sundesk backup you trust.
+            </p>
+            <p className="settings-backup-note" id="settings-backup-note">
+              Backup controls are local commands. They do not change Firebase setup or write remote data.
+            </p>
+          </div>
+          <div className="settings-backup-actions" aria-describedby="settings-backup-note">
+            <button type="button" className="primary" disabled={!canExportBackup} onClick={onExportBackup}>
+              Export backup
+            </button>
+            <button type="button" disabled={!canImportBackup} onClick={onImportBackup}>
+              Import backup
+            </button>
+          </div>
+        </div>
+        {(!canExportBackup || !canImportBackup) && (
+          <p className="settings-backup-disabled">
+            Backup handlers are not connected in this build.
+          </p>
+        )}
       </article>
 
       <article className="settings-panel">

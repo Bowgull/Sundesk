@@ -125,7 +125,41 @@ Then test the preview URL with fake data only. No private emails, real records, 
 
 If write approval has not been given, stop here. No remote write test should run.
 
-## 7. Deploy
+## 7. Local Fake-Data Backup And Import Rehearsal
+
+Run this before any Firestore write approval is requested.
+
+Scope:
+
+- Local browser data only.
+- Fake verification data only.
+- No real Lindsay records.
+- No SALTXC data.
+- No private contact data.
+- No permit contents.
+- No COI contents.
+- No contract text.
+- No setup screenshots with private values.
+- No deploy.
+- No Firebase writes.
+
+Steps:
+
+1. Keep `VITE_SUNDESK_FIRESTORE_WRITES` blank.
+2. Use the local preview or local browser build only.
+3. Create a tiny fake dataset that proves tables, fields, tags, links, and views still behave.
+4. Open Settings.
+5. Use Export backup to preserve that fake local state as JSON.
+6. Clear or isolate the local browser state only if needed for the rehearsal.
+7. Use Import backup to restore the fake local state back into the local app.
+8. Confirm Today remains home.
+9. Confirm Build remains visible in the sidebar.
+10. Confirm the restored data is fake.
+11. Confirm Settings still shows Firestore writes as disabled.
+
+Stop after the local rehearsal. This step does not approve Firestore writes. This step does not approve deploy. This step does not move any real Lindsay, SALTXC, permit, COI, contract, contact, or company data into Sundesk.
+
+## 8. Deploy
 
 Deploy only after explicit deploy approval.
 
@@ -146,9 +180,9 @@ After deploy:
 8. Refresh and confirm the fake data state matches the approved write mode.
 9. Confirm no real Lindsay or SALTXC data is present.
 
-Firestore writes require separate explicit write approval. Deploy approval is not write approval. Deploying Hosting and rules is not write approval.
+Firestore writes require separate explicit write approval after the local fake-data backup/import rehearsal. Deploy approval is not write approval. Deploying Hosting and rules is not write approval.
 
-## 8. Mobile Install Check
+## 9. Mobile Install Check
 
 On iPhone:
 
@@ -173,7 +207,7 @@ On Android:
 7. Confirm Today opens first.
 8. Confirm Build is reachable from the sidebar.
 
-## 9. Desktop Bookmark Check
+## 10. Desktop Bookmark Check
 
 On desktop:
 
@@ -185,12 +219,13 @@ On desktop:
 6. Confirm Today opens first.
 7. Confirm Build is reachable from the sidebar.
 
-## 10. Backup And Rollback
+## 11. Backup And Rollback
 
 Before enabling Firestore writes:
 
 - Keep the local browser build as the fallback.
-- Export or preserve any local fake verification data only if needed for testing.
+- Complete the local fake-data backup/import rehearsal.
+- Export or preserve local fake verification data only if needed for testing.
 - Do not migrate real records until the hosted path is approved.
 - Treat Firestore as empty until a deliberate first write is approved.
 

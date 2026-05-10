@@ -292,6 +292,7 @@ Current resolved alignment:
 - The seventeenth block added Firebase setup state detection with tests and surfaced local, partial, sign-in-ready, and write-ready states in Settings.
 - The eighteenth block added next setup-step guidance, removed the hardcoded summary recipient email from Settings, and verified the launch-safe Settings copy.
 - The nineteenth parallel block added `npm run preflight`, launch-preflight docs, stronger auth-gate E2E coverage for protected Settings routes, and removed the hardcoded digest bridge recipient.
+- The twentieth backup block added local JSON backup/import helpers, a quiet Settings backup panel, and the local fake-data backup/import rehearsal gate before any Firestore write approval, with no deploy, no Firebase writes, and no real Lindsay, SALTXC, permit, COI, contract, contact, or company data.
 
 Remaining gaps:
 

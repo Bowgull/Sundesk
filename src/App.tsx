@@ -61,10 +61,12 @@ import {
   buildViewStateStorageKey,
   cloneWorkbase,
   computedFieldTypes,
+  createSundeskLocalBackup,
   defaultVisibleFieldIdsByTable,
   getDefaultVisibleFieldIds,
   getEmptyFieldValue,
   getEmptyRecordValues,
+  normalizeSundeskLocalBackupImport,
   readStoredBuildViewState,
   readStoredRules,
   readStoredWorkbase,
@@ -795,6 +797,68 @@ function App() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     showToast('Weekly note exported.')
+  }
+
+  function exportLocalBackup() {
+    const backup = createSundeskLocalBackup({
+      workbase: base,
+      rules: localRules,
+      buildViewState: getCurrentBuildViewState(),
+    })
+    const fileName = `sundesk-local-backup-${backup.createdAt.slice(0, 10)}.json`
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast('Local backup exported.')
+  }
+
+  function applyLocalBackupFile(file: File) {
+    void (async () => {
+      try {
+        const parsedBackup = JSON.parse(await file.text()) as unknown
+        const importedBackup = normalizeSundeskLocalBackupImport(parsedBackup)
+
+        if (!importedBackup.ok) {
+          showToast(importedBackup.reason)
+          return
+        }
+
+        setBase(importedBackup.workbase)
+        setLocalRules(importedBackup.rules)
+        applyRemoteBuildViewState(importedBackup.buildViewState)
+        writeWorkbaseState(importedBackup.workbase)
+        writeRulesState(importedBackup.rules)
+        localStorage.setItem(buildViewStateStorageKey, JSON.stringify(importedBackup.buildViewState))
+        setSelectedBuildRecordId(getRecordsForTable(importedBackup.workbase, importedBackup.buildViewState.selectedBuildTableId)[0]?.id || '')
+        setRecordDraft(getEmptyRecordValues(importedBackup.workbase, importedBackup.buildViewState.selectedBuildTableId))
+        setBuildModal('')
+        showToast('Local backup imported.')
+      } catch {
+        showToast('Backup import failed.')
+      }
+    })()
+  }
+
+  function importLocalBackup() {
+    const input = document.createElement('input')
+
+    input.type = 'file'
+    input.accept = 'application/json,.json'
+    input.addEventListener('change', () => {
+      const file = input.files?.[0]
+
+      if (file) {
+        applyLocalBackupFile(file)
+      }
+    }, { once: true })
+    input.click()
   }
 
   function closeBuildModal() {
@@ -3819,6 +3883,8 @@ function App() {
             localEngineStats={localEngineStats}
             localRules={localRules}
             migrationMessages={migrationMessages}
+            onExportBackup={exportLocalBackup}
+            onImportBackup={importLocalBackup}
             openScreen={openScreen}
             ruleDestinationStats={ruleDestinationStats}
             selectedTheme={selectedTheme}
