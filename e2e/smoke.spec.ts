@@ -123,6 +123,28 @@ test('Lindsay install basics are present and local no-config opens Today', async
   await expect(appleIcon).toBeOK()
   await expect(icon192).toBeOK()
   await expect(icon512).toBeOK()
+
+  const decodedIconSizes = await page.evaluate(async () => {
+    const decodeIcon = (src: string) => new Promise<{ width: number, height: number }>((resolve, reject) => {
+      const image = new Image()
+
+      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight })
+      image.onerror = () => reject(new Error(`Icon did not decode: ${src}`))
+      image.src = src
+    })
+
+    const [apple, small, large] = await Promise.all([
+      decodeIcon('/apple-touch-icon.png'),
+      decodeIcon('/icon-192.png'),
+      decodeIcon('/icon-512.png'),
+    ])
+
+    return { apple, small, large }
+  })
+
+  expect(decodedIconSizes.apple).toEqual({ width: 180, height: 180 })
+  expect(decodedIconSizes.small).toEqual({ width: 192, height: 192 })
+  expect(decodedIconSizes.large).toEqual({ width: 512, height: 512 })
 })
 
 test('First-run onboarding choice can start alone and persists dismissal', async ({ page }) => {
@@ -808,6 +830,44 @@ test('Build created records persist across reloads', async ({ page }) => {
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByTestId('build-screen').getByText('Confirm catering count')).toBeVisible()
+})
+
+test('Settings reruns onboarding without clearing the local workspace', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('build-add-record').first().click()
+
+  const modal = page.getByTestId('record-modal')
+
+  await modal.getByLabel('Title').fill('Save rental invoice')
+  await modal.getByLabel('Status').selectOption('Waiting')
+  await modal.getByRole('button', { name: 'Add record' }).click()
+  await modal.getByRole('button', { name: 'Done' }).click()
+  await expect(page.getByTestId('build-screen').getByText('Save rental invoice')).toBeVisible()
+
+  const realRecordCount = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
+
+  await page.goto('/#lab')
+  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByTestId('lab-module-tags')).toContainText('In progress')
+
+  await page.goto('/#settings')
+  await page.getByRole('button', { name: 'Restart onboarding' }).click()
+  await expect(page).toHaveURL(/#today$/)
+  await expect(page.getByTestId('onboarding-tour')).toBeVisible()
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Today')
+
+  const storedAfterRestart = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
+  const realRecordCountAfterRestart = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
+
+  expect(storedAfterRestart.onboarding.status).toBe('inProgress')
+  expect(storedAfterRestart.onboarding.currentStepId).toBe('today')
+  expect(storedAfterRestart.lab.modules.tags.status).toBe('inProgress')
+  expect(realRecordCountAfterRestart).toBe(realRecordCount)
+
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+  await expect(page.getByTestId('build-screen').getByText('Save rental invoice')).toBeVisible()
 })
 
 test('Build adds and removes a dependency link', async ({ page }) => {

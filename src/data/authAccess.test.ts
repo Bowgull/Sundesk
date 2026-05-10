@@ -55,7 +55,7 @@ describe('auth access helpers', () => {
     })
     expect(getAuthStateLabel({ loading: false, userEmail: 'owner@example.com', allowed: true })).toEqual({
       actionLabel: 'Open Sundesk',
-      detail: 'Approved account connected. Firestore is ready for the workspace.',
+      detail: 'Approved account connected. Shared workspace can load here. Remote writes still need the write gate.',
       eyebrow: 'Signed in',
       state: 'signedIn',
       title: 'Ready to continue.',
