@@ -45,8 +45,8 @@ const lessons: LessonSeed[] = [
     title: 'Start with the map',
     teaches: 'Source material, command center, practice boundary',
     requiredPractice: 'Open the map and name what belongs in each surface',
-    sampleData: 'Fyre island site notes, permit risk memo, water run, villa keys, medical tent, and weekly readiness meeting.',
-    scenarioBrief: 'Fyre planning starts with scattered fake source material. The Lab turns it into one visible operating map.',
+    sampleData: 'GTA event notes, permit risk memo, vendor COI chase, site map cleanup, sponsor deck, and weekly readiness meeting.',
+    scenarioBrief: 'GTA event planning starts with scattered fake source material. The Lab turns it into one visible operating map.',
     taskInstruction: 'Read the source list, open the command map, and confirm the practice boundary before editing records.',
     expectedReceipt: 'Source material mapped. Practice records only. Real workspace untouched.',
     surface: 'start',
@@ -55,7 +55,7 @@ const lessons: LessonSeed[] = [
         id: 'start-open-map',
         title: 'Open the command map',
         guidance: 'Read the fake source list and open the map.',
-        scenario: 'Fyre source material needs one place to land.',
+        scenario: 'GTA source material needs one place to land.',
         actionId: 'open-command-map',
         sourceTruth: 'Start. Map source material before editing records.',
         expectedReceipt: 'Command map opened.',
@@ -76,8 +76,8 @@ const lessons: LessonSeed[] = [
     title: 'Build the first grid',
     teaches: 'Paste-first Build, inline edits, added rows',
     requiredPractice: 'Paste rows, edit one cell, and add one missing row',
-    sampleData: 'Permit risk, water run, medical tent, villa keys, sponsor deck, and weather comms rows.',
-    scenarioBrief: 'Fyre planning begins as a pasted grid. Sundesk should keep the spreadsheet move, then show what changed.',
+    sampleData: 'Permit risk, vendor COI replies, site map cleanup, sponsor deck, volunteer roster, and weather comms rows.',
+    scenarioBrief: 'GTA planning begins as a pasted grid. Sundesk should keep the spreadsheet move, then show what changed.',
     taskInstruction: 'Paste the starter rows, edit one status, and add the missing weather comms row.',
     expectedReceipt: 'Starter grid exists with one edited status and one added row.',
     surface: 'build',
@@ -85,7 +85,7 @@ const lessons: LessonSeed[] = [
       {
         id: 'build-grid-paste-rows',
         title: 'Paste starter rows',
-        guidance: 'Paste the fake Fyre rows into the Lab grid.',
+        guidance: 'Paste the fake GTA event rows into the Lab grid.',
         scenario: 'The first move is paste. No import wizard.',
         actionId: 'paste-lab-rows',
         sourceTruth: 'Build. Paste first.',
@@ -117,7 +117,7 @@ const lessons: LessonSeed[] = [
     teaches: 'Field type, helper suggestion, typed values',
     requiredPractice: 'Convert one plain column into a typed field',
     sampleData: 'Status, owner, due date, tags, and connected place columns.',
-    scenarioBrief: 'Fyre rows need fields that behave like records, not loose text.',
+    scenarioBrief: 'GTA event rows need fields that behave like records, not loose text.',
     taskInstruction: 'Open the field helper and convert the due column into a date field.',
     expectedReceipt: 'Due column behaves like a date field. Other fields stay optional.',
     surface: 'fields',
@@ -147,8 +147,8 @@ const lessons: LessonSeed[] = [
     title: 'Make tags route work',
     teaches: 'Tags as grouping, surfacing, routing, and blocker markers',
     requiredPractice: 'Tag one row and filter the Lab by that tag',
-    sampleData: 'Permit risk, water, medical, artist arrivals, meeting prep, waiting, and weather tags.',
-    scenarioBrief: 'Fyre planning uses tags to surface real work without hand sorting.',
+    sampleData: 'Permit risk, COI, site map, sponsor, meeting prep, waiting, and weather tags.',
+    scenarioBrief: 'GTA event planning uses tags to surface real work without hand sorting.',
     taskInstruction: 'Add the Permit risk tag to a row, then filter the Lab by that tag.',
     expectedReceipt: 'Permit risk route visible.',
     surface: 'tags',
@@ -178,16 +178,16 @@ const lessons: LessonSeed[] = [
     title: 'Link rows to places',
     teaches: 'Linked records, communities, backlinks',
     requiredPractice: 'Connect a work row to a place and read the backlink',
-    sampleData: 'Island dock, villa ridge, medical tent, catering compound, security gate, and connected work rows.',
-    scenarioBrief: 'Fyre planning needs place records to show their work without retyping facts.',
-    taskInstruction: 'Link the permit memo to the island dock, then read the place backlink.',
-    expectedReceipt: 'Permit row linked to island dock. Backlink visible.',
+    sampleData: 'Kensington Market, Danforth Night Market, Scarborough Pop-Up, Liberty Village, and connected work rows.',
+    scenarioBrief: 'GTA event planning needs place records to show their work without retyping facts.',
+    taskInstruction: 'Link the permit memo to Kensington Market, then read the place backlink.',
+    expectedReceipt: 'Permit row linked to Kensington Market. Backlink visible.',
     surface: 'links',
     steps: [
       {
         id: 'links-connect-place',
         title: 'Choose the place',
-        guidance: 'Connect the permit memo to Island dock.',
+        guidance: 'Connect the permit memo to Kensington Market.',
         scenario: 'One fact should not be retyped.',
         actionId: 'link-permit-to-dock',
         sourceTruth: 'Links. Choose community.',
@@ -209,20 +209,20 @@ const lessons: LessonSeed[] = [
     title: 'Read place readiness',
     teaches: 'Community command center, local state, linked work',
     requiredPractice: 'Open one place and explain what is ready, waiting, and blocked',
-    sampleData: 'Island dock, villa ridge, medical tent, catering compound, security gate.',
-    scenarioBrief: 'Fyre planning treats each island zone as a command-center record.',
-    taskInstruction: 'Open Island dock and read its linked work.',
-    expectedReceipt: 'Island dock shows blocked, waiting, and next work.',
+    sampleData: 'Kensington Market, Danforth Night Market, Scarborough Pop-Up, Liberty Village, Parkdale vendor lane.',
+    scenarioBrief: 'GTA event planning treats each place as a command-center record.',
+    taskInstruction: 'Open Kensington Market and read its linked work.',
+    expectedReceipt: 'Kensington Market shows blocked, waiting, and next work.',
     surface: 'communities',
     steps: [
       {
         id: 'communities-open-place',
-        title: 'Open Island dock',
+        title: 'Open Kensington Market',
         guidance: 'Open the place with the highest risk.',
         scenario: 'The place record should explain local state.',
         actionId: 'open-island-dock',
         sourceTruth: 'Communities. Open one.',
-        expectedReceipt: 'Island dock opened.',
+        expectedReceipt: 'Kensington Market opened.',
       },
       {
         id: 'communities-read-state',
@@ -240,25 +240,25 @@ const lessons: LessonSeed[] = [
     title: 'Separate now from waiting',
     teaches: 'Today lanes, waiting receipts, slip risk',
     requiredPractice: 'Move one item into Today and write one chase receipt',
-    sampleData: 'Water delivery now, catering confirmation waiting, weather comms next.',
-    scenarioBrief: 'Fyre planning needs Today to show what can slip before the schedule lies.',
-    taskInstruction: 'Route water delivery into Now and write the waiting receipt for catering.',
+    sampleData: 'Vendor COI replies waiting, permit follow-up now, weather comms next.',
+    scenarioBrief: 'GTA event planning needs Today to show what can slip before the schedule lies.',
+    taskInstruction: 'Route the permit follow-up into Now and write the waiting receipt for vendor COIs.',
     expectedReceipt: 'Now, Waiting, and Next are separated with a chase reason.',
     surface: 'today',
     steps: [
       {
         id: 'today-waiting-route-now',
         title: 'Route the now item',
-        guidance: 'Move water delivery into Now.',
+        guidance: 'Move the permit follow-up into Now.',
         scenario: 'Due work should surface first.',
         actionId: 'route-water-now',
         sourceTruth: 'Today. Now, Waiting, Next.',
-        expectedReceipt: 'Water delivery routed to Now.',
+        expectedReceipt: 'Permit follow-up routed to Now.',
       },
       {
         id: 'today-waiting-chase-receipt',
         title: 'Write the chase receipt',
-        guidance: 'Write who owes catering, age, and consequence.',
+        guidance: 'Write who owes vendor COIs, age, and consequence.',
         scenario: 'Waiting needs a reason, not a vague status.',
         actionId: 'write-catering-chase',
         sourceTruth: 'Waiting On. Who owes it.',
@@ -271,8 +271,8 @@ const lessons: LessonSeed[] = [
     title: 'Generate the weekly note',
     teaches: 'Meeting templates, generated notes, editable receipts',
     requiredPractice: 'Generate and edit the weekly readiness note',
-    sampleData: 'Blocked permits, water delivery, medical setup, villa keys, and weather comms.',
-    scenarioBrief: 'Fyre planning meetings should pull linked work into one note instead of asking someone to remember the plan.',
+    sampleData: 'Blocked permits, waiting COIs, site map cleanup, sponsor deck, and weather comms.',
+    scenarioBrief: 'GTA event meetings should pull linked work into one note instead of asking someone to remember the plan.',
     taskInstruction: 'Generate the weekly note, then edit it into a planning receipt.',
     expectedReceipt: 'Weekly note generated and edited.',
     surface: 'meetings',
@@ -302,8 +302,8 @@ const lessons: LessonSeed[] = [
     title: 'Switch timeline views',
     teaches: 'Grid, kanban, calendar, readiness, graph',
     requiredPractice: 'Switch view modes and read the same work differently',
-    sampleData: 'Permit deadline, water run, medical setup, artist arrivals, weather comms.',
-    scenarioBrief: 'Fyre planning needs different reads for the same event pressure.',
+    sampleData: 'Permit deadline, COI chase, site map cleanup, sponsor review, weather comms.',
+    scenarioBrief: 'GTA event planning needs different reads for the same event pressure.',
     taskInstruction: 'Open kanban, calendar, and graph views for the fake plan.',
     expectedReceipt: 'Same work read as movement, date pressure, and risk.',
     surface: 'timeline',
@@ -342,8 +342,8 @@ const lessons: LessonSeed[] = [
     title: 'Run the routine',
     teaches: 'Data boundary, morning read, meeting prep, end-of-day receipt',
     requiredPractice: 'Confirm the fake-data boundary and write the end-of-day receipt',
-    sampleData: 'Morning slip read, weekly meeting prep, and end-of-day updates for water, permits, security, and weather.',
-    scenarioBrief: 'Fyre planning becomes useful only if the routine repeats.',
+    sampleData: 'Morning slip read, weekly meeting prep, and end-of-day updates for COIs, permits, site maps, sponsor review, and weather.',
+    scenarioBrief: 'GTA event planning becomes useful only if the routine repeats.',
     taskInstruction: 'Confirm the data boundary, then write the end-of-day receipt.',
     expectedReceipt: 'Practice boundary confirmed. End-of-day receipt written.',
     surface: 'data',
@@ -645,27 +645,27 @@ export function resetSundeskLabProgress(
 
 function applyRecordAction(records: SundeskLabRecord[], actionId: string): SundeskLabRecord[] {
   if (actionId === 'tag-risk-row') {
-    return records.map((record) => record.id === 'fyre-permit-risk'
+    return records.map((record) => record.id === 'gta-permit-risk'
       ? { ...record, tags: Array.from(new Set([...record.tags, 'Permit risk'])) }
       : record)
   }
 
   if (actionId === 'edit-permit-status') {
-    return records.map((record) => record.id === 'fyre-permit-risk' ? { ...record, status: 'Blocked' } : record)
+    return records.map((record) => record.id === 'gta-permit-risk' ? { ...record, status: 'Blocked' } : record)
   }
 
-  if (actionId === 'add-weather-row' && !records.some((record) => record.id === 'fyre-weather-comms')) {
+  if (actionId === 'add-weather-row' && !records.some((record) => record.id === 'gta-weather-comms')) {
     return [
       ...records,
       {
-        id: 'fyre-weather-comms',
+        id: 'gta-weather-comms',
         table: 'work',
         title: 'Weather comms update',
         status: 'Open',
         owner: 'Comms lead',
         due: '2026-06-15',
         tags: ['Weather'],
-        communityId: 'fyre-island-dock',
+        communityId: 'gta-kensington-market',
         notes: 'Late source note added from the Lab.',
         fake: true,
       },
@@ -673,11 +673,11 @@ function applyRecordAction(records: SundeskLabRecord[], actionId: string): Sunde
   }
 
   if (actionId === 'link-permit-to-dock') {
-    return records.map((record) => record.id === 'fyre-permit-risk' ? { ...record, communityId: 'fyre-island-dock' } : record)
+    return records.map((record) => record.id === 'gta-permit-risk' ? { ...record, communityId: 'gta-kensington-market' } : record)
   }
 
   if (actionId === 'set-due-date-field') {
-    return records.map((record) => ({ ...record, notes: record.id === 'fyre-permit-risk' ? `${record.notes} Due is typed as date.` : record.notes }))
+    return records.map((record) => ({ ...record, notes: record.id === 'gta-permit-risk' ? `${record.notes} Due is typed as date.` : record.notes }))
   }
 
   return records
@@ -706,62 +706,62 @@ function getActionReceipt(module: SundeskLabModule, actionId: string, completedT
 function getResetLabRecords(): SundeskLabRecord[] {
   return [
     {
-      id: 'fyre-permit-risk',
+      id: 'gta-permit-risk',
       table: 'work',
-      title: 'Permit risk memo',
+      title: 'Kensington permit follow-up',
       status: 'Blocked',
       owner: 'Operations',
       due: '2026-06-11',
       tags: ['Permit risk'],
-      communityId: 'fyre-island-dock',
+      communityId: 'gta-kensington-market',
       notes: 'Permit status needs a visible owner before the weekly meeting.',
       fake: true,
     },
     {
-      id: 'fyre-water-run',
+      id: 'gta-vendor-cois',
       table: 'work',
-      title: 'Water delivery run',
+      title: 'Vendor COI replies',
       status: 'Waiting',
       owner: 'Vendor lead',
       due: '2026-06-12',
-      tags: ['Water', 'Waiting'],
-      communityId: 'fyre-catering-compound',
-      notes: 'Truck ETA is still missing.',
+      tags: ['COI', 'Waiting'],
+      communityId: 'gta-danforth-night-market',
+      notes: 'Two vendor certificates are still missing.',
       fake: true,
     },
     {
-      id: 'fyre-medical-tent',
+      id: 'gta-site-map',
       table: 'work',
-      title: 'Medical tent setup',
+      title: 'Site map cleanup',
       status: 'In progress',
       owner: 'Site lead',
       due: '2026-06-13',
-      tags: ['Medical'],
-      communityId: 'fyre-medical-tent',
-      notes: 'Supply list needs one final pass.',
+      tags: ['Site map'],
+      communityId: 'gta-scarborough-popup',
+      notes: 'Vendor row spacing needs one final pass.',
       fake: true,
     },
     {
-      id: 'fyre-villa-keys',
+      id: 'gta-sponsor-deck',
       table: 'work',
-      title: 'Villa key handoff',
+      title: 'Sponsor deck review',
       status: 'Open',
-      owner: 'Guest ops',
+      owner: 'Partnerships',
       due: '2026-06-14',
-      tags: ['Artist arrivals'],
-      communityId: 'fyre-villa-ridge',
-      notes: 'Keys are not matched to arrival windows yet.',
+      tags: ['Sponsor'],
+      communityId: 'gta-liberty-village',
+      notes: 'Deck needs the latest booth package and logo row.',
       fake: true,
     },
     {
-      id: 'fyre-weekly-meeting',
+      id: 'gta-weekly-meeting',
       table: 'meetings',
-      title: 'Weekly island readiness',
+      title: 'Weekly event readiness',
       status: 'Draft',
       owner: 'Lindsay',
       due: '2026-06-10',
       tags: ['Meeting prep'],
-      communityId: 'fyre-island-dock',
+      communityId: 'gta-kensington-market',
       notes: 'Prep from blocked work, waiting work, and readiness notes.',
       fake: true,
     },

@@ -65,7 +65,7 @@ export function SundeskLabScreen({
           <div>
             <span className="eyebrow">Sandbox</span>
             <h1>Sundesk Lab</h1>
-            <p className="panel-lede">Fake Fyre work. Real Sundesk moves. Practice state ready for sync.</p>
+            <p className="panel-lede">Fake GTA event work. Real Sundesk moves. Practice state ready for sync.</p>
           </div>
           <button
             aria-label="Reset sample data"
@@ -145,7 +145,7 @@ export function SundeskLabScreen({
                 <div className="lab-stage-topline">
                   <div>
                     <span>Practice workspace</span>
-                    <strong>Fyre readiness room</strong>
+                    <strong>GTA readiness room</strong>
                   </div>
                   <small>{displayModule.sampleData}</small>
                 </div>
@@ -305,15 +305,15 @@ function renderSandboxSurface({
   }
 
   if (module.surface === 'communities' || module.surface === 'links') {
-    const dockRecords = records.filter((record) => record.communityId === 'fyre-island-dock')
-    const blockedRecord = dockRecords.find((record) => record.status === 'Blocked')
-    const nextRecord = dockRecords.find((record) => record.id === 'fyre-weekly-meeting') || dockRecords[0] || null
+    const placeRecords = records.filter((record) => record.communityId === 'gta-kensington-market')
+    const blockedRecord = placeRecords.find((record) => record.status === 'Blocked')
+    const nextRecord = placeRecords.find((record) => record.id === 'gta-weekly-meeting') || placeRecords[0] || null
 
     return (
       <section className="lab-links-surface" aria-label="Place practice surface">
         <article className="lab-place-card">
           <span>Place</span>
-          <strong>Island dock</strong>
+          <strong>Kensington Market</strong>
           <small>{blockedRecord ? `${blockedRecord.title} is ${blockedRecord.status.toLowerCase()}.` : 'No blocker linked yet.'}</small>
           <div className="lab-stage-actions">
             {module.surface === 'links' && <ActionButton action={action('link-permit-to-dock', 'Link permit row', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />}
@@ -324,24 +324,24 @@ function renderSandboxSurface({
         </article>
         <article>
           <span>Place state</span>
-          <strong>{dockRecords.length} linked rows. {blockedRecord ? '1 blocker.' : '0 blockers.'}</strong>
+          <strong>{placeRecords.length} linked rows. {blockedRecord ? '1 blocker.' : '0 blockers.'}</strong>
           <small>{nextRecord ? `Next read: ${nextRecord.title}. ${nextRecord.notes}` : 'Link a row before reading the place.'}</small>
         </article>
-        {renderRecordGrid(dockRecords, completedTaskIds, apply, module, true)}
+        {renderRecordGrid(placeRecords, completedTaskIds, apply, module, true)}
       </section>
     )
   }
 
   if (module.surface === 'today') {
-    const nowRecords = records.filter((record) => record.id === 'fyre-water-run')
+    const nowRecords = records.filter((record) => record.id === 'gta-permit-risk')
     const waitingRecords = records.filter((record) => record.status === 'Waiting')
     const nextRecords = records
-      .filter((record) => record.status !== 'Waiting' && record.id !== 'fyre-water-run')
+      .filter((record) => record.status !== 'Waiting' && record.id !== 'gta-permit-risk')
       .slice(0, 3)
 
     return (
       <section className="lab-today-surface" aria-label="Today practice surface">
-        <TodayLane title="Now" records={nowRecords} action={action('route-water-now', 'Route water now', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
+        <TodayLane title="Now" records={nowRecords} action={action('route-water-now', 'Route now', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
         <TodayLane title="Waiting" records={waitingRecords} action={action('write-catering-chase', 'Write chase receipt')} completedTaskIds={completedTaskIds} onApply={apply} />
         <TodayLane title="Next" records={nextRecords} completedTaskIds={completedTaskIds} onApply={apply} />
         <article>
@@ -362,7 +362,7 @@ function renderSandboxSurface({
       <section className="lab-meeting-surface" aria-label="Meeting practice surface">
         <article>
           <span>Generated note</span>
-          <strong>Weekly island readiness</strong>
+          <strong>Weekly event readiness</strong>
           <p>{blockedRecords.length} blocked. {waitingRecords.length} waiting. {movingRecords.length} moving. Next move: assign one owner before the meeting.</p>
           <div className="lab-stage-actions">
             <ActionButton action={action('generate-weekly-note', 'Generate note', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
@@ -578,7 +578,7 @@ function renderRecordGrid(
           <span>{record.status}</span>
           <span>{record.due || 'No date'}</span>
           <span>{record.tags.join(', ') || 'No tags'}</span>
-          <span>{record.communityId ? record.communityId.replace('fyre-', '').replaceAll('-', ' ') : 'No place'}</span>
+          <span>{record.communityId ? record.communityId.replace('gta-', '').replaceAll('-', ' ') : 'No place'}</span>
           <span>{renderRowAction(record, completedTaskIds, onApply, module)}</span>
         </div>
       ))}
@@ -594,11 +594,11 @@ function renderRowAction(
 ) {
   const validActionIds = new Set(module.steps.map((step) => step.actionId))
 
-  if (record.id === 'fyre-permit-risk' && validActionIds.has('edit-permit-status')) {
+  if (record.id === 'gta-permit-risk' && validActionIds.has('edit-permit-status')) {
     return <ActionButton action={{ actionId: 'edit-permit-status', label: 'Mark blocked' }} completedTaskIds={completedTaskIds} onApply={onApply} />
   }
 
-  if (record.id === 'fyre-water-run' && validActionIds.has('route-water-now')) {
+  if (record.id === 'gta-permit-risk' && validActionIds.has('route-water-now')) {
     return <ActionButton action={{ actionId: 'route-water-now', label: 'Route now' }} completedTaskIds={completedTaskIds} onApply={onApply} />
   }
 
@@ -623,7 +623,7 @@ function renderRiskGraph() {
   return (
     <div className="lab-risk-graph">
       <span>Permit risk</span>
-      <strong>Island dock</strong>
+      <strong>Kensington Market</strong>
       <span>Water run</span>
       <span>Medical tent</span>
     </div>

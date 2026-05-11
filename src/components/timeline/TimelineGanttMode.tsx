@@ -12,6 +12,10 @@ function getVisibleMarkerLeft(left: number) {
   return Math.min(92, Math.max(8, left))
 }
 
+function getVisibleBarLeft(left: number) {
+  return Math.min(78, Math.max(4, left))
+}
+
 export function TimelineGanttMode({
   model,
   selectedCommunityId,
@@ -53,24 +57,23 @@ export function TimelineGanttMode({
               <strong>{row.community}</strong>
               <span>{row.readiness}% ready</span>
             </button>
-            <div className="gantt-track" style={{ minHeight: `${Math.max(78, 42 + Math.min(row.items.length, 3) * 32)}px` }}>
+            <div className="gantt-track" style={{ minHeight: `${Math.max(104, 72 + row.items.length * 46)}px` }}>
               <i className="gantt-event-line" style={{ left: `${row.eventLeft}%` }} />
-              {row.items.map((item, index) => (
-                <button
-                  className={`gantt-bar tone-${item.tone}`}
-                  key={item.id}
-                  style={{
-                    left: `${item.left}%`,
-                    top: `${10 + (index % 3) * 32}px`,
-                    width: `${item.width}%`,
-                  }}
-                  type="button"
-                  onClick={() => onOpenRecord(item.record)}
-                >
-                  <span>{item.dueLabel}</span>
-                  <strong>{item.title}</strong>
-                </button>
-              ))}
+              <div className="gantt-lane-list">
+                {row.items.map((item) => (
+                  <div className="gantt-lane" key={item.id}>
+                    <button
+                      className={`gantt-bar tone-${item.tone}`}
+                      style={{ left: `${getVisibleBarLeft(item.left)}%`, width: `clamp(170px, ${item.width}%, 260px)` }}
+                      type="button"
+                      onClick={() => onOpenRecord(item.record)}
+                    >
+                      <span>{item.dueLabel}</span>
+                      <strong>{item.title}</strong>
+                    </button>
+                  </div>
+                ))}
+              </div>
               <em className="gantt-event-chip" style={{ left: `${getVisibleMarkerLeft(row.eventLeft)}%` }}>
                 Event. {row.eventLabel}
               </em>
