@@ -824,6 +824,101 @@
   z-index: 4;
 }
 
+.gantt-mobile-board {
+  display: none;
+}
+
+.gantt-mobile-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.gantt-mobile-row.selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.gantt-mobile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.gantt-mobile-head span {
+  display: grid;
+  gap: 2px;
+}
+
+.gantt-mobile-head strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.gantt-mobile-head small,
+.gantt-mobile-head em {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.gantt-mobile-meter {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.gantt-mobile-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--sun));
+}
+
+.gantt-mobile-items {
+  display: grid;
+  gap: 8px;
+}
+
+.gantt-mobile-item {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  min-height: 48px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--tone, var(--accent)) 48%, var(--line));
+  border-left: 5px solid var(--tone, var(--line-strong));
+  border-radius: 8px;
+  background: var(--tone-soft, var(--surface-soft));
+  color: var(--ink);
+  text-align: left;
+}
+
+.gantt-mobile-item span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.gantt-mobile-item strong {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .graph-focus-strip {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1069,5 +1164,14 @@
   .calendar-month button {
     min-height: 92px;
     border-right: 1px solid var(--line);
+  }
+
+  .gantt-board {
+    display: none;
+  }
+
+  .gantt-mobile-board {
+    display: grid;
+    gap: 10px;
   }
 }

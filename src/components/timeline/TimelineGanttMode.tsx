@@ -81,6 +81,35 @@ export function TimelineGanttMode({
           </section>
         ))}
       </div>
+      <div className="gantt-mobile-board" aria-label="Mobile readiness timeline">
+        {model.gantt.rows.map((row) => (
+          <section className={row.communityId === selectedRow?.communityId ? 'gantt-mobile-row selected' : 'gantt-mobile-row'} key={row.communityId}>
+            <button className="gantt-mobile-head" type="button" onClick={() => onSelectCommunity(row.communityId)}>
+              <span>
+                <strong>{row.community}</strong>
+                <small>{row.readiness}% ready</small>
+              </span>
+              <em>{row.eventLabel}</em>
+            </button>
+            <div className="gantt-mobile-meter" aria-hidden="true">
+              <i style={{ width: `${row.readiness}%` }} />
+            </div>
+            <div className="gantt-mobile-items">
+              {row.items.map((item) => (
+                <button
+                  className={`gantt-mobile-item tone-${item.tone}`}
+                  key={item.id}
+                  type="button"
+                  onClick={() => onOpenRecord(item.record)}
+                >
+                  <span>{item.dueLabel}</span>
+                  <strong>{item.title}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </section>
   )
 }
