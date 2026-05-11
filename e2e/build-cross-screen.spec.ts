@@ -67,9 +67,11 @@ async function editLinkedRecordCell(page: Page, recordId: string, fieldId: strin
 
   await cell.dblclick()
   const editor = page.locator('.grid-cell-editor')
+  const searchInput = editor.getByLabel(`Search ${label}`)
 
-  await editor.getByLabel(`Search ${label}`).fill(linkedName)
-  await editor.getByRole('button', { name: new RegExp(linkedName) }).click()
+  await searchInput.fill(linkedName)
+  await expect(editor.getByRole('option', { name: linkedName })).toBeVisible()
+  await searchInput.press('Enter')
   await editor.getByLabel(`${label} editor`).getByRole('button', { name: 'Done' }).click()
   await expect(cell).toContainText(linkedName)
 }
@@ -99,7 +101,8 @@ test('Build community link edits change the Communities surface', async ({ page 
   const editor = page.locator('.grid-cell-editor')
 
   await editor.getByLabel('Search Community').fill('Toronto')
-  await editor.getByRole('button', { name: /Toronto/ }).click()
+  await expect(editor.getByRole('option', { name: 'Toronto' })).toBeVisible()
+  await editor.getByLabel('Search Community').press('Enter')
   await expect(communityCell).toContainText('Toronto')
   await expect(editor).toHaveCount(0)
 
@@ -108,6 +111,24 @@ test('Build community link edits change the Communities surface', async ({ page 
 
   await expect(page.getByTestId('community-place-detail')).toContainText('Toronto')
   await expect(page.getByTestId('community-place-detail')).toContainText('Toronto site map chase.')
+})
+
+test('Build single linked-record dropdown supports keyboard selection with clean labels', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const communityCell = page.getByTestId('grid-cell-task_site_map_vaughan-community')
+
+  await communityCell.dblclick()
+  const editor = page.locator('.grid-cell-editor')
+
+  await editor.getByLabel('Search Community').fill('Toronto')
+  await expect(editor.getByRole('option', { name: /^Toronto$/ })).toBeVisible()
+  await expect(editor.getByRole('option', { name: /Toronto .* At risk/ })).toHaveCount(0)
+  await editor.getByLabel('Search Community').press('ArrowDown')
+  await editor.getByLabel('Search Community').press('Enter')
+  await expect(communityCell).toContainText('Toronto')
+  await expect(editor).toHaveCount(0)
 })
 
 test('Build meeting work links change the Meetings prep surface', async ({ page }) => {

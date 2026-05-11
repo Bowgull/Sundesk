@@ -82,6 +82,51 @@ describe('Sundesk Lab sync-ready sandbox', () => {
     expect(completed.lab.modules.links.completedStepIds).toEqual([])
   })
 
+  it('records real fake-work changes for Build, Today, and Meetings', () => {
+    const started = startSundeskLabModule(getDefaultSundeskEducationState(), 'build-grid', '2026-05-10T18:00:00.000Z')
+    const pasted = applySundeskLabAction(started, sundeskLabModules, 'build-grid', 'paste-lab-rows', '2026-05-10T18:01:00.000Z')
+    const edited = applySundeskLabAction(pasted, sundeskLabModules, 'build-grid', 'edit-permit-status', '2026-05-10T18:02:00.000Z')
+    const withWeather = applySundeskLabAction(edited, sundeskLabModules, 'build-grid', 'add-weather-row', '2026-05-10T18:03:00.000Z')
+
+    expect(withWeather.lab.sandbox.records.find((record) => record.id === 'gta-permit-risk')).toMatchObject({
+      status: 'Blocked',
+      notes: expect.stringContaining('Starter rows pasted into the Lab grid.'),
+    })
+    expect(withWeather.lab.sandbox.records.find((record) => record.id === 'gta-weather-comms')).toMatchObject({
+      title: 'Weather comms update',
+      fake: true,
+    })
+
+    const today = startSundeskLabModule(withWeather, 'today-waiting', '2026-05-10T18:04:00.000Z')
+    const routed = applySundeskLabAction(today, sundeskLabModules, 'today-waiting', 'route-water-now', '2026-05-10T18:05:00.000Z')
+    const chased = applySundeskLabAction(routed, sundeskLabModules, 'today-waiting', 'write-catering-chase', '2026-05-10T18:06:00.000Z')
+
+    expect(chased.lab.sandbox.records.find((record) => record.id === 'gta-permit-risk')).toMatchObject({
+      status: 'Now',
+      tags: expect.arrayContaining(['Now']),
+    })
+    expect(chased.lab.sandbox.records.find((record) => record.id === 'gta-vendor-cois')?.notes).toContain('Vendor lead owes 2 COIs')
+    expect(chased.lab.sandbox.generatedReceipts['today-waiting']).toBe('Vendor COI chase receipt written.')
+
+    const meetings = startSundeskLabModule(chased, 'meetings', '2026-05-10T18:07:00.000Z')
+    const generated = applySundeskLabAction(meetings, sundeskLabModules, 'meetings', 'generate-weekly-note', '2026-05-10T18:08:00.000Z')
+    const editedNote = applySundeskLabAction(generated, sundeskLabModules, 'meetings', 'edit-weekly-note', '2026-05-10T18:09:00.000Z')
+
+    expect(editedNote.lab.sandbox.records.find((record) => record.id === 'gta-weekly-meeting')).toMatchObject({
+      status: 'Edited',
+      notes: expect.stringContaining('Edited receipt'),
+    })
+  })
+
+  it('clears tag filters when leaving the Tags lesson', () => {
+    const started = startSundeskLabModule(getDefaultSundeskEducationState(), 'tags', '2026-05-10T18:00:00.000Z')
+    const filtered = applySundeskLabAction(started, sundeskLabModules, 'tags', 'filter-risk-tag', '2026-05-10T18:01:00.000Z')
+    const routine = startSundeskLabModule(filtered, 'data-routine', '2026-05-10T18:02:00.000Z')
+
+    expect(filtered.lab.sandbox.selectedFilterTag).toBe('Permit risk')
+    expect(routine.lab.sandbox.selectedFilterTag).toBeNull()
+  })
+
   it('normalizes sync-ready Lab state across persisted snapshots', () => {
     const normalized = normalizeSundeskEducationState({
       version: 1,

@@ -259,6 +259,30 @@ function renderSandboxSurface({
   if (module.surface === 'build') {
     return (
       <section className="lab-build-surface" aria-label="Build practice grid">
+        <div className="lab-workbench-row">
+          <label className="lab-practice-control wide">
+            <span>Paste source rows</span>
+            <textarea
+              aria-label="Paste fake source rows"
+              defaultValue={'Kensington permit follow-up\tBlocked\t2026-06-11\nVendor COI replies\tWaiting\t2026-06-12\nSite map cleanup\tIn progress\t2026-06-13'}
+            />
+          </label>
+          <label className="lab-practice-control">
+            <span>Permit status</span>
+            <select
+              aria-label="Permit status editor"
+              defaultValue={completedTaskIds.includes('edit-permit-status') ? 'Blocked' : 'Open'}
+              onChange={(event) => {
+                if (event.currentTarget.value === 'Blocked') {
+                  apply('edit-permit-status')
+                }
+              }}
+            >
+              <option value="Open">Open</option>
+              <option value="Blocked">Blocked</option>
+            </select>
+          </label>
+        </div>
         <div className="lab-stage-actions">
           <ActionButton action={action('paste-lab-rows', 'Paste starter rows', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
           <ActionButton action={action('add-weather-row', 'Add weather row')} completedTaskIds={completedTaskIds} onApply={apply} />
@@ -281,6 +305,21 @@ function renderSandboxSurface({
           <span>Field type</span>
           <strong>Date</strong>
           <small>Due dates can land records in Today and Timeline.</small>
+          <label className="lab-practice-control inline">
+            <span>Due field</span>
+            <select
+              aria-label="Due field type"
+              defaultValue={completedTaskIds.includes('set-due-date-field') ? 'date' : 'text'}
+              onChange={(event) => {
+                if (event.currentTarget.value === 'date') {
+                  apply('set-due-date-field')
+                }
+              }}
+            >
+              <option value="text">Text</option>
+              <option value="date">Date</option>
+            </select>
+          </label>
           <ActionButton action={action('set-due-date-field', 'Set date field')} completedTaskIds={completedTaskIds} onApply={apply} />
         </article>
         <article>
@@ -295,9 +334,23 @@ function renderSandboxSurface({
   if (module.surface === 'tags') {
     return (
       <section className="lab-tags-surface" aria-label="Tags practice surface">
-        <div className="lab-stage-actions">
-          <ActionButton action={action('tag-risk-row', 'Add tag', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
-          <ActionButton action={action('filter-risk-tag', 'Filter tag')} completedTaskIds={completedTaskIds} onApply={apply} />
+        <div className="lab-tag-builder">
+          <article>
+            <span>Row</span>
+            <strong>Kensington permit follow-up</strong>
+            <small>Tags should change where the record appears.</small>
+          </article>
+          <div className="lab-tag-chip-row" aria-label="Tag picker">
+            <button
+              aria-label="Add tag"
+              type="button"
+              disabled={completedTaskIds.includes('tag-risk-row')}
+              onClick={() => apply('tag-risk-row')}
+            >
+              Permit risk
+            </button>
+            <button type="button" disabled={completedTaskIds.includes('filter-risk-tag')} onClick={() => apply('filter-risk-tag')}>Filter tag</button>
+          </div>
         </div>
         {renderRecordGrid(records, completedTaskIds, apply, module)}
       </section>
@@ -315,6 +368,24 @@ function renderSandboxSurface({
           <span>Place</span>
           <strong>Kensington Market</strong>
           <small>{blockedRecord ? `${blockedRecord.title} is ${blockedRecord.status.toLowerCase()}.` : 'No blocker linked yet.'}</small>
+          {module.surface === 'links' && (
+            <label className="lab-practice-control inline">
+              <span>Linked place</span>
+              <select
+                aria-label="Linked place picker"
+                defaultValue={completedTaskIds.includes('link-permit-to-dock') ? 'gta-kensington-market' : ''}
+                onChange={(event) => {
+                  if (event.currentTarget.value === 'gta-kensington-market') {
+                    apply('link-permit-to-dock')
+                  }
+                }}
+              >
+                <option value="">No place</option>
+                <option value="gta-kensington-market">Kensington Market</option>
+                <option value="gta-danforth-night-market">Danforth Night Market</option>
+              </select>
+            </label>
+          )}
           <div className="lab-stage-actions">
             {module.surface === 'links' && <ActionButton action={action('link-permit-to-dock', 'Link permit row', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />}
             {module.surface === 'links' && <ActionButton action={action('read-dock-backlink', 'Read backlink')} completedTaskIds={completedTaskIds} onApply={apply} />}
@@ -357,6 +428,7 @@ function renderSandboxSurface({
     const blockedRecords = records.filter((record) => record.status === 'Blocked')
     const waitingRecords = records.filter((record) => record.status === 'Waiting')
     const movingRecords = records.filter((record) => record.status === 'In progress')
+    const meetingRecord = records.find((record) => record.id === 'gta-weekly-meeting')
 
     return (
       <section className="lab-meeting-surface" aria-label="Meeting practice surface">
@@ -364,6 +436,13 @@ function renderSandboxSurface({
           <span>Generated note</span>
           <strong>Weekly event readiness</strong>
           <p>{blockedRecords.length} blocked. {waitingRecords.length} waiting. {movingRecords.length} moving. Next move: assign one owner before the meeting.</p>
+          <label className="lab-practice-control wide">
+            <span>Editable meeting note</span>
+            <textarea
+              aria-label="Weekly note editor"
+              defaultValue={meetingRecord?.notes || 'Generate the note from connected fake work.'}
+            />
+          </label>
           <div className="lab-stage-actions">
             <ActionButton action={action('generate-weekly-note', 'Generate note', 'primary')} completedTaskIds={completedTaskIds} onApply={apply} />
             <ActionButton action={action('edit-weekly-note', 'Edit receipt')} completedTaskIds={completedTaskIds} onApply={apply} />
@@ -624,8 +703,8 @@ function renderRiskGraph() {
     <div className="lab-risk-graph">
       <span>Permit risk</span>
       <strong>Kensington Market</strong>
-      <span>Water run</span>
-      <span>Medical tent</span>
+      <span>Vendor COIs</span>
+      <span>Site map</span>
     </div>
   )
 }

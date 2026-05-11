@@ -262,7 +262,7 @@ const lessons: LessonSeed[] = [
         scenario: 'Waiting needs a reason, not a vague status.',
         actionId: 'write-catering-chase',
         sourceTruth: 'Waiting On. Who owes it.',
-        expectedReceipt: 'Catering chase receipt written.',
+        expectedReceipt: 'Vendor COI chase receipt written.',
       },
     ],
   },
@@ -458,6 +458,7 @@ export function startSundeskLabModule(
         activeSurface: module.surface,
         sampleWorkspaceVersion: 3,
         selectedView: module.surface === 'timeline' ? educationState.lab.sandbox.selectedView : 'grid',
+        selectedFilterTag: module.surface === 'tags' ? educationState.lab.sandbox.selectedFilterTag : null,
         updatedAt: now,
       },
     },
@@ -645,6 +646,12 @@ export function resetSundeskLabProgress(
 }
 
 function applyRecordAction(records: SundeskLabRecord[], actionId: string): SundeskLabRecord[] {
+  if (actionId === 'paste-lab-rows') {
+    return records.map((record) => record.id === 'gta-permit-risk'
+      ? { ...record, notes: replaceOrAppendLabNote(record.notes, 'Starter rows pasted into the Lab grid.') }
+      : record)
+  }
+
   if (actionId === 'tag-risk-row') {
     return records.map((record) => record.id === 'gta-permit-risk'
       ? { ...record, tags: Array.from(new Set([...record.tags, 'Permit risk'])) }
@@ -653,6 +660,12 @@ function applyRecordAction(records: SundeskLabRecord[], actionId: string): Sunde
 
   if (actionId === 'edit-permit-status') {
     return records.map((record) => record.id === 'gta-permit-risk' ? { ...record, status: 'Blocked' } : record)
+  }
+
+  if (actionId === 'route-water-now') {
+    return records.map((record) => record.id === 'gta-permit-risk'
+      ? { ...record, status: 'Now', tags: Array.from(new Set([...record.tags, 'Now'])) }
+      : record)
   }
 
   if (actionId === 'add-weather-row' && !records.some((record) => record.id === 'gta-weather-comms')) {
@@ -678,10 +691,44 @@ function applyRecordAction(records: SundeskLabRecord[], actionId: string): Sunde
   }
 
   if (actionId === 'set-due-date-field') {
-    return records.map((record) => ({ ...record, notes: record.id === 'gta-permit-risk' ? `${record.notes} Due is typed as date.` : record.notes }))
+    return records.map((record) => record.id === 'gta-permit-risk'
+      ? { ...record, notes: replaceOrAppendLabNote(record.notes, 'Due is typed as date.') }
+      : record)
+  }
+
+  if (actionId === 'write-catering-chase') {
+    return records.map((record) => record.id === 'gta-vendor-cois'
+      ? {
+          ...record,
+          notes: 'Vendor lead owes 2 COIs. 3 days old. Missing certificates block vendor confirmation.',
+        }
+      : record)
+  }
+
+  if (actionId === 'generate-weekly-note') {
+    return records.map((record) => record.id === 'gta-weekly-meeting'
+      ? {
+          ...record,
+          notes: 'Generated: permit blocked, vendor COIs waiting, site map moving, sponsor deck open.',
+        }
+      : record)
+  }
+
+  if (actionId === 'edit-weekly-note') {
+    return records.map((record) => record.id === 'gta-weekly-meeting'
+      ? {
+          ...record,
+          status: 'Edited',
+          notes: 'Edited receipt: assign permit owner, chase 2 vendor COIs, review site map before Friday.',
+        }
+      : record)
   }
 
   return records
+}
+
+function replaceOrAppendLabNote(notes: string, nextNote: string) {
+  return notes.includes(nextNote) ? notes : `${notes} ${nextNote}`
 }
 
 function getSelectedViewForAction(actionId: string, currentView: string) {

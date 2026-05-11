@@ -687,7 +687,7 @@ function App() {
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
   const activeOnboardingStep = getOnboardingStep(educationState.onboarding.currentStepId)
   const activeOnboardingProgress = getOnboardingStepProgress(activeOnboardingStep?.id)
-  const visibleOnboardingStatus = educationState.onboarding.status === 'notStarted' && activeScreen === 'today'
+  const visibleOnboardingStatus = educationState.onboarding.status === 'notStarted' && activeScreen !== 'settings'
     ? 'dismissed'
     : educationState.onboarding.status
   const rupaulMode = educationState.copyMode.rupaulMode
@@ -1438,7 +1438,29 @@ function App() {
   }
 
   function openDailyRecord(record: BaseRecord) {
-    openBuildRecord(record.tableId, record.id)
+    openDailyRecordById(record.tableId, record.id)
+  }
+
+  function openDailyRecordById(tableId: string, recordId: string) {
+    const table = base.tables.find((tableItem) => tableItem.id === tableId)
+    const record = getRecord(base, recordId)
+
+    if (!table || !record) {
+      return
+    }
+
+    setSelectedBuildTableId(tableId)
+    setSelectedBuildRecordId(recordId)
+    setGridFilter('')
+    setGridSortFieldId(table.primaryFieldId)
+    setGridSortDirection('asc')
+    setGridGroupFieldId('')
+    setGridColorFieldId('')
+    setActiveGridViewId('')
+    setRecordDraft(getEmptyRecordValues(base, tableId))
+    setIsCreatingRecord(false)
+    setBuildModal('')
+    setIsRecordDrawerOpen(true)
   }
 
   function openWorkflowTagRoute(record: BaseRecord, tag: string) {
@@ -3779,7 +3801,7 @@ function App() {
           onCreateDependency={createDependency}
           onDeleteDependency={deleteDependency}
           onFlipDependencyDirection={flipDependencyDirection}
-          onOpenRecord={openBuildRecord}
+          onOpenRecord={activeScreen === 'build' ? openBuildRecord : openDailyRecordById}
           onRenderMeetingPrep={renderMeetingPrep}
           onRenderRecordInput={renderRecordInput}
           onSelectedRecordChange={updateSelectedRecord}

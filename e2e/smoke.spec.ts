@@ -189,7 +189,7 @@ test('Lindsay install basics are present and local no-config opens Today', async
 
 test('First-run onboarding choice can start alone and persists dismissal', async ({ page }) => {
   await page.addInitScript(() => window.localStorage.removeItem('sundesk-education-state-v1'))
-  await page.goto('/')
+  await page.goto('/#settings')
 
   await expect(page.getByTestId('onboarding-choice')).toBeVisible()
   await page.getByRole('button', { name: 'Start on my own' }).click()
@@ -202,7 +202,7 @@ test('First-run onboarding choice can start alone and persists dismissal', async
 
 test('Onboarding tour advances only from exact highlighted target clicks', async ({ page }) => {
   await page.addInitScript(() => window.localStorage.removeItem('sundesk-education-state-v1'))
-  await page.goto('/')
+  await page.goto('/#settings')
 
   await page.getByRole('button', { name: 'Start the tour' }).click()
   await expect(page.getByTestId('onboarding-tour')).toContainText('Today is the look-at-this-first screen')
@@ -343,17 +343,16 @@ test('Settings explains local, shared, bookmark, and install paths without leadi
 })
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
+  await expect(page.getByTestId('today-brief')).toBeVisible()
+  await expect(page.getByTestId('today-brief').getByRole('heading', { name: 'Today' })).toBeVisible()
+  await expect(page.getByTestId('today-brief')).toContainText('What can slip. What is waiting. What moves next.')
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
   await expect(page.getByTestId('rail-workspace-card')).not.toHaveAttribute('open', '')
   await expect(page.getByTestId('rail-system-read-card')).not.toHaveAttribute('open', '')
-  await expect(page.getByTestId('today-counts')).not.toHaveAttribute('open', '')
   await expect(page.getByRole('button', { name: 'Preview summary' })).toBeEnabled()
-  await expect(page.getByTestId('today-first-read')).toContainText('Now')
-  await expect(page.getByTestId('today-first-read')).toContainText('Waiting')
-  await expect(page.getByTestId('today-first-read')).toContainText('Next')
-  await expect(page.getByTestId('today-first-read')).toContainText('Changed')
-  await expect(page.getByTestId('today-first-read')).toContainText('Can slip')
+  await expect(page.getByTestId('today-lanes')).toContainText('Now')
+  await expect(page.getByTestId('today-lanes')).toContainText('Waiting')
+  await expect(page.getByTestId('today-lanes')).toContainText('Next')
   await expect(page.getByTestId('today-focus')).toContainText('Touch first')
   await expect(page.getByTestId('today-focus')).toContainText('Send permit follow-up.')
   await expect(page.getByTestId('today-focus')).toContainText('Status is Blocked.')
@@ -362,15 +361,13 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
   await expect(page.getByTestId('today-lane-next')).toBeVisible()
   await expect(page.getByTestId('today-lane-rules')).toHaveCount(0)
   await page.getByText('Show why items surfaced').click()
-  await expect(page.getByTestId('today-rule-receipts').getByText('Rule matched').first()).toBeVisible()
-  await expect(page.getByTestId('today-rule-receipts').getByText('No send happened').first()).toBeVisible()
-  await expect(page.getByTestId('today-lane-now').getByText('Blocked by: Venue readiness may slip.')).toBeVisible()
-  await page.getByLabel(/Send permit follow-up.*workflow tags/).getByRole('button', { name: 'COI' }).click()
-  await expect(page.getByTestId('build-screen')).toBeVisible()
-  await expect(page.getByLabel('Filter')).toHaveValue('COI')
-  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeVisible()
-  await expect(page.getByRole('row', { name: /Log vendor COIs/ })).toBeHidden()
-  await expect(page.getByRole('status')).toContainText('Tag route opened: COI.')
+  await expect(page.getByTestId('today-rule-receipts').getByText('Send permit follow-up.').first()).toBeVisible()
+  await expect(page.getByTestId('today-rule-receipts').getByText('Status is Blocked.').first()).toBeVisible()
+  await expect(page.getByTestId('today-lane-now').getByText('Status is Blocked.').first()).toBeVisible()
+  await page.getByTestId('today-lane-now').getByRole('button', { name: 'Open' }).first().click()
+  await expect(page.getByTestId('record-drawer')).toBeVisible()
+  await expect(page.getByTestId('record-work-hero')).toContainText('Send permit follow-up.')
+  await expect(page.getByTestId('record-work-hero')).toContainText('Open blocker')
 })
 
 test('Today command-send preview is local-only and keeps Today as home', async ({ page }) => {
@@ -387,7 +384,7 @@ test('Today command-send preview is local-only and keeps Today as home', async (
 
   const preview = page.getByTestId('today-command-send-preview')
 
-  await expect(preview.getByText('Command send preview.', { exact: true })).toBeVisible()
+  await expect(preview).toContainText(/Command send preview/i)
   await expect(preview).toContainText(/No send happened/i)
   await expect(preview).toContainText(/Now/i)
   await expect(preview).toContainText(/Waiting/i)
@@ -401,7 +398,7 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
 
   await page.goto('/')
   await expect(page).toHaveURL(/\/#?$/)
-  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
+  await expect(page.getByTestId('today-brief').getByRole('heading', { name: 'Today' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
   await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
 
@@ -414,18 +411,18 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
 
   await navigation.getByRole('link', { name: 'Meetings' }).click()
   await expect(page.getByTestId('meeting-prep')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Weekly notes first.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Weekly note draft.' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Timeline' }).click()
   await expect(page.getByTestId('timeline-screen')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Timeline has 5 ways to look.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Clean read.' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Build' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
+  await expect(page.getByTestId('build-screen').getByRole('heading', { name: 'Work' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
+  await expect(page.getByTestId('today-brief').getByRole('heading', { name: 'Today' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 })
 
@@ -1128,7 +1125,6 @@ test('Build edits reflect in Today and Timeline after reload', async ({ page }) 
 
   await expect(page.getByTestId('today-lane-now').getByText('Reflection smoke task')).toBeVisible()
   await page.goto('/#timeline')
-  await page.getByText('Details and controls').click()
   await page.getByPlaceholder('Find items').fill('reflection')
   await expect(page.getByTestId('timeline-list').getByText('Reflection smoke task')).toBeVisible()
 })
@@ -1769,21 +1765,8 @@ test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
 
-  const onboardingChoice = page.getByTestId('onboarding-choice')
-  const onboardingCard = onboardingChoice.locator('.onboarding-choice-card')
-
-  await expect(onboardingChoice).toBeVisible()
-  await expect(onboardingCard).toBeVisible()
-
-  const cardBox = await onboardingCard.boundingBox()
-
-  expect(cardBox?.x).toBeGreaterThanOrEqual(0)
-  expect(cardBox?.y).toBeGreaterThanOrEqual(0)
-  expect(cardBox ? cardBox.x + cardBox.width : 0).toBeLessThanOrEqual(390)
-  expect(cardBox ? cardBox.y + cardBox.height : 0).toBeLessThanOrEqual(844)
-
-  await page.getByRole('button', { name: 'Start on my own' }).click()
-  await expect(onboardingChoice).toHaveCount(0)
+  await expect(page.getByTestId('onboarding-choice')).toHaveCount(0)
+  await expect(page.getByTestId('today-brief')).toBeVisible()
 
   const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
 
@@ -1794,6 +1777,9 @@ test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page })
 
   await navigation.getByRole('link', { name: 'Settings' }).click()
   await expect(page.getByTestId('settings-screen')).toBeVisible()
+  await expect(page.getByTestId('onboarding-choice')).toBeVisible()
+  await page.getByRole('button', { name: 'Start on my own' }).click()
+  await expect(page.getByTestId('onboarding-choice')).toHaveCount(0)
   await page.getByLabel('Search Help').fill('iPhone')
   await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
   await page.locator('.rupaul-toggle').click()

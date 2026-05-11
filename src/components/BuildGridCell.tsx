@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from 'react'
+import { useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { BaseRecord, FieldDefinition, RecordValue } from '../data/workbase'
 
 export type BuildGridCellCoordinates = {
@@ -99,6 +99,7 @@ export function BuildGridCell({
   setSelectedBuildRecordId,
   startGridCellEdit,
 }: BuildGridCellProps) {
+  const [activeLinkedOptionIndex, setActiveLinkedOptionIndex] = useState(0)
   const cell = { recordId: record.id, fieldId: field.id }
   const isSelected = isSameGridCell(selectedGridCell, cell)
   const isEditing = isSameGridCell(editingGridCell, cell)
@@ -230,6 +231,18 @@ export function BuildGridCell({
           .toLowerCase()
           .includes(normalizedSearchTerm)
       })
+      const safeActiveLinkedOptionIndex = Math.max(0, Math.min(activeLinkedOptionIndex, filteredLinkedRecords.length - 1))
+
+      function commitLinkedRecord(linkedRecordId: string) {
+        const nextValue = toggleListValue(selectedLinkedIds, linkedRecordId, field.allowMultiple)
+
+        if (field.allowMultiple === false) {
+          onCommitValue(record.id, field.id, nextValue)
+          return
+        }
+
+        setEditDraft(nextValue)
+      }
 
       return (
         <div className="grid-linked-editor" aria-label={`${field.label} editor`}>
@@ -243,6 +256,31 @@ export function BuildGridCell({
             placeholder="Search items"
             type="search"
             value={searchTerm}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                event.stopPropagation()
+                setActiveLinkedOptionIndex((current) => Math.min(current + 1, Math.max(0, filteredLinkedRecords.length - 1)))
+                return
+              }
+
+              if (event.key === 'ArrowUp') {
+                event.preventDefault()
+                event.stopPropagation()
+                setActiveLinkedOptionIndex((current) => Math.max(0, current - 1))
+                return
+              }
+
+              if (event.key === 'Enter') {
+                const linkedRecord = filteredLinkedRecords[safeActiveLinkedOptionIndex]
+
+                if (linkedRecord) {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  commitLinkedRecord(linkedRecord.id)
+                }
+              }
+            }}
             onChange={(event) =>
               setLinkedRecordFilters((current) => ({
                 ...current,
@@ -264,29 +302,25 @@ export function BuildGridCell({
               ))}
             </div>
           )}
-          <div className="grid-linked-pills">
+          <div className="grid-linked-pills" role="listbox" aria-label={`${field.label} choices`}>
             {filteredLinkedRecords.length === 0 && <small>No items match. Change the search.</small>}
-            {filteredLinkedRecords.map((linkedRecord) => {
+            {filteredLinkedRecords.map((linkedRecord, linkedRecordIndex) => {
               const isSelectedLinkedRecord = selectedLinkedIds.includes(linkedRecord.id)
+              const isActiveLinkedRecord = linkedRecordIndex === safeActiveLinkedOptionIndex
 
               return (
                 <button
-                  className={isSelectedLinkedRecord ? 'selected' : ''}
-                  aria-pressed={isSelectedLinkedRecord}
+                  className={`${isSelectedLinkedRecord ? 'selected' : ''} ${isActiveLinkedRecord ? 'active' : ''}`.trim()}
+                  aria-label={getRecordTitle(linkedRecord)}
+                  aria-selected={isSelectedLinkedRecord}
                   key={linkedRecord.id}
+                  role="option"
                   type="button"
                   onClick={() => {
-                    const nextValue = toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple)
-
-                    if (field.allowMultiple === false) {
-                      onCommitValue(record.id, field.id, nextValue)
-                      return
-                    }
-
-                    setEditDraft(nextValue)
+                    commitLinkedRecord(linkedRecord.id)
                   }}
                 >
-                  <span>{getPickerRecordLabel(linkedRecord)}</span>
+                  <span>{getRecordTitle(linkedRecord)}</span>
                   <small>{getPickerRecordMeta(linkedRecord)}</small>
                 </button>
               )
