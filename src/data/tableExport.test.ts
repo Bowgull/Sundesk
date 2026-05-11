@@ -18,12 +18,12 @@ describe('table export', () => {
       getField(workbase, 'tasks', 'tags'),
       getField(workbase, 'tasks', 'communityEventDate'),
     ].filter((field): field is FieldDefinition => Boolean(field))
-    const record = getRecord(workbase, 'task_coi_halifax')
+    const record = getRecord(workbase, 'task_permit_toronto')
 
     expect(record).toBeDefined()
     expect(exportTableCsv(workbase, fields, [record!])).toBe([
       'Title,Status,Community,Tags,Community event date',
-      'Confirm COI status.,Blocked,Halifax,"COI, Blocked",2026-05-22',
+      'Send permit follow-up.,Blocked,Toronto,"Permit, Blocked",2026-05-22',
     ].join('\n'))
   })
 
@@ -59,12 +59,12 @@ describe('table export', () => {
       getField(workbase, 'communities', 'openTaskCount'),
       getField(workbase, 'communities', 'approvalStatusRollup'),
     ].filter((field): field is FieldDefinition => Boolean(field))
-    const record = getRecord(workbase, 'community_halifax')
+    const record = getRecord(workbase, 'community_toronto')
 
     expect(record).toBeDefined()
     expect(exportTableCsv(workbase, fields, [record!])).toBe([
       'Name,Open work,Approval status',
-      'Halifax,4,"Blocked, Missing, Waiting"',
+      'Toronto,4,"Blocked, Missing, Waiting"',
     ].join('\n'))
   })
 

@@ -62,62 +62,60 @@ export type TaskDependency = {
 
 export const priorityItems: PriorityItem[] = [
   {
-    id: 'task-coi-halifax',
-    title: 'Confirm COI status for Halifax.',
-    community: 'Halifax',
+    id: 'task-permit-toronto',
+    title: 'Send permit follow-up for Toronto.',
+    community: 'Toronto',
     priority: 'fire',
-    summary: 'Blocks venue readiness. Event date is 7 days out. Last nudge was 3 days ago.',
-    reasons: ['COI status missing', 'Venue readiness blocked', 'Halifax at risk'],
-    linkedRecords: ['Halifax', 'Venue readiness', 'Venue lead nudge'],
+    summary: 'Permit missing. Event date is close. Venue readiness is blocked.',
+    reasons: ['Permit missing', 'Venue readiness blocked', 'Toronto at risk'],
+    linkedRecords: ['Toronto', 'Permit missing', 'Venue readiness waiting'],
   },
   {
-    id: 'task-permit-moncton',
-    title: 'Send permit nudge to Moncton.',
-    community: 'Moncton',
+    id: 'task-vendor-cois-mississauga',
+    title: 'Log vendor COIs for Mississauga.',
+    community: 'Mississauga',
     priority: 'waiting',
-    summary: 'Permit update gates site map review. The waiting item is overdue.',
-    reasons: ['Permit status unclear', 'Site map review waiting', 'Waiting item overdue'],
-    linkedRecords: ['Moncton', 'Permit approval', 'City contact'],
+    summary: 'Vendor replies are pending. COI status keeps Mississauga in waiting.',
+    reasons: ['Vendor COIs stale', 'Waiting item open', 'Vendor reply pending'],
+    linkedRecords: ['Mississauga', 'Vendor COIs stale', 'Vendor lead'],
   },
   {
-    id: 'task-meeting-charlottetown',
-    title: 'Build Charlottetown meeting prep.',
-    community: 'Charlottetown',
+    id: 'task-meeting-brampton',
+    title: 'Review Brampton prep notes.',
+    community: 'Brampton',
     priority: 'prep',
-    summary: 'Meeting is tomorrow. 2 open work items and 1 unanswered program note roll into the agenda.',
-    reasons: ['Meeting tomorrow', '2 open work items', '1 waiting item'],
+    summary: 'Agenda is ready. Meeting prep needs one final read.',
+    reasons: ['Meeting prep', 'Agenda ready', '1 meeting item'],
     linkedRecords: ['Meeting', '2 work items', '1 waiting item'],
   },
 ]
 
 export const communities: CommunitySignal[] = [
-  { id: 'halifax', name: 'Halifax', readiness: 62, status: 'hot' },
-  { id: 'moncton', name: 'Moncton', readiness: 71, status: 'warm' },
-  { id: 'sydney', name: 'Sydney', readiness: 88, status: 'cool' },
-  { id: 'fredericton', name: 'Fredericton', readiness: 92, status: 'cool' },
-  { id: 'charlottetown', name: 'Charlottetown', readiness: 77, status: 'warm' },
-  { id: 'st-johns', name: 'St. John’s', readiness: 84, status: 'cool' },
+  { id: 'toronto', name: 'Toronto', readiness: 58, status: 'hot' },
+  { id: 'mississauga', name: 'Mississauga', readiness: 66, status: 'warm' },
+  { id: 'brampton', name: 'Brampton', readiness: 81, status: 'warm' },
+  { id: 'vaughan', name: 'Vaughan', readiness: 88, status: 'cool' },
 ]
 
 export const linkedRecords: LinkedRecord[] = [
   {
-    id: 'linked-task-coi',
+    id: 'linked-task-permit',
     type: 'Work',
-    title: 'Confirm COI status.',
-    detail: 'Blocks venue readiness.',
+    title: 'Send permit follow-up.',
+    detail: 'Blocks readiness.',
     priority: 'fire',
   },
   {
-    id: 'linked-followup-venue',
+    id: 'linked-followup-vendor',
     type: 'Waiting On',
-    title: 'Venue lead nudge.',
-    detail: 'Overdue by 1 day.',
+    title: 'Vendor replies pending.',
+    detail: 'Waiting on vendor.',
     priority: 'waiting',
   },
   {
     id: 'linked-meeting-venue',
     type: 'Meeting item',
-    title: 'Ask for final venue note.',
+    title: 'Review prep notes.',
     detail: 'Added to next agenda.',
     priority: 'prep',
   },
@@ -127,7 +125,7 @@ export const selectedFields: FieldDefinition[] = [
   { label: 'Status', type: 'single select', value: 'At risk' },
   { label: 'Event date', type: 'date', value: 'May 22' },
   { label: 'Readiness', type: 'rollup', value: '62%' },
-  { label: 'COI status', type: 'custom field', value: 'Missing' },
+  { label: 'Permit status', type: 'custom field', value: 'Missing' },
 ]
 
 export const automationRules: AutomationRule[] = [
@@ -193,7 +191,7 @@ export const tables: TableDefinition[] = [
   {
     id: 'approvals',
     name: 'Approvals',
-    purpose: 'Permits, COI status, confirmations, and blockers.',
+    purpose: 'Permits, vendor COIs, confirmations, and blockers.',
     records: 5,
   },
   {
@@ -252,17 +250,17 @@ export const savedViews: SavedView[] = [
 export const taskDependencies: TaskDependency[] = [
   {
     id: 'coi-venue',
-    task: 'Confirm COI status.',
+    task: 'Send permit follow-up.',
     dependsOn: 'Venue readiness.',
     linkedTable: 'Approvals',
-    reason: 'COI must be received before the venue can be marked ready.',
+    reason: 'Permit status must clear before Toronto can be marked ready.',
   },
   {
     id: 'permit-map',
-    task: 'Send permit nudge.',
-    dependsOn: 'Site map review.',
+    task: 'Log vendor COIs.',
+    dependsOn: 'Vendor replies.',
     linkedTable: 'Waiting On',
-    reason: 'Site map review waits for the permit answer.',
+    reason: 'Mississauga waits for vendor replies before readiness can move.',
   },
   {
     id: 'prep-agenda',

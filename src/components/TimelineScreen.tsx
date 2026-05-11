@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react'
 import { timelineViewOptions, type TimelineView } from '../appConfig'
 import type { BaseRecord, Workbase } from '../data/workbase'
-import { getRecordContext, getRecordTitle } from '../data/workbase'
 
 type TimelineScreenProps = {
   base: Workbase
-  dailyTimelineRecords: readonly BaseRecord[]
   renderTimelineView: () => ReactNode
   timelineDatedRecordCount: number
   timelineDependencyRecordCount: number
@@ -26,31 +24,44 @@ type TimelineScreenProps = {
   onWorkflowTagRouteOpen: (record: BaseRecord, tag: string) => void
 }
 
-type TimelineViewHelper = {
-  readonly label: string
-  readonly description: string
-  readonly value: TimelineView
-}
-
-const timelineViewHelpers: readonly TimelineViewHelper[] = [
-  { value: 'grid', label: 'Grid', description: 'Clean or edit rows.' },
-  { value: 'kanban', label: 'Kanban', description: 'Move work by state.' },
-  { value: 'calendar', label: 'Calendar', description: 'See date pressure.' },
-  { value: 'timeline', label: 'Timeline', description: 'Read readiness before event day.' },
-  { value: 'graph', label: 'Graph', description: 'Explain why a place is at risk.' },
-]
-
 function getTimelineSourceLabel(base: Workbase, timelineTableId: string) {
   if (timelineTableId === 'all') {
-    return 'All source tables.'
+    return 'All areas.'
   }
 
   return `${base.tables.find((table) => table.id === timelineTableId)?.label || timelineTableId}.`
 }
 
+const timelineModeCopy: Record<TimelineView, { kicker: string, title: string, lede: string }> = {
+  grid: {
+    kicker: 'Grid',
+    title: 'Clean read.',
+    lede: 'Place, item, status, date, blocker, next move.',
+  },
+  kanban: {
+    kicker: 'Kanban',
+    title: 'Move stuck work.',
+    lede: 'Cards show blocker, place, date, and the next state.',
+  },
+  calendar: {
+    kicker: 'Calendar',
+    title: 'Date pressure.',
+    lede: 'Deadlines, waiting loops, meetings, and event days in one scan.',
+  },
+  timeline: {
+    kicker: 'Gantt Timeline',
+    title: 'Readiness before event day.',
+    lede: 'Community rows show what must land before the marker.',
+  },
+  graph: {
+    kicker: 'Graph',
+    title: 'Why this place is at risk.',
+    lede: 'Connected blockers, risks, and next move stay visible.',
+  },
+}
+
 export function TimelineScreen({
   base,
-  dailyTimelineRecords,
   renderTimelineView,
   timelineDatedRecordCount,
   timelineDependencyRecordCount,
@@ -72,20 +83,25 @@ export function TimelineScreen({
 }: TimelineScreenProps) {
   const timelineRecordCount = timelineRecords.length
   const timelineSourceLabel = getTimelineSourceLabel(base, timelineTableId)
-  const timelineViewLabel = timelineViewOptions.find((option) => option.value === timelineView)?.label
+  const timelineDetailsLabel = `${timelineRecordCount} shown. ${timelineDatedRecordCount} dated. ${timelineDependencyRecordCount} linked.`
+  const modeCopy = timelineModeCopy[timelineView]
 
   return (
-    <section className="screen-grid" data-testid="timeline-screen" id="timeline">
+    <section className="timeline-screen-layout" data-testid="timeline-screen" id="timeline">
       <article className="screen-panel wide">
-        <div className="panel-title">
-          <div>
-            <span className="eyebrow">Views · Timeline</span>
-            <h2>Timeline has 5 ways to look.</h2>
+        <div className="timeline-deck-header">
+          <div className="timeline-deck-title">
+            <span className="eyebrow">Timeline · {modeCopy.kicker}</span>
+            <h2>{modeCopy.title}</h2>
+            <p>{modeCopy.lede}</p>
           </div>
           <span className="metric-pill">{timelineRecordCount} shown</span>
         </div>
-        <p className="panel-lede">The main header is the view type. Controls like fields, filter, sort, and group sit underneath.</p>
-        <div className="view-mode-tabs" role="tablist" aria-label="Timeline views">
+        <div className="timeline-question-strip" aria-label="Current timeline question">
+          <span>Current question</span>
+          <strong>{timelineViewQuestion}</strong>
+        </div>
+        <div className="view-mode-tabs timeline-view-chips" role="tablist" aria-label="Timeline ways to look">
           {timelineViewOptions.map((option) => (
             <button
               aria-selected={timelineView === option.value}
@@ -99,115 +115,80 @@ export function TimelineScreen({
             </button>
           ))}
         </div>
-        <div className="timeline-mode-receipt" aria-label="Timeline mode receipt" data-testid="timeline-mode-receipt">
-          <article>
-            <span>Question</span>
-            <strong>{timelineViewQuestion}</strong>
-          </article>
-          <article>
-            <span>Records</span>
-            <strong>{timelineRecordCount}</strong>
-            <small>{timelineSourceLabel}</small>
-          </article>
-          <article>
-            <span>Dates</span>
-            <strong>{timelineDatedRecordCount}</strong>
-            <small>Rows with a usable date.</small>
-          </article>
-          <article>
-            <span>Links</span>
-            <strong>{timelineDependencyRecordCount}</strong>
-            <small>Rows with dependencies.</small>
-          </article>
-          <article>
-            <span>Reads</span>
-            <strong>{timelineRuleReadCount}</strong>
-            <small>Timeline rules matched.</small>
-          </article>
-        </div>
-        {timelineTagRouteOptions.length > 0 && (
-          <div className="tag-route-strip timeline-tag-route-strip" aria-label="Timeline tag routes">
-            <span>Tag routes</span>
-            <div>
-              {timelineTagRouteOptions.map(([tag, record]) => (
-                <button
-                  className={`select-tag ${getChipColorClass(tag)}`}
-                  key={tag}
-                  type="button"
-                  onClick={() => onWorkflowTagRouteOpen(record, tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
+        <div className="timeline-controls-panel">
+          <div className="timeline-mode-receipt" aria-label="Timeline details" data-testid="timeline-mode-receipt">
+            <article>
+              <span>Shown</span>
+              <strong>{timelineRecordCount}</strong>
+              <small>{timelineSourceLabel}</small>
+            </article>
+            <article>
+              <span>Dated</span>
+              <strong>{timelineDatedRecordCount}</strong>
+              <small>Items with a usable date.</small>
+            </article>
+            <article>
+              <span>Linked</span>
+              <strong>{timelineDependencyRecordCount}</strong>
+              <small>Rows with dependencies.</small>
+            </article>
+            <article>
+              <span>Checks</span>
+              <strong>{timelineRuleReadCount}</strong>
+              <small>Saved checks matched.</small>
+            </article>
           </div>
-        )}
-        <div className="grid-toolbar timeline-toolbar">
-          <label>
-            <span>Filter</span>
-            <input
-              value={timelineFilter}
-              onChange={(event) => onTimelineFilterChange(event.target.value)}
-              placeholder="Find records"
-            />
-          </label>
-          <label>
-            <span>Table</span>
-            <select value={timelineTableId} onChange={(event) => onTimelineTableChange(event.target.value)}>
-              <option value="all">All tables</option>
-              {base.tables.map((table) => (
-                <option key={table.id} value={table.id}>
-                  {table.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Status</span>
-            <select value={timelineStatus} onChange={(event) => onTimelineStatusChange(event.target.value)}>
-              <option value="all">All statuses</option>
-              {timelineStatusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
+          {timelineTagRouteOptions.length > 0 && (
+            <div className="tag-route-strip timeline-tag-route-strip" aria-label="Timeline tag routes">
+              <span>Tags</span>
+              <div>
+                {timelineTagRouteOptions.map(([tag, record]) => (
+                  <button
+                    className={`select-tag ${getChipColorClass(tag)}`}
+                    key={tag}
+                    type="button"
+                    onClick={() => onWorkflowTagRouteOpen(record, tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="grid-toolbar timeline-toolbar" aria-label={timelineDetailsLabel}>
+            <label>
+              <span>Find</span>
+              <input
+                value={timelineFilter}
+                onChange={(event) => onTimelineFilterChange(event.target.value)}
+                placeholder="Find items"
+              />
+            </label>
+            <label>
+              <span>Area</span>
+              <select value={timelineTableId} onChange={(event) => onTimelineTableChange(event.target.value)}>
+                <option value="all">All areas</option>
+                {base.tables.map((table) => (
+                  <option key={table.id} value={table.id}>
+                    {table.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Status</span>
+              <select value={timelineStatus} onChange={(event) => onTimelineStatusChange(event.target.value)}>
+                <option value="all">All statuses</option>
+                {timelineStatusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
         {renderTimelineView()}
-      </article>
-
-      <article className="screen-panel">
-        <div className="panel-title compact">
-          <div>
-            <span className="eyebrow">Sub controls</span>
-            <h2>{timelineViewLabel} answers one question.</h2>
-          </div>
-        </div>
-        <div className="view-helper-list">
-          {timelineViewHelpers.map((helper) => (
-            <button key={helper.value} type="button" onClick={() => onTimelineViewChange(helper.value)}>
-              <strong>{helper.label}</strong>
-              <span>{helper.description}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="panel-title compact timeline-panel-gap">
-          <div>
-            <span className="eyebrow">Date sample</span>
-            <h2>Next records.</h2>
-          </div>
-        </div>
-        <div className="gantt-preview">
-          {dailyTimelineRecords.slice(0, 5).map((record, index) => (
-            <div key={record.id}>
-              <span>{getRecordTitle(base, record)}</span>
-              <i className={`bar ${index % 3 === 0 ? 'firebar' : index % 3 === 1 ? 'waitbar' : 'prepbar'}`} />
-              <em>{getRecordContext(record)}</em>
-            </div>
-          ))}
-        </div>
       </article>
     </section>
   )

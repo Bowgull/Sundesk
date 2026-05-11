@@ -18,6 +18,46 @@ const auditFirebaseWrites = (page: Page) => {
   return firebaseWriteRequests
 }
 
+async function addBuildGridRow(
+  page: Page,
+  title: string,
+  options: { status?: string, dueDate?: string } = {},
+) {
+  await page.getByTestId('build-add-record').first().click()
+
+  const recordId = await page.evaluate(() => {
+    const stored = JSON.parse(window.localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}') as {
+      base?: { records?: Array<{ id: string, tableId: string }> }
+    }
+    const taskRows = stored.base?.records?.filter((record) => record.tableId === 'tasks') || []
+
+    return taskRows.at(-1)?.id || ''
+  })
+
+  await page.getByLabel('Title editor').fill(title)
+  await page.getByLabel('Title editor').press('Enter')
+
+  if (options.status) {
+    const statusCell = page.getByTestId(`grid-cell-${recordId}-status`)
+
+    await statusCell.click()
+    await statusCell.press('Enter')
+    await page.getByLabel('Status editor').selectOption(options.status)
+    await page.getByLabel('Status editor').press('Enter')
+  }
+
+  if (options.dueDate) {
+    const dateCell = page.getByTestId(`grid-cell-${recordId}-dueDate`)
+
+    await dateCell.click()
+    await dateCell.press('Enter')
+    await page.getByLabel('Due date editor').fill(options.dueDate)
+    await page.getByLabel('Due date editor').press('Enter')
+  }
+
+  return recordId
+}
+
 test.beforeEach(async ({ page }, testInfo) => {
   const consoleErrors: string[] = []
 
@@ -165,13 +205,25 @@ test('Onboarding tour advances only from exact highlighted target clicks', async
   await page.goto('/')
 
   await page.getByRole('button', { name: 'Start the tour' }).click()
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Today is the look-at-this-first screen')
+  await expect(page.getByTestId('onboarding-tour')).toContainText(/1 of \d+/)
+  await expect(page.getByTestId('onboarding-tour')).toContainText('Read this first. Today is home.')
+
+  await page.mouse.click(520, 520)
+
+  let educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+
+  expect(educationState.onboarding.currentStepId).toBe('today')
+  expect(educationState.onboarding.completedActionIds).not.toContain('view-today')
+
+  await page.getByRole('button', { name: 'I see Today' }).click()
   await expect(page.getByTestId('onboarding-tour')).toContainText('Build is where tables live.')
   await expect(page.getByTestId('onboarding-tour')).toContainText(/2 of \d+/)
   await expect(page.getByTestId('onboarding-tour')).toContainText('Click Build in the sidebar.')
 
   await page.mouse.click(520, 520)
 
-  let educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
+  educationState = await page.evaluate(() => JSON.parse(window.localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
   expect(educationState.onboarding.currentStepId).toBe('build-nav')
   expect(educationState.onboarding.completedActionIds).not.toContain('click-build')
@@ -303,7 +355,7 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
   await expect(page.getByTestId('today-first-read')).toContainText('Changed')
   await expect(page.getByTestId('today-first-read')).toContainText('Can slip')
   await expect(page.getByTestId('today-focus')).toContainText('Touch first')
-  await expect(page.getByTestId('today-focus')).toContainText('Confirm COI status.')
+  await expect(page.getByTestId('today-focus')).toContainText('Send permit follow-up.')
   await expect(page.getByTestId('today-focus')).toContainText('Status is Blocked.')
   await expect(page.getByTestId('today-lane-now')).toBeVisible()
   await expect(page.getByTestId('today-lane-waiting')).toBeVisible()
@@ -313,11 +365,11 @@ test('Today renders local lanes, rule receipts, and dependency receipts', async 
   await expect(page.getByTestId('today-rule-receipts').getByText('Rule matched').first()).toBeVisible()
   await expect(page.getByTestId('today-rule-receipts').getByText('No send happened').first()).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText('Blocked by: Venue readiness may slip.')).toBeVisible()
-  await page.getByLabel(/Confirm COI status.*workflow tags/).getByRole('button', { name: 'COI' }).click()
+  await page.getByLabel(/Send permit follow-up.*workflow tags/).getByRole('button', { name: 'COI' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
   await expect(page.getByLabel('Filter')).toHaveValue('COI')
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
-  await expect(page.getByRole('row', { name: /Send permit nudge/ })).toBeHidden()
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Log vendor COIs/ })).toBeHidden()
   await expect(page.getByRole('status')).toContainText('Tag route opened: COI.')
 })
 
@@ -354,7 +406,7 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
   await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Waiting On' }).click()
-  await expect(page.getByRole('heading', { name: 'Who owes the next move.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Chase list.' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Communities' }).click()
@@ -362,7 +414,7 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
 
   await navigation.getByRole('link', { name: 'Meetings' }).click()
   await expect(page.getByTestId('meeting-prep')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Weekly prep.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Weekly notes first.' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Timeline' }).click()
   await expect(page.getByTestId('timeline-screen')).toBeVisible()
@@ -380,6 +432,8 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
 test('Sundesk Lab is a real nav screen and persists module progress locally', async ({ page }) => {
   const navigation = page.getByRole('navigation', { name: 'Sundesk navigation' })
   const labLink = navigation.getByRole('link', { name: 'Sundesk Lab' })
+  const labModuleId = 'tags'
+  const labModuleTestId = `lab-module-${labModuleId}`
 
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
   await expect(labLink).toBeVisible()
@@ -388,45 +442,50 @@ test('Sundesk Lab is a real nav screen and persists module progress locally', as
   await expect(page).toHaveURL(/#lab$/)
   await expect(page.getByTestId('sundesk-lab-screen')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Sundesk Lab' })).toBeVisible()
-  await expect(page.getByTestId('lab-module-list')).toContainText('First look')
-  await expect(page.getByTestId('lab-module-list')).toContainText('Scarborough')
+  await expect(page.getByTestId('lab-module-list')).toContainText('Start with the map')
+  await expect(page.getByTestId('lab-module-list')).toContainText('Make tags route work')
+  await expect(page.getByTestId('sundesk-lab-screen')).toContainText('Sync-ready')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Done when')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Practice workspace')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Permit risk memo')
 
-  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Continue' }).click()
-  await expect(page.getByTestId('lab-active-module')).toContainText('Tags')
-  await expect(page.getByTestId('lab-active-module')).toContainText('Open a tag cell')
-  await expect(page.getByTestId('lab-active-module')).toContainText('Tag Steph, vendor, waiting, and needs-eyes')
-  await expect(page.getByTestId('lab-module-tags')).toContainText('In progress')
+  await page.getByTestId(labModuleTestId).getByRole('button', { name: /Make tags route work/ }).click()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Make tags route work')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Tag the risk row')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Permit risk')
+  await expect(page.getByTestId(labModuleTestId)).toContainText('In progress')
 
   const storedAfterContinue = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
-  expect(storedAfterContinue.lab.activeModuleId).toBe('tags')
-  expect(storedAfterContinue.lab.modules.tags.status).toBe('inProgress')
-  expect(storedAfterContinue.lab.modules.tags.currentStepId).toBe('tags-open-cell')
+  expect(storedAfterContinue.lab.activeModuleId).toBe(labModuleId)
+  expect(storedAfterContinue.lab.modules[labModuleId].status).toBe('inProgress')
+  expect(storedAfterContinue.lab.modules[labModuleId].currentStepId).toBe('tags-tag-risk-row')
+  expect(storedAfterContinue.lab.sandbox.activeLessonId).toBe(labModuleId)
+  expect(storedAfterContinue.lab.sandbox.activeSurface).toBe('tags')
+  expect(storedAfterContinue.lab.sandbox.coachOpen).toBe(true)
+  expect(storedAfterContinue.lab.sandbox.inspectorOpen).toBe(true)
+  expect(storedAfterContinue.lab.sandbox.records.every((record: { fake: boolean }) => record.fake)).toBe(true)
 
-  await page.getByRole('button', { name: 'Mark step done' }).click()
-  await expect(page.getByTestId('lab-active-module')).toContainText('Add 2 tags')
+  await expect(page.getByRole('button', { name: 'Complete lesson' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Add tag' }).click()
+  await page.getByRole('button', { name: 'Filter tag' }).click()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Permit risk route visible.')
+  await page.getByRole('button', { name: 'Complete lesson' }).click()
 
-  const storedAfterStepOne = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
-
-  expect(storedAfterStepOne.lab.modules.tags.completedStepIds).toEqual(['tags-open-cell'])
-  expect(storedAfterStepOne.lab.modules.tags.completedActionIds).toEqual(['open-tag-cell'])
-  expect(storedAfterStepOne.lab.modules.tags.currentStepId).toBe('tags-add-two')
-
-  await page.reload()
-  await expect(page.getByTestId('lab-active-module')).toContainText('Add 2 tags')
-  await page.getByRole('button', { name: 'Mark step done' }).click()
-  await page.getByRole('button', { name: 'Mark step done' }).click()
+  await expect(page.getByTestId('lab-active-module')).toContainText('Done')
 
   const storedAfterCompletion = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
-  expect(storedAfterCompletion.lab.modules.tags.status).toBe('completed')
-  expect(storedAfterCompletion.lab.modules.tags.currentStepId).toBeNull()
-  expect(storedAfterCompletion.lab.modules.tags.completedAt).toEqual(expect.any(String))
+  expect(storedAfterCompletion.lab.modules[labModuleId].status).toBe('completed')
+  expect(storedAfterCompletion.lab.modules[labModuleId].currentStepId).toBeNull()
+  expect(storedAfterCompletion.lab.modules[labModuleId].completedStepIds).toEqual(['tags-tag-risk-row', 'tags-filter-risk-tag'])
+  expect(storedAfterCompletion.lab.modules[labModuleId].completedActionIds).toEqual(['tag-risk-row', 'filter-risk-tag'])
+  expect(storedAfterCompletion.lab.modules[labModuleId].completedAt).toEqual(expect.any(String))
 
-  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Start over' }).click()
+  await page.getByRole('button', { name: 'Start over' }).click()
   const storedAfterModuleReset = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
-  expect(storedAfterModuleReset.lab.modules.tags).toBeUndefined()
+  expect(storedAfterModuleReset.lab.modules[labModuleId]).toBeUndefined()
 
   const realRecordCount = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
 
@@ -436,6 +495,7 @@ test('Sundesk Lab is a real nav screen and persists module progress locally', as
 
   expect(storedAfterLabReset.lab.activeModuleId).toBeNull()
   expect(storedAfterLabReset.lab.modules).toEqual({})
+  expect(storedAfterLabReset.lab.sandbox.records.every((record: { fake: boolean }) => record.fake)).toBe(true)
   expect(realRecordCountAfterReset).toBe(realRecordCount)
 })
 
@@ -447,7 +507,7 @@ test('Build renders table workshop, record drawer, dependency editor, and Rules 
   await page.getByTestId('build-table-tasks').click()
 
   await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
   await expect(page.getByTestId('record-drawer')).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('Blocked')
   await expect(page.getByTestId('record-drawer').getByLabel('Record status')).toContainText('2026-05-12')
@@ -455,53 +515,45 @@ test('Build renders table workshop, record drawer, dependency editor, and Rules 
   await expect(page.getByTestId('dependency-editor')).toBeVisible()
   await expect(page.getByTestId('dependency-editor').getByPlaceholder('Search records')).toBeVisible()
   await expect(page.getByTestId('dependency-editor').getByRole('button', { name: 'Add dependency' })).toBeDisabled()
-  await expect(page.getByTestId('rules-panel').getByRole('heading', { name: 'When this happens, do this.' })).toBeVisible()
-  await expect(page.getByTestId('rules-panel').getByText('matches').first()).toBeVisible()
+  await expect(page.getByTestId('rules-panel').getByRole('heading', { name: 'Route records after the grid has context.' })).toBeVisible()
+  await expect(page.getByTestId('rules-panel').getByText('8 rules · 10 matches')).toBeVisible()
+  await page.getByTestId('rules-panel').getByRole('heading', { name: 'Route records after the grid has context.' }).click()
   await expect(page.getByTestId('local-rule-row').first().getByRole('button', { name: 'Edit' })).toBeVisible()
 })
 
 test('Build record drawer supports linked-record picker editing', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
 
   await expect(page.getByTestId('record-drawer')).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByPlaceholder('Search Communities')).toBeVisible()
-  await expect(page.getByTestId('record-drawer').getByRole('button', { name: /Halifax.*Remove/ })).toBeVisible()
+  await expect(page.getByTestId('record-drawer').getByRole('button', { name: /Toronto.*Remove/ })).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByText('Backlinks', { exact: true })).toBeVisible()
 })
 
 test('Build linked-record edits persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
+  await page.getByTestId('edit-record-task_meeting_brampton').click()
 
   const drawer = page.getByTestId('record-drawer')
 
-  await drawer.getByRole('button', { name: /Charlottetown.*Remove/ }).click()
-  await drawer.getByRole('button', { name: /Halifax · At risk/ }).click()
-  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
+  await drawer.getByRole('button', { name: /Brampton.*Remove/ }).click()
+  await drawer.getByRole('button', { name: /Toronto · At risk/ }).click()
+  await expect(page.getByRole('row', { name: /Review Brampton prep notes/ })).toContainText('Toronto')
 
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
-  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toContainText('Halifax')
+  await expect(page.getByRole('row', { name: /Review Brampton prep notes/ })).toContainText('Toronto')
 })
 
 test('Build creates a local record from the grid', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
+  await addBuildGridRow(page, 'Book generator', { status: 'In progress', dueDate: '2026-05-19' })
 
-  await expect(modal.getByRole('heading', { name: 'New record.' })).toBeVisible()
-  await modal.getByLabel('Title').fill('Book generator')
-  await modal.getByLabel('Status').selectOption('In progress')
-  await modal.getByLabel('Due date').fill('2026-05-19')
-  await modal.getByRole('button', { name: 'Add record' }).click()
-
-  await expect(modal.getByRole('heading', { name: 'Book generator' })).toBeVisible()
-  await modal.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByTestId('build-screen').getByText('Book generator')).toBeVisible()
 })
 
@@ -509,27 +561,27 @@ test('Build grid supports inline cell editing and keyboard movement', async ({ p
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
 
-  const titleCell = page.getByTestId('grid-cell-task_coi_halifax-title')
+  const titleCell = page.getByTestId('grid-cell-task_permit_toronto-title')
 
   await titleCell.click()
   await titleCell.press('Enter')
   await page.getByLabel('Title editor').fill('Confirm COI certificate')
   await page.getByLabel('Title editor').press('Escape')
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeVisible()
   await expect(page.getByRole('row', { name: /Confirm COI certificate/ })).toBeHidden()
 
   await titleCell.press('Enter')
   await page.getByLabel('Title editor').fill('Confirm COI certificate')
   await page.getByLabel('Title editor').press('Tab')
   await expect(page.getByRole('row', { name: /Confirm COI certificate/ })).toBeVisible()
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-status')).toBeFocused()
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-status')).toBeFocused()
 })
 
 test('Build paste shows post-paste helpers', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
-  const titleCell = page.getByTestId('grid-cell-task_coi_halifax-title')
+  const titleCell = page.getByTestId('grid-cell-task_permit_toronto-title')
 
   await titleCell.click()
   await titleCell.evaluate((element) => {
@@ -551,13 +603,13 @@ test('Build paste shows post-paste helpers', async ({ page }) => {
   await page.getByRole('button', { name: 'Use Status' }).click()
   await expect(page.getByRole('status')).toContainText('Status behavior applied.')
 
-  await page.locator('.build-workbench .drawer-actions').getByRole('button', { name: 'Add field', exact: true }).click()
-  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
-  await addFieldModal.getByLabel('Field name').fill('Imported tags')
-  await addFieldModal.getByRole('button', { name: 'Add field' }).click()
+  await page.locator('[data-onboarding-target="build-add-field"]').first().click()
+  const addFieldModal = page.getByRole('dialog', { name: 'Add column' })
+  await addFieldModal.getByLabel('Column name').fill('Imported tags')
+  await addFieldModal.getByRole('button', { name: 'Add column' }).click()
   await expect(page.getByRole('columnheader', { name: /Imported tags/ }).first()).toBeVisible()
 
-  const importedTagsCell = page.getByTestId('grid-cell-task_coi_halifax-imported_tags')
+  const importedTagsCell = page.getByTestId('grid-cell-task_permit_toronto-imported_tags')
   await importedTagsCell.click()
   await importedTagsCell.evaluate((element) => {
     const clipboardData = new DataTransfer()
@@ -580,7 +632,7 @@ test('Build grid cells keep a visible keyboard focus ring', async ({ page }) => 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
 
-  const titleCell = page.getByTestId('grid-cell-task_coi_halifax-title')
+  const titleCell = page.getByTestId('grid-cell-task_permit_toronto-title')
 
   await titleCell.focus()
   await expect(titleCell).toBeFocused()
@@ -598,18 +650,18 @@ test('Build field header menu exposes view and field actions', async ({ page }) 
   await expect(titleMenuTrigger).toHaveAttribute('aria-expanded', 'false')
   await titleMenuTrigger.click()
   await expect(titleMenuTrigger).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.getByRole('menuitem', { name: 'Edit field' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Edit column' })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Rename', exact: true })).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: 'Change type' })).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: 'Hide from view' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Change behavior' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Hide from scan' })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Sort ascending' })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Sort descending' })).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: 'Group by this field' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Group by this column' })).toBeVisible()
   await page.getByRole('menuitem', { name: 'Sort descending' }).click()
   await expect(page.getByLabel('Direction')).toHaveValue('desc')
 
   await titleHeader.locator('.grid-field-menu-trigger').click()
-  await page.getByRole('menuitem', { name: 'Duplicate field' }).click()
+  await page.getByRole('menuitem', { name: 'Duplicate column' }).click()
   await expect(page.getByRole('columnheader', { name: /Title copy/ }).first()).toBeVisible()
 })
 
@@ -618,9 +670,9 @@ test('Build menus and non-destructive modals close on Escape', async ({ page }) 
   await page.getByTestId('build-table-tasks').click()
 
   await page.getByRole('columnheader', { name: /Title/ }).first().locator('.grid-field-menu-trigger').click()
-  await expect(page.getByRole('menu', { name: /Title field actions/ })).toBeVisible()
+  await expect(page.getByRole('menu', { name: /Title column actions/ })).toBeVisible()
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('menu', { name: /Title field actions/ })).toBeHidden()
+  await expect(page.getByRole('menu', { name: /Title column actions/ })).toBeHidden()
 
   await page.getByRole('button', { name: 'Add table' }).click()
   await expect(page.getByRole('dialog', { name: 'Add table' })).toBeVisible()
@@ -674,7 +726,7 @@ test('Build exports the current visible table view as a local CSV download', asy
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('tab', { name: /Work/ })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeVisible()
 
   const exportCsv = page.getByRole('button', { name: 'Export CSV' })
 
@@ -701,7 +753,7 @@ test('Build exports the current visible table view as a local CSV download', asy
   expect(download.suggestedFilename()).toMatch(/\.csv$/)
   expect(headerRow).toContain('Title')
   expect(headerRow).toContain('Status')
-  expect(dataRows.some((row) => row.includes('Confirm COI status'))).toBe(true)
+  expect(dataRows.some((row) => row.includes('Send permit follow-up'))).toBe(true)
 
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
@@ -714,30 +766,30 @@ test('Build toolbar colour applies semantic row tinting', async ({ page }) => {
 
   await page.getByText('Shape grid').click()
   await page.getByLabel('Colour').selectOption('status')
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toHaveClass(/grid-row-color-coral/)
-  await expect(page.getByRole('row', { name: /Send permit nudge/ })).toHaveClass(/grid-row-color-gold/)
-  await expect(page.getByRole('row', { name: /Build Charlottetown meeting prep/ })).toHaveClass(/grid-row-color-lavender/)
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toHaveClass(/grid-row-color-coral/)
+  await expect(page.getByRole('row', { name: /Log vendor COIs/ })).toHaveClass(/grid-row-color-gold/)
+  await expect(page.getByRole('row', { name: /Review Brampton prep notes/ })).toHaveClass(/grid-row-color-lavender/)
 })
 
 test('Build chips use semantic colour and field type treatment', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
 
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-status').locator('.select-tag')).toHaveClass(/chip-coral/)
-  await expect(page.getByTestId('grid-cell-task_permit_moncton-status').locator('.select-tag')).toHaveClass(/chip-gold/)
-  await expect(page.getByTestId('grid-cell-task_meeting_charlottetown-status').locator('.select-tag')).toHaveClass(/chip-lavender/)
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags').getByText('COI')).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-status').locator('.select-tag')).toHaveClass(/chip-coral/)
+  await expect(page.getByTestId('grid-cell-task_vendor_cois_mississauga-status').locator('.select-tag')).toHaveClass(/chip-gold/)
+  await expect(page.getByTestId('grid-cell-task_meeting_brampton-status').locator('.select-tag')).toHaveClass(/chip-lavender/)
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-tags').getByText('COI')).toBeVisible()
   await page.getByLabel('Tag workflow routes').getByRole('button', { name: 'Permit' }).click()
-  await expect(page.getByRole('row', { name: /Send permit nudge/ })).toBeVisible()
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeHidden()
+  await expect(page.getByRole('row', { name: /Log vendor COIs/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeHidden()
   await expect(page.getByTestId('record-drawer').locator('.field-type-chip').first()).toBeVisible()
 })
 
 test('Build drawer keeps several tags on one record across reload', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
 
   const tagPicker = page.getByTestId('record-drawer').locator('[data-onboarding-target="field-tags-cell"]')
 
@@ -745,17 +797,17 @@ test('Build drawer keeps several tags on one record across reload', async ({ pag
   await tagPicker.getByRole('button', { name: 'Prep', exact: true }).click()
   await expect(tagPicker.getByRole('button', { name: 'Permit', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(tagPicker.getByRole('button', { name: 'Prep', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
 
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
 
   const reopenedTagPicker = page.getByTestId('record-drawer').locator('[data-onboarding-target="field-tags-cell"]')
 
   await expect(reopenedTagPicker.getByRole('button', { name: 'Permit', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(reopenedTagPicker.getByRole('button', { name: 'Prep', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-tags').locator('.select-tag')).toContainText(['COI', 'Permit', 'Prep'])
 })
 
 test('Build exposes onboarding targets for tags, links, views, and checkbox options', async ({ page }) => {
@@ -766,13 +818,13 @@ test('Build exposes onboarding targets for tags, links, views, and checkbox opti
   await expect(page.locator('[data-onboarding-target="build-active-table"]')).toBeVisible()
   await expect(page.locator('[data-onboarding-target="build-view-controls"]')).toBeVisible()
   await page.getByTestId('build-table-tasks').click()
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags')).toBeVisible()
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-tags')).toHaveAttribute('data-onboarding-target', 'field-tags-cell')
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-community')).toBeVisible()
-  await expect(page.getByTestId('grid-cell-task_coi_halifax-community')).toHaveAttribute('data-onboarding-target', 'linked-record-cell')
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-tags')).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-tags')).toHaveAttribute('data-onboarding-target', 'field-tags-cell')
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-community')).toBeVisible()
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-community')).toHaveAttribute('data-onboarding-target', 'linked-record-cell')
 
   await page.locator('[data-onboarding-target="build-add-field"]').first().click()
-  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+  const addFieldModal = page.getByRole('dialog', { name: 'Add column' })
 
   await expect(addFieldModal.locator('[data-onboarding-target="field-type-menu"]')).toBeVisible()
   await addFieldModal.getByLabel('Type').selectOption('checkbox')
@@ -801,30 +853,24 @@ test('Build grid linked-record editor searches and commits readable records', as
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
 
-  const communityCell = page.getByTestId('grid-cell-task_coi_halifax-community')
+  const communityCell = page.getByTestId('grid-cell-task_permit_toronto-community')
 
   await communityCell.click()
   await communityCell.press('Enter')
 
   const editor = page.getByLabel('Community editor')
 
-  await editor.getByPlaceholder('Search records').fill('charlottetown')
-  await editor.getByRole('button', { name: /Charlottetown · Prep · 2026-05-28/ }).click()
+  await editor.getByPlaceholder('Search items').fill('charlottetown')
+  await editor.getByRole('button', { name: /Brampton · Prep · 2026-05-28/ }).click()
   await editor.getByRole('button', { name: 'Done' }).click()
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toContainText('Charlottetown')
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toContainText('Brampton')
 })
 
 test('Build created records persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
-
-  await modal.getByLabel('Title').fill('Confirm catering count')
-  await modal.getByLabel('Status').selectOption('Waiting')
-  await modal.getByRole('button', { name: 'Add record' }).click()
-  await modal.getByRole('button', { name: 'Done' }).click()
+  await addBuildGridRow(page, 'Confirm catering count', { status: 'Waiting' })
   await expect(page.getByTestId('build-screen').getByText('Confirm catering count')).toBeVisible()
 
   await page.reload()
@@ -835,20 +881,14 @@ test('Build created records persist across reloads', async ({ page }) => {
 test('Settings reruns onboarding without clearing the local workspace', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
-
-  await modal.getByLabel('Title').fill('Save rental invoice')
-  await modal.getByLabel('Status').selectOption('Waiting')
-  await modal.getByRole('button', { name: 'Add record' }).click()
-  await modal.getByRole('button', { name: 'Done' }).click()
+  await addBuildGridRow(page, 'Save rental invoice', { status: 'Waiting' })
   await expect(page.getByTestId('build-screen').getByText('Save rental invoice')).toBeVisible()
 
   const realRecordCount = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{"base":{"records":[]}}').base.records.length)
 
   await page.goto('/#lab')
-  await page.getByTestId('lab-module-tags').getByRole('button', { name: 'Continue' }).click()
+  await page.getByTestId('lab-module-tags').getByRole('button', { name: /Make tags route work/ }).click()
   await expect(page.getByTestId('lab-module-tags')).toContainText('In progress')
 
   await page.goto('/#settings')
@@ -873,7 +913,7 @@ test('Settings reruns onboarding without clearing the local workspace', async ({
 test('Build adds and removes a dependency link', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
+  await page.getByTestId('edit-record-task_meeting_brampton').click()
 
   const editor = page.getByTestId('dependency-editor')
 
@@ -893,7 +933,7 @@ test('Build adds and removes a dependency link', async ({ page }) => {
 test('Build dependencies persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
+  await page.getByTestId('edit-record-task_meeting_brampton').click()
 
   const editor = page.getByTestId('dependency-editor')
 
@@ -903,7 +943,7 @@ test('Build dependencies persist across reloads', async ({ page }) => {
   await editor.getByRole('button', { name: 'Add dependency' }).click()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_meeting_charlottetown').click()
+  await page.getByTestId('edit-record-task_meeting_brampton').click()
 
   const dependencyRow = page.locator('.editable-dependency-list li').filter({ hasText: 'Permit approval' })
 
@@ -942,14 +982,14 @@ test('Build table delete repairs linked fields and persists', async ({ page }) =
   await page.getByRole('dialog', { name: 'Delete table' }).getByRole('button', { name: 'Delete table' }).click()
   await expect(page.getByTestId('build-table-people')).toBeHidden()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 
   await page.reload()
   await expect(page.getByTestId('build-table-people')).toBeHidden()
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
+  await page.getByTestId('edit-record-task_permit_toronto').click()
   await expect(page.getByTestId('record-drawer').getByText('Owner').first()).toBeVisible()
   await expect(page.getByTestId('record-drawer').getByText('Choose a linked table in field settings.').first()).toBeVisible()
 })
@@ -958,7 +998,7 @@ test('Build saves, applies, pins, and deletes a view', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await page.getByLabel('Filter').fill('permit')
-  await page.getByRole('button', { name: 'Save view' }).click()
+  await page.locator('[data-onboarding-target="build-save-view"]').click()
 
   const savedView = page.getByLabel('View name').locator('xpath=ancestor::article[1]')
 
@@ -982,7 +1022,7 @@ test('Build view rename, update, copy, and reset persist locally', async ({ page
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await page.getByLabel('Filter').fill('permit')
-  await page.getByRole('button', { name: 'Save view' }).click()
+  await page.locator('[data-onboarding-target="build-save-view"]').click()
 
   const savedView = page.getByTestId('local-view-row').first()
 
@@ -1008,7 +1048,7 @@ test('Build pinned views persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await page.getByLabel('Filter').fill('permit')
-  await page.getByRole('button', { name: 'Save view' }).click()
+  await page.locator('[data-onboarding-target="build-save-view"]').click()
 
   const savedView = page.getByLabel('View name').locator('xpath=ancestor::article[1]')
 
@@ -1022,29 +1062,29 @@ test('Build pinned views persist across reloads', async ({ page }) => {
 test('Build field create, edit, and delete persist across reloads', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.locator('.build-workbench .drawer-actions').getByRole('button', { name: 'Add field', exact: true }).click()
+  await page.locator('[data-onboarding-target="build-add-field"]').first().click()
 
-  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+  const addFieldModal = page.getByRole('dialog', { name: 'Add column' })
 
-  await addFieldModal.getByLabel('Field name').fill('Notes')
+  await addFieldModal.getByLabel('Column name').fill('Notes')
   await addFieldModal.getByLabel('Type').selectOption('longText')
-  await addFieldModal.getByRole('button', { name: 'Add field' }).click()
-  await expect(page.getByRole('status')).toHaveText('Field added.')
+  await addFieldModal.getByRole('button', { name: 'Add column' }).click()
+  await expect(page.getByRole('status')).toHaveText('Column added.')
   await expect(page.getByRole('columnheader', { name: /Notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Notes/ }).first().locator('.grid-field-menu-trigger').click()
-  await page.getByRole('menuitem', { name: 'Edit field' }).click()
+  await page.getByRole('menuitem', { name: 'Edit column' }).click()
 
-  const settingsModal = page.getByRole('dialog', { name: 'Field settings' })
+  const settingsModal = page.getByRole('dialog', { name: 'Column settings' })
 
-  await settingsModal.getByLabel('Field name').fill('Internal notes')
+  await settingsModal.getByLabel('Column name').fill('Internal notes')
   await settingsModal.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByRole('columnheader', { name: /Internal notes/ }).first()).toBeVisible()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('columnheader', { name: /Internal notes/ }).first()).toBeVisible()
   await page.getByRole('columnheader', { name: /Internal notes/ }).first().locator('.grid-field-menu-trigger').click()
-  await page.getByRole('menuitem', { name: 'Delete field' }).click()
-  await page.getByRole('dialog', { name: 'Delete field' }).getByRole('button', { name: 'Delete field' }).click()
+  await page.getByRole('menuitem', { name: 'Delete column' }).click()
+  await page.getByRole('dialog', { name: 'Delete column' }).getByRole('button', { name: 'Delete column' }).click()
   await expect(page.getByRole('columnheader', { name: /Internal notes/ })).toBeHidden()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
@@ -1054,6 +1094,7 @@ test('Build field create, edit, and delete persist across reloads', async ({ pag
 test('Build Rule edits persist as read-only previews', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('rules-panel').getByRole('heading', { name: 'Route records after the grid has context.' }).click()
   await page.getByTestId('rules-panel').getByRole('button', { name: 'New rule' }).click()
 
   const rule = page.getByTestId('local-rule-row').first()
@@ -1066,6 +1107,7 @@ test('Build Rule edits persist as read-only previews', async ({ page }) => {
   await expect(rule.getByText('1 matches')).toBeVisible()
   await page.reload()
   await page.getByTestId('build-table-tasks').click()
+  await page.getByTestId('rules-panel').getByRole('heading', { name: 'Route records after the grid has context.' }).click()
 
   const persistedRule = page.getByTestId('local-rule-row').first()
 
@@ -1079,21 +1121,15 @@ test('Build Rule edits persist as read-only previews', async ({ page }) => {
 test('Build edits reflect in Today and Timeline after reload', async ({ page }) => {
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
-
-  await modal.getByLabel('Title').fill('Reflection smoke task')
-  await modal.getByLabel('Status').selectOption('Blocked')
-  await modal.getByLabel('Due date').fill('2026-05-10')
-  await modal.getByRole('button', { name: 'Add record' }).click()
-  await modal.getByRole('button', { name: 'Done' }).click()
+  await addBuildGridRow(page, 'Reflection smoke task', { status: 'Blocked', dueDate: '2026-05-10' })
   await page.reload()
   await page.goto('/#today')
 
   await expect(page.getByTestId('today-lane-now').getByText('Reflection smoke task')).toBeVisible()
   await page.goto('/#timeline')
-  await page.getByPlaceholder('Find records').fill('reflection')
+  await page.getByText('Details and controls').click()
+  await page.getByPlaceholder('Find items').fill('reflection')
   await expect(page.getByTestId('timeline-list').getByText('Reflection smoke task')).toBeVisible()
 })
 
@@ -1103,95 +1139,76 @@ test('Timeline filters records and keeps rule receipts visible', async ({ page }
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Question')
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Which rows need a clean read.')
 
-  await page.getByPlaceholder('Find records').fill('permit')
+  await page.getByPlaceholder('Find items').fill('permit')
 
-  await expect(page.getByTestId('timeline-row-task_permit_moncton')).toBeVisible()
-  await expect(page.getByTestId('timeline-row-approval_permit_moncton')).toBeVisible()
+  await expect(page.getByTestId('timeline-row-task_vendor_cois_mississauga')).toBeVisible()
+  await expect(page.getByTestId('timeline-row-approval_vendor_cois_mississauga')).toBeVisible()
   await expect(page.getByTestId('timeline-list').getByText('Rule: Work.Due date is within 7 days. show in screen: Timeline.')).toBeVisible()
   await page.getByRole('tab', { name: 'Kanban' }).click()
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Where is the work stuck.')
   await expect(page.getByTestId('timeline-kanban')).toBeVisible()
-  await page.getByLabel('Waiting lane').getByRole('button', { name: 'Move to In progress' }).click()
-  await expect(page.getByLabel('In progress lane')).toContainText('Send permit nudge')
-  await expect(page.getByRole('status')).toContainText('Send permit nudge. moved to In progress.')
+  await page.getByLabel('Waiting lane').getByRole('button', { name: 'Move to Prep' }).click()
+  await expect(page.getByLabel('Prep lane')).toContainText('Log vendor COIs')
+  await expect(page.getByRole('status')).toContainText('Log vendor COIs. moved to Prep.')
   await page.getByRole('tab', { name: 'Calendar' }).click()
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Which dates are carrying pressure.')
   await expect(page.getByTestId('timeline-calendar')).toBeVisible()
   await expect(page.getByTestId('timeline-calendar').getByLabel('Calendar date focus')).toBeVisible()
-  await page.getByTestId('timeline-calendar').getByLabel('Calendar date focus').getByRole('button', { name: /2026-05-13/ }).click()
-  await expect(page.getByTestId('timeline-calendar').getByLabel('Calendar day detail')).toContainText('Send permit nudge')
+  await page.getByTestId('timeline-calendar').getByLabel('Calendar date focus').getByRole('button', { name: /May 13/ }).click()
+  await expect(page.getByTestId('timeline-calendar').getByLabel('Calendar day detail')).toContainText('Log vendor COIs')
   await page.getByRole('tab', { name: 'Timeline' }).click()
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Which places are ready before event day.')
   await expect(page.getByTestId('timeline-readiness')).toBeVisible()
   await expect(page.getByTestId('timeline-readiness').getByLabel('Readiness place focus')).toBeVisible()
-  await page.getByTestId('timeline-readiness').getByLabel('Readiness place focus').getByRole('button', { name: 'Moncton' }).click()
-  await expect(page.getByTestId('timeline-readiness').getByLabel('Readiness place focus')).toContainText('Moncton')
-  await expect(page.getByTestId('timeline-readiness').getByLabel('Focused readiness rows')).toContainText('Send permit nudge')
+  await page.getByTestId('timeline-readiness').getByLabel('Readiness place focus').getByRole('button', { name: 'Mississauga' }).click()
+  await expect(page.getByTestId('timeline-readiness').getByLabel('Readiness place focus')).toContainText('Mississauga')
+  await expect(page.getByTestId('timeline-readiness').getByLabel('Focused readiness rows')).toContainText('Log vendor COIs')
   await page.getByRole('tab', { name: 'Graph' }).click()
   await expect(page.getByTestId('timeline-mode-receipt')).toContainText('Why is this place at risk.')
   await expect(page.getByTestId('timeline-graph')).toBeVisible()
   await expect(page.getByTestId('timeline-graph').getByLabel('Graph place focus')).toBeVisible()
-  await page.getByTestId('timeline-graph').getByLabel('Graph place focus').getByRole('button', { name: 'Moncton' }).click()
-  await expect(page.getByTestId('timeline-graph').locator('.graph-node.center')).toContainText('Moncton')
+  await page.getByTestId('timeline-graph').getByLabel('Graph place focus').getByRole('button', { name: 'Mississauga' }).click()
+  await expect(page.getByTestId('timeline-graph').locator('.graph-node.center')).toContainText('Mississauga')
   await page.getByLabel('Timeline tag routes').getByRole('button', { name: 'Permit' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
   await expect(page.getByLabel('Filter')).toHaveValue('Permit')
-  await expect(page.getByRole('row', { name: /Send permit nudge/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Log vendor COIs/ })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('Tag route opened: Permit.')
 })
 
 test('Daily support actions open real local surfaces', async ({ page }) => {
   await page.goto('/#communities')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Place detail')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Readiness')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Linked rows')
-  await page.getByRole('button', { name: /Moncton/ }).click()
-  await expect(page.getByTestId('community-place-detail')).toContainText('Moncton')
-  await page.getByTestId('community-place-detail').getByLabel('Place quick edit').getByLabel('Readiness').fill('73')
-  await expect(page.getByTestId('community-place-detail')).toContainText('73%')
-  await page.getByTestId('community-place-detail').getByLabel('Place quick edit').getByLabel('Status').selectOption('Blocked')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Blocked')
-  await page.getByRole('button', { name: /Halifax/ }).click()
-  await expect(page.getByTestId('community-place-detail')).toContainText('Halifax')
-  await page.getByTestId('community-place-detail').getByLabel('Community routes').getByRole('button', { name: 'Work' }).click()
+  await expect(page.getByRole('heading', { name: 'Communities are the command center.' })).toBeVisible()
+  await expect(page.getByText('Scan every place.')).toBeVisible()
+  await expect(page.getByTestId('community-command-board').getByRole('button', { name: /Toronto/ })).toBeVisible()
+  await expect(page.getByTestId('community-command-board').getByRole('button', { name: /Mississauga/ })).toBeVisible()
+  await expect(page.getByTestId('community-command-board').getByRole('button', { name: /Brampton/ })).toBeVisible()
+  await expect(page.getByTestId('community-command-board').getByRole('button', { name: /Vaughan/ })).toBeVisible()
+  await page.getByRole('button', { name: /Mississauga/ }).click()
+  await expect(page.getByTestId('community-place-detail')).toContainText('Mississauga')
+  await expect(page.getByTestId('community-place-detail')).toContainText('What needs attention')
+  await expect(page.getByTestId('community-place-detail')).toContainText('66% ready')
+  await expect(page.getByTestId('community-place-detail')).toContainText('Waiting on reply before readiness can move')
+  await expect(page.getByTestId('community-place-detail')).toContainText('Vendor COIs stale')
+  await page.getByRole('button', { name: /Toronto/ }).click()
+  await expect(page.getByTestId('community-place-detail')).toContainText('Toronto')
+  await page.getByLabel('Community routes').getByRole('button', { name: 'See waiting' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
-  await expect(page.getByTestId('build-table-tasks')).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByLabel('Filter')).toHaveValue('Halifax')
-  await expect(page.getByRole('row', { name: /Confirm COI status/ })).toBeVisible()
-  await expect(page.getByRole('status')).toContainText('Community route opened: Work.')
+  await expect(page.getByTestId('build-table-followups')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByLabel('Active Build filter')).toContainText('Toronto')
+  await expect(page.getByRole('row', { name: /Send permit follow-up/ })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('Community route opened: Waiting.')
   await page.goto('/#communities')
-  await page.getByRole('button', { name: /Halifax/ }).click()
-  await page.getByTestId('community-place-detail').getByLabel('Add linked row').selectOption('task_permit_moncton')
-  await page.getByTestId('community-place-detail').getByRole('button', { name: 'Add' }).click()
-  await expect(page.getByTestId('community-place-detail')).toContainText('Send permit nudge')
-  await page.getByTestId('community-place-detail').getByLabel('New linked row').selectOption('tasks')
-  await page.getByTestId('community-place-detail').getByLabel('Title').fill('Call site lead')
-  await page.getByTestId('community-place-detail').locator('.community-link-row-actions', { hasText: 'New linked row' }).getByLabel('Status').selectOption('Waiting')
-  await page.getByTestId('community-place-detail').getByLabel('Due date').fill('2026-05-20')
-  await page.getByTestId('community-place-detail').locator('.community-link-row-actions', { hasText: 'New linked row' }).getByLabel('Priority').selectOption('Fire')
-  await page.getByTestId('community-place-detail').getByLabel('Tags').fill('Prep, Permit')
-  await page.getByTestId('community-place-detail').getByRole('button', { name: 'Create' }).click()
-  await expect(page.getByTestId('community-place-detail')).toContainText('Call site lead')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Waiting')
-  await expect(page.getByTestId('community-place-detail')).toContainText('2026-05-20')
-  await expect(page.getByTestId('community-place-detail')).toContainText('Fire · Prep, Permit')
-  await page.getByTestId('community-place-detail').locator('.community-linked-row').first().getByLabel('Status').selectOption('In progress')
-  await expect(page.getByTestId('community-place-detail')).toContainText('In progress')
-  await page.getByTestId('community-place-detail').locator('.community-linked-row', { hasText: 'Send permit nudge' }).getByRole('button', { name: 'Remove' }).click()
-  await expect(page.getByTestId('community-place-detail').locator('.community-linked-row', { hasText: 'Send permit nudge' })).toHaveCount(0)
-  await page.getByTestId('community-place-detail').getByRole('button', { name: 'Open record' }).click()
-  await expect(page.getByTestId('community-detail-command')).toContainText('Readiness')
-  await expect(page.getByTestId('community-detail-command')).toContainText('Blockers')
+  await page.getByRole('button', { name: /Toronto/ }).click()
+  await page.getByLabel('Community routes').getByRole('button', { name: 'Open community' }).click()
+  await expect(page.getByTestId('community-detail-command')).toContainText('READINESS')
+  await expect(page.getByTestId('community-detail-command')).toContainText('BLOCKERS')
   await expect(page.getByTestId('community-detail-command')).toContainText('Next action')
 
-  await page.goto('/#build')
-  await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('edit-record-task_coi_halifax').click()
-  await expect(page.getByTestId('record-drawer')).toBeVisible()
-
   await page.goto('/#followups')
-  await page.getByRole('button', { name: 'Adjust rule' }).click()
-  await expect(page.getByTestId('build-screen')).toBeVisible()
+  await page.getByRole('button', { name: 'Add waiting item' }).click()
+  await expect(page.getByTestId('record-modal')).toBeVisible()
+  await expect(page.getByTestId('record-modal')).toContainText('New record.')
 
   await page.goto('/#meetings')
   await expect(page.getByTestId('meeting-prep').getByText('Computed prep').first()).toBeVisible()
@@ -1201,12 +1218,12 @@ test('Daily support actions open real local surfaces', async ({ page }) => {
   await page.getByTestId('meeting-weekly-note').getByRole('textbox', { name: 'Decisions' }).fill('- Hold permit call.')
   await expect(page.getByLabel('Weekly note draft').first()).toContainText('## Decisions\n- Hold permit call.')
   await expect(page.getByTestId('meeting-weekly-note').getByLabel('Routed source inserts')).toContainText('In progress by 2026-05-14 belongs in next steps.')
-  await page.getByTestId('meeting-weekly-note').getByLabel('Routed source inserts').getByRole('button').filter({ hasText: 'Build Charlottetown meeting prep.' }).click()
+  await page.getByTestId('meeting-weekly-note').getByLabel('Routed source inserts').getByRole('button').filter({ hasText: 'Review Brampton prep notes.' }).click()
   await expect(page.getByLabel('Weekly note draft').first()).toContainText('## Next steps')
-  await page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Open source record Build Charlottetown meeting prep.' }).click()
+  await page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Open source record Review Brampton prep notes.' }).click()
   await expect(page.getByTestId('build-screen')).toBeVisible()
-  await expect(page.getByTestId('record-drawer')).toContainText('Build Charlottetown meeting prep.')
-  await expect(page.getByRole('status')).toContainText('Meeting source opened: Build Charlottetown meeting prep.')
+  await expect(page.getByTestId('record-drawer')).toContainText('Review Brampton prep notes.')
+  await expect(page.getByRole('status')).toContainText('Meeting source opened: Review Brampton prep notes.')
   await page.goto('/#meetings')
   await page.getByLabel('Weekly note draft').first().fill('## Decisions\n- Move vendor call to Monday.')
   await expect(page.getByLabel('Weekly note draft').first()).toHaveValue('## Decisions\n- Move vendor call to Monday.')
@@ -1252,7 +1269,7 @@ test('Meetings export note and agenda PDFs locally', async ({ page }, testInfo) 
 
   const noteState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
-  expect(noteState.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
+  expect(noteState.meetingPdf.lastExportedMeetingId).toBe('meeting_brampton')
 
   const agendaDownloadPromise = page.waitForEvent('download')
 
@@ -1271,7 +1288,7 @@ test('Meetings export note and agenda PDFs locally', async ({ page }, testInfo) 
 
   const agendaState = await page.evaluate(() => JSON.parse(localStorage.getItem('sundesk-education-state-v1') || '{}'))
 
-  expect(agendaState.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
+  expect(agendaState.meetingPdf.lastExportedMeetingId).toBe('meeting_brampton')
   expect(firebaseWriteRequests).toEqual([])
 })
 
@@ -1336,7 +1353,7 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await page.goto('/#settings')
 
   await expect(page.getByRole('heading', { name: 'Find the local answer.' })).toBeVisible()
-  await expect(page.getByText('Long hover shows plain version')).toBeVisible()
+  await expect(page.getByText('Long hover still shows the plain version')).toBeVisible()
   await expect(page.getByText('Show sensitive data note')).toBeVisible()
   await expect(page.getByText('Use Sundesk for sensitive information at your own risk. Josh can help tune the setup, but you still choose what belongs in the app')).toBeHidden()
   await page.getByText('Show sensitive data note').click()
@@ -1350,7 +1367,7 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await expect(page.getByLabel('Help results')).toContainText('Meeting notes and PDFs')
   await expect(page.getByLabel('Help results')).toContainText('Meetings')
   await page.getByRole('button', { name: 'Open Meetings' }).click()
-  await expect(page.getByText('Meetings generate the weekly notes.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Weekly notes first.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' }).click()
 
   await page.getByLabel('Search Help').fill('iPhone PWA')
@@ -1378,42 +1395,42 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await expect(page.getByLabel('Help results')).toContainText('No help results found.')
   await expect(page.getByLabel('Help results')).toContainText('Can’t find it here? Send Josh what you were trying to do and where you got stuck.')
 
-  await page.getByLabel('RuPaul Mode').check()
+  await page.locator('.rupaul-toggle').click()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
   await page.locator('.settings-sensitive-details').evaluate((element) => {
     if (element instanceof HTMLDetailsElement) {
       element.open = true
     }
   })
-  await expect(page.getByText('Put sensitive things in here at your own risk, my pookie. The system can organize the mess, but it cannot make a secret less secret')).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toContainText('Today. The mess has been called to the stage')
-  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toContainText('Build. Give the chaos a backbone')
-  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' })).toContainText('Meetings. Bring receipts')
-  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' })).toContainText('Settings. Touch things with intention')
+  await expect(page.getByText('Sensitive data enters at your own risk. The wig is tall. The secret is still a secret')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toContainText('Today. Main stage for the mess')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toContainText('Build. Werkroom for the messy table era')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' })).toContainText('Meetings. Bring receipts and posture')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' })).toContainText('Settings. Adjust the lighting')
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('title', 'Build')
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toHaveAttribute('data-copy-plain', 'Build')
 
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
-  await expect(page.getByRole('button', { name: 'Add table' })).toContainText('Add another bucket')
+  await expect(page.getByRole('button', { name: 'Add table' })).toContainText('New category')
   await expect(page.getByRole('button', { name: 'Add table' })).toHaveAttribute('data-copy-plain', 'Add table')
-  await expect(page.getByRole('button', { name: 'Add field', exact: true }).first()).toContainText('Add a new little rule')
-  await expect(page.getByRole('button', { name: 'Save view' })).toContainText('Save this angle')
-  await expect(page.getByTestId('build-add-record')).toContainText('Add the next problem')
+  await expect(page.getByRole('button', { name: 'Add column', exact: true }).first()).toContainText('Give it a talent')
+  await expect(page.locator('[data-onboarding-target="build-save-view"]')).toContainText('Views')
+  await expect(page.getByTestId('build-add-record')).toContainText('Another queen enters')
 
   await page.getByRole('button', { name: 'Add table' }).click()
   const addTableModal = page.getByRole('dialog', { name: 'Add table' })
-  await expect(addTableModal.getByRole('button', { name: 'Close' })).toContainText('Close the curtain')
+  await expect(addTableModal.getByRole('button', { name: 'Close' })).toContainText('Curtain down')
   await expect(addTableModal.getByRole('button', { name: 'Close' })).toHaveAttribute('data-copy-plain', 'Close')
-  await expect(addTableModal.getByRole('button', { name: 'Cancel' })).toContainText('Cancel. Leave it alone')
-  await expect(addTableModal.getByRole('button', { name: 'Add table' })).toContainText('Add another bucket')
+  await expect(addTableModal.getByRole('button', { name: 'Cancel' })).toContainText('Sashay away from this edit')
+  await expect(addTableModal.getByRole('button', { name: 'Add table' })).toContainText('New category')
   await expect(addTableModal.getByRole('button', { name: 'Add table' })).toHaveAttribute('title', 'Add table')
   await addTableModal.getByRole('button', { name: 'Close' }).click()
 
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Meetings' }).click()
-  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toContainText('Copy the agenda before somebody freestyles')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toContainText('No improv in the werkroom')
   await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Copy agenda' }).first()).toHaveAttribute('data-copy-plain', 'Copy agenda')
-  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export agenda PDF' }).first()).toContainText('Export the agenda PDF. Receipts for the room')
-  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview summary' }).first()).toContainText('Preview the morning read')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Export agenda PDF' }).first()).toContainText('Receipts for the judging panel')
+  await expect(page.getByTestId('meeting-agenda').getByRole('button', { name: 'Preview summary' }).first()).toContainText('Read the room first')
 
   const storedCopyMode = await page.evaluate(() => {
     const rawState = window.localStorage.getItem('sundesk-education-state-v1')
@@ -1426,9 +1443,9 @@ test('Settings Help search and RuPaul Mode stay local and persistent', async ({ 
   await page.reload()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Settings' }).click()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
-  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Sundesk Lab' })).toContainText('Sundesk Lab. Practice the drama safely')
+  await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Sundesk Lab' })).toContainText('Sundesk Lab. Rehearse the chaos')
   await page.getByLabel('Search Help').fill('unknown')
-  await expect(page.getByLabel('Help results')).toContainText('No help found for that. Try a messier word')
+  await expect(page.getByLabel('Help results')).toContainText('No help result found. The judges need a better keyword')
 })
 
 test('Settings Help actions open the exact Lab module and onboarding tour', async ({ page }) => {
@@ -1462,7 +1479,6 @@ test('Settings exports and imports a local backup without changing Firebase writ
   const firebaseWriteRequests = auditFirebaseWrites(page)
   const originalTitle = 'Backup restore seed'
   const changedTitle = 'Backup restore changed'
-  const fakeRecordId = 'tasks_backup_restore_seed'
   const todayRouteDate = '2026-05-10'
   const firebaseSetupText = 'Firebase setup. Local mode. 6 config fields missing. 0 approved accounts in local config.'
   const writeGateText = 'Write gate. Disabled. No Firestore writes can run in this build.'
@@ -1470,15 +1486,9 @@ test('Settings exports and imports a local backup without changing Firebase writ
 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
+  const fakeRecordId = await addBuildGridRow(page, originalTitle, { status: 'Blocked', dueDate: todayRouteDate })
 
-  await modal.getByLabel('Title').fill(originalTitle)
-  await modal.getByLabel('Status').selectOption('Blocked')
-  await modal.getByLabel('Due date').fill(todayRouteDate)
-  await modal.getByRole('button', { name: 'Add record' }).click()
-  await modal.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
 
   const communityCell = page.getByTestId(`grid-cell-${fakeRecordId}-community`)
@@ -1486,9 +1496,9 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await communityCell.click()
   await communityCell.press('Enter')
   await page.getByLabel('Community editor').getByPlaceholder('Search records').fill('halifax')
-  await page.getByLabel('Community editor').getByRole('button', { name: /Halifax · At risk · 2026-05-22/ }).click()
+  await page.getByLabel('Community editor').getByRole('button', { name: /Toronto · At risk · 2026-05-22/ }).click()
   await page.getByLabel('Community editor').getByRole('button', { name: 'Done' }).click()
-  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Halifax')
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Toronto')
 
   await page.goto('/#today')
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
@@ -1528,7 +1538,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   expect(exportedRecord?.values?.title).toBe(originalTitle)
   expect(exportedRecord?.values?.status).toBe('Blocked')
   expect(exportedRecord?.values?.dueDate).toBe(todayRouteDate)
-  expect(exportedRecord?.values?.community).toEqual(['community_halifax'])
+  expect(exportedRecord?.values?.community).toEqual(['community_toronto'])
 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
@@ -1563,7 +1573,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toBeVisible()
-  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Halifax')
+  await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Toronto')
   await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeHidden()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
@@ -1595,14 +1605,8 @@ test('Settings rejects unsupported backup imports without changing local work', 
 
   await page.goto('/#build')
   await page.getByTestId('build-table-tasks').click()
-  await page.getByTestId('build-add-record').first().click()
 
-  const modal = page.getByTestId('record-modal')
-
-  await modal.getByLabel('Title').fill(seedTitle)
-  await modal.getByLabel('Status').selectOption('Waiting')
-  await modal.getByRole('button', { name: 'Add record' }).click()
-  await modal.getByRole('button', { name: 'Done' }).click()
+  await addBuildGridRow(page, seedTitle, { status: 'Waiting' })
   await expect(page.getByRole('row', { name: new RegExp(seedTitle) })).toBeVisible()
 
   await page.goto('/#settings')
@@ -1674,7 +1678,7 @@ test('Mobile Build keeps dense controls, drawer, and onboarding inside the viewp
   await assertInViewport('.record-table-wrap')
   await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 390)
 
-  await page.getByTestId('edit-record-risk_venue_halifax').click()
+  await page.getByTestId('edit-record-risk_permit_toronto').click()
   await expect(page.getByTestId('record-drawer')).toBeVisible()
   await assertInViewport('.record-drawer.active-record-drawer')
   await expect(page.getByTestId('record-drawer').getByRole('heading', { name: 'Venue readiness may slip.' })).toBeVisible()
@@ -1727,7 +1731,7 @@ test('Mobile Build keeps modals and field editors inside the viewport', async ({
 
   await page.locator('[data-onboarding-target="build-add-field"]').first().click()
 
-  const addFieldModal = page.getByRole('dialog', { name: 'Add field' })
+  const addFieldModal = page.getByRole('dialog', { name: 'Add column' })
 
   await expect(addFieldModal).toBeVisible()
   await assertLocatorInViewport(addFieldModal)
@@ -1745,24 +1749,19 @@ test('Mobile Build keeps modals and field editors inside the viewport', async ({
   await assertLocatorCurrentlyInViewport(addFieldModal.locator('.modal-actions'))
 
   await addFieldModal.getByLabel('Type').selectOption('linkedRecord')
-  await assertLocatorInViewport(addFieldModal.getByLabel('Linked table'))
+  await assertLocatorInViewport(addFieldModal.getByLabel('Connected table'))
   await assertLocatorInViewport(addFieldModal.getByText('Allow multiple linked records'))
   await addFieldModal.getByRole('button', { name: 'Cancel' }).click()
 
   await page.getByTestId('build-add-record').first().click()
 
-  const recordModal = page.getByTestId('record-modal')
+  const titleEditor = page.getByLabel('Title editor')
 
-  await expect(recordModal).toBeVisible()
-  await assertLocatorInViewport(recordModal)
-  await assertLocatorInViewport(recordModal.locator('.modal-actions'))
-  await assertLocatorInViewport(recordModal.locator('[data-onboarding-target="linked-record-cell"]'))
-  await assertLocatorInViewport(recordModal.locator('[data-onboarding-target="field-tags-cell"]'))
-  await recordModal.evaluate((element) => {
-    element.scrollTop = element.scrollHeight
-  })
-  await assertLocatorCurrentlyInViewport(recordModal.getByRole('button', { name: 'Close' }))
-  await assertLocatorCurrentlyInViewport(recordModal.locator('.modal-actions'))
+  await expect(titleEditor).toBeVisible()
+  await assertLocatorInViewport(titleEditor)
+  await titleEditor.fill('Mobile inline row')
+  await titleEditor.press('Enter')
+  await expect(page.getByRole('row', { name: /Mobile inline row/ })).toBeVisible()
   await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 390)
 })
 
@@ -1791,20 +1790,20 @@ test('First-run onboarding mobile PWA surfaces stay reachable', async ({ page })
   await navigation.getByRole('link', { name: 'Sundesk Lab' }).click()
   await expect(page.getByTestId('sundesk-lab-screen')).toBeVisible()
   await expect(page.getByTestId('lab-module-list')).toBeVisible()
-  await expect(page.getByTestId('lab-module-list').getByRole('button', { name: 'Continue' }).first()).toBeVisible()
+  await expect(page.getByTestId('lab-module-list').getByRole('button', { name: /Start with the map/ })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Settings' }).click()
   await expect(page.getByTestId('settings-screen')).toBeVisible()
   await page.getByLabel('Search Help').fill('iPhone')
   await expect(page.getByLabel('Help results')).toContainText('Use Sundesk on iPhone')
-  await page.getByLabel('RuPaul Mode').check()
+  await page.locator('.rupaul-toggle').click()
   await expect(page.getByLabel('RuPaul Mode')).toBeChecked()
-  await expect(page.getByText('Long hover shows plain version')).toBeVisible()
+  await expect(page.getByText('Long hover still shows the plain version')).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Meetings' }).click()
-  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toContainText('Copy the receipts')
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toContainText('Receipts in heels')
   await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Copy note' }).first()).toHaveAttribute('data-copy-plain', 'Copy note')
   await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toBeVisible()
-  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toContainText('Export the PDF, darling')
+  await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toContainText('Make it runway-ready')
   await expect(page.getByTestId('meeting-weekly-note').getByRole('button', { name: 'Export PDF' }).first()).toHaveAttribute('title', 'Export PDF')
 })

@@ -13,6 +13,34 @@ export type SundeskEducationProgress = {
   lastSeenAt: string | null
 }
 
+export type SundeskLabRecord = {
+  id: string
+  table: 'work' | 'communities' | 'meetings' | 'people'
+  title: string
+  status: string
+  owner: string | null
+  due: string | null
+  tags: string[]
+  communityId: string | null
+  notes: string
+  fake: true
+}
+
+export type SundeskLabSandboxState = {
+  version: 1
+  activeLessonId: string | null
+  activeSurface: string
+  sampleWorkspaceVersion: 2
+  selectedView: string
+  selectedFilterTag: string | null
+  coachOpen: boolean
+  inspectorOpen: boolean
+  completedTaskIds: string[]
+  generatedReceipts: Record<string, string>
+  records: SundeskLabRecord[]
+  updatedAt: string | null
+}
+
 export interface SundeskEducationState {
   version: 1
   onboarding: {
@@ -26,9 +54,10 @@ export interface SundeskEducationState {
   }
   lab: {
     activeModuleId: string | null
-    sampleWorkspaceVersion: 1
+    sampleWorkspaceVersion: 2
     sampleWorkspaceResetAt: string | null
     modules: Record<string, SundeskEducationProgress>
+    sandbox: SundeskLabSandboxState
   }
   help: {
     recentQueries: string[]
@@ -64,9 +93,23 @@ export function getDefaultSundeskEducationState(): SundeskEducationState {
     },
     lab: {
       activeModuleId: null,
-      sampleWorkspaceVersion: 1,
+      sampleWorkspaceVersion: 2,
       sampleWorkspaceResetAt: null,
       modules: {},
+      sandbox: {
+        version: 1,
+        activeLessonId: null,
+        activeSurface: 'start',
+        sampleWorkspaceVersion: 2,
+        selectedView: 'grid',
+        selectedFilterTag: null,
+        coachOpen: true,
+        inspectorOpen: true,
+        completedTaskIds: [],
+        generatedReceipts: {},
+        records: getDefaultLabRecords(),
+        updatedAt: null,
+      },
     },
     help: {
       recentQueries: [],
@@ -159,12 +202,14 @@ function normalizeLabState(
   value: unknown,
 ): SundeskEducationState['lab'] {
   const state = isRecord(value) ? value : {}
+  const activeModuleId = normalizeLabLessonId(state.activeModuleId)
 
   return {
-    activeModuleId: normalizeNullableString(state.activeModuleId),
-    sampleWorkspaceVersion: 1,
+    activeModuleId,
+    sampleWorkspaceVersion: 2,
     sampleWorkspaceResetAt: normalizeNullableString(state.sampleWorkspaceResetAt),
     modules: normalizeLabModules(state.modules),
+    sandbox: normalizeLabSandboxState(state.sandbox, activeModuleId),
   }
 }
 
@@ -213,12 +258,171 @@ function normalizeLabModules(value: unknown): Record<string, SundeskEducationPro
   const modules: Record<string, SundeskEducationProgress> = {}
 
   Object.entries(value).forEach(([moduleId, moduleState]) => {
-    if (typeof moduleId === 'string' && isRecord(moduleState)) {
-      modules[moduleId] = normalizeEducationProgress(moduleState)
+    const normalizedModuleId = normalizeLabLessonId(moduleId)
+
+    if (normalizedModuleId && isRecord(moduleState)) {
+      modules[normalizedModuleId] = normalizeEducationProgress(moduleState)
     }
   })
 
   return modules
+}
+
+function normalizeLabSandboxState(value: unknown, activeModuleId: string | null): SundeskLabSandboxState {
+  const state = isRecord(value) ? value : {}
+
+  return {
+    version: 1,
+    activeLessonId: normalizeLabLessonId(state.activeLessonId) || activeModuleId,
+    activeSurface: normalizeNullableString(state.activeSurface) || 'start',
+    sampleWorkspaceVersion: 2,
+    selectedView: normalizeNullableString(state.selectedView) || 'grid',
+    selectedFilterTag: normalizeNullableString(state.selectedFilterTag),
+    coachOpen: typeof state.coachOpen === 'boolean' ? state.coachOpen : true,
+    inspectorOpen: typeof state.inspectorOpen === 'boolean' ? state.inspectorOpen : true,
+    completedTaskIds: normalizeStringArray(state.completedTaskIds),
+    generatedReceipts: normalizeStringRecord(state.generatedReceipts),
+    records: normalizeLabRecords(state.records),
+    updatedAt: normalizeNullableString(state.updatedAt),
+  }
+}
+
+function normalizeLabRecords(value: unknown): SundeskLabRecord[] {
+  if (!Array.isArray(value)) {
+    return getDefaultLabRecords()
+  }
+
+  const records = value
+    .filter(isRecord)
+    .filter((record) => record.fake === true)
+    .map((record): SundeskLabRecord => ({
+      id: normalizeNullableString(record.id) || 'lab-record',
+      table: normalizeLabTable(record.table),
+      title: normalizeNullableString(record.title) || 'Untitled practice row',
+      status: normalizeNullableString(record.status) || 'Open',
+      owner: normalizeNullableString(record.owner),
+      due: normalizeNullableString(record.due),
+      tags: normalizeStringArray(record.tags),
+      communityId: normalizeNullableString(record.communityId),
+      notes: normalizeNullableString(record.notes) || '',
+      fake: true,
+    }))
+
+  return records.length ? records : getDefaultLabRecords()
+}
+
+function getDefaultLabRecords(): SundeskLabRecord[] {
+  return [
+    {
+      id: 'fyre-permit-risk',
+      table: 'work',
+      title: 'Permit risk memo',
+      status: 'Blocked',
+      owner: 'Operations',
+      due: '2026-06-11',
+      tags: ['Permit risk'],
+      communityId: 'fyre-island-dock',
+      notes: 'Permit status needs a visible owner before the weekly meeting.',
+      fake: true,
+    },
+    {
+      id: 'fyre-water-run',
+      table: 'work',
+      title: 'Water delivery run',
+      status: 'Waiting',
+      owner: 'Vendor lead',
+      due: '2026-06-12',
+      tags: ['Water', 'Waiting'],
+      communityId: 'fyre-catering-compound',
+      notes: 'Truck ETA is still missing.',
+      fake: true,
+    },
+    {
+      id: 'fyre-medical-tent',
+      table: 'work',
+      title: 'Medical tent setup',
+      status: 'In progress',
+      owner: 'Site lead',
+      due: '2026-06-13',
+      tags: ['Medical'],
+      communityId: 'fyre-medical-tent',
+      notes: 'Supply list needs one final pass.',
+      fake: true,
+    },
+    {
+      id: 'fyre-villa-keys',
+      table: 'work',
+      title: 'Villa key handoff',
+      status: 'Open',
+      owner: 'Guest ops',
+      due: '2026-06-14',
+      tags: ['Artist arrivals'],
+      communityId: 'fyre-villa-ridge',
+      notes: 'Keys are not matched to arrival windows yet.',
+      fake: true,
+    },
+    {
+      id: 'fyre-weekly-meeting',
+      table: 'meetings',
+      title: 'Weekly island readiness',
+      status: 'Draft',
+      owner: 'Lindsay',
+      due: '2026-06-10',
+      tags: ['Meeting prep'],
+      communityId: 'fyre-island-dock',
+      notes: 'Prep from blocked work, waiting work, and readiness notes.',
+      fake: true,
+    },
+  ]
+}
+
+function normalizeStringRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] =>
+      typeof entry[0] === 'string' && typeof entry[1] === 'string',
+    ),
+  )
+}
+
+function normalizeLabTable(value: unknown): SundeskLabRecord['table'] {
+  return value === 'work' || value === 'communities' || value === 'meetings' || value === 'people'
+    ? value
+    : 'work'
+}
+
+function normalizeLabLessonId(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const aliases: Record<string, string> = {
+    'slide-01-start-here': 'start',
+    'slide-02-product-map': 'start',
+    'slide-03-blank-grid': 'build-grid',
+    'slide-04-after-paste': 'build-grid',
+    'slide-05-fields': 'fields',
+    'slide-06-tags': 'tags',
+    'slide-07-links': 'links',
+    'slide-08-communities': 'communities',
+    'slide-09-today': 'today-waiting',
+    'slide-10-waiting-on': 'today-waiting',
+    'slide-11-meetings': 'meetings',
+    'slide-12-timeline-views': 'timeline',
+    'slide-13-kanban': 'timeline',
+    'slide-14-calendar': 'timeline',
+    'slide-15-readiness-timeline': 'timeline',
+    'slide-16-risk-graph': 'timeline',
+    'slide-17-freeform-build': 'build-grid',
+    'slide-18-context-helpers': 'fields',
+    'slide-19-data-access': 'data-routine',
+    'slide-20-routine': 'data-routine',
+  }
+
+  return aliases[value] || value
 }
 
 function normalizeEducationProgress(value: Record<string, unknown>): SundeskEducationProgress {

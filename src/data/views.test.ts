@@ -29,12 +29,12 @@ describe('view read models', () => {
 
   it('keeps Build table rows ordered for daily building', () => {
     expect(getBuildTableRows(workbase).map((table) => table.id)).toEqual([
-      'risks',
       'tasks',
-      'followups',
       'approvals',
+      'followups',
       'meetings',
       'people',
+      'risks',
     ])
   })
 
@@ -50,25 +50,26 @@ describe('view read models', () => {
     )
 
     expect(grid.visibleFieldsForGrid.map((field) => field.id)).toEqual(['title', 'status'])
-    expect(grid.sortedAndFilteredRecords.map((record) => record.id)).toEqual(['task_permit_moncton'])
+    expect(grid.sortedAndFilteredRecords.map((record) => record.id)).toEqual(['task_permit_toronto'])
     expect(grid.groupField?.id).toBe('status')
     expect(grid.groupedRecords).toEqual([
       {
-        label: 'Waiting',
-        records: [expect.objectContaining({ id: 'task_permit_moncton' })],
+        label: 'Blocked',
+        records: [expect.objectContaining({ id: 'task_permit_toronto' })],
       },
     ])
   })
 
   it('derives dependency picker records without the active record', () => {
-    const records = getDependencyPickerRecords(workbase, 'task_coi_halifax', 'permit')
+    const records = getDependencyPickerRecords(workbase, 'task_permit_toronto', 'permit')
 
     expect(records.map((record) => record.id)).toEqual([
-      'approval_permit_moncton',
-      'task_permit_moncton',
+      'approval_permit_toronto',
+      'risk_permit_toronto',
     ])
-    expect(getDependencyPickerRecords(workbase, 'task_coi_halifax', 'coi').map((record) => record.id)).toEqual([
-      'approval_coi_halifax',
+    expect(getDependencyPickerRecords(workbase, 'task_permit_toronto', 'coi').map((record) => record.id)).toEqual([
+      'approval_vendor_cois_mississauga',
+      'task_vendor_cois_mississauga',
     ])
   })
 
@@ -76,12 +77,29 @@ describe('view read models', () => {
     const groups = getWorkRecordGroups(workbase)
 
     expect(groups.openTaskRecords.map((record) => record.id)).toEqual([
-      'task_coi_halifax',
-      'task_permit_moncton',
-      'task_meeting_charlottetown',
+      'task_permit_toronto',
+      'task_vendor_cois_mississauga',
+      'task_meeting_brampton',
+      'task_site_map_vaughan',
     ])
     expect(groups.atRiskCommunityRecords.map((record) => record.id)).toEqual([
-      'community_halifax',
+      'community_toronto',
+      'community_mississauga',
+    ])
+  })
+
+  it('uses the deck GTA community seed records', () => {
+    const groups = getWorkRecordGroups(workbase)
+
+    expect(groups.communityRecords.map((record) => ({
+      name: record.values.name,
+      readiness: record.values.readiness,
+      status: record.values.status,
+    }))).toEqual([
+      { name: 'Toronto', readiness: 58, status: 'At risk' },
+      { name: 'Mississauga', readiness: 66, status: 'Waiting' },
+      { name: 'Brampton', readiness: 81, status: 'Prep' },
+      { name: 'Vaughan', readiness: 88, status: 'On track' },
     ])
   })
 
@@ -90,20 +108,21 @@ describe('view read models', () => {
 
     expect(getTimelineStatusOptions(sourceRecords)).toContain('Blocked')
     expect(getTimelineRecords(workbase, sourceRecords, 'tasks', 'Blocked', '').map((record) => record.id)).toEqual([
-      'task_coi_halifax',
+      'task_permit_toronto',
     ])
     expect(getTimelineRecords(workbase, sourceRecords, 'all', 'all', 'permit').map((record) => record.id)).toEqual([
-      'task_permit_moncton',
-      'approval_permit_moncton',
+      'task_permit_toronto',
+      'approval_permit_toronto',
+      'risk_permit_toronto',
     ])
   })
 
   it('builds deterministic meeting prep from linked records and community work', () => {
-    const prep = getMeetingPrep(workbase, 'meeting_charlottetown', todayDate)
+    const prep = getMeetingPrep(workbase, 'meeting_brampton', todayDate)
 
-    expect(prep?.communities.map((record) => record.id)).toEqual(['community_charlottetown'])
-    expect(prep?.linkedTasks.map((record) => record.id)).toEqual(['task_meeting_charlottetown'])
-    expect(prep?.nextSteps.map((record) => record.id)).toEqual(['task_meeting_charlottetown'])
+    expect(prep?.communities.map((record) => record.id)).toEqual(['community_brampton'])
+    expect(prep?.linkedTasks.map((record) => record.id)).toEqual(['task_meeting_brampton'])
+    expect(prep?.nextSteps.map((record) => record.id)).toEqual(['task_meeting_brampton'])
     expect(prep?.sections.map((section) => section.id)).toEqual(['blocked', 'followups', 'approvals', 'risks', 'next'])
     expect(prep?.agenda.map((item) => item.id)).toEqual([
       'community-read',
@@ -112,11 +131,11 @@ describe('view read models', () => {
       'name-risk',
       'assign-next',
     ])
-    expect(prep?.agenda.find((item) => item.id === 'assign-next')?.recordIds).toEqual(['task_meeting_charlottetown'])
+    expect(prep?.agenda.find((item) => item.id === 'assign-next')?.recordIds).toEqual(['task_meeting_brampton'])
   })
 
   it('formats computed agenda text and digest preview without saving records', () => {
-    const prep = getMeetingPrep(workbase, 'meeting_charlottetown', todayDate)
+    const prep = getMeetingPrep(workbase, 'meeting_brampton', todayDate)
 
     expect(prep).not.toBeNull()
 
@@ -125,7 +144,7 @@ describe('view read models', () => {
 
     expect(agendaText).toContain('Computed agenda. Not saved.')
     expect(agendaText).toContain('1. Read the community state.')
-    expect(agendaText).toContain('Source records: Charlottetown.')
+    expect(agendaText).toContain('Source records: Brampton.')
     expect(digestPreview).toContain('Command send preview.')
     expect(digestPreview).toContain('Agenda items: 5. Source records: 2.')
   })
@@ -136,9 +155,9 @@ describe('view read models', () => {
     const todayLanes = getTodayLanes(workbase, todayMatches)
     const laneRecordIds = todayLanes.flatMap((lane) => lane.records.map((record) => record.id))
 
-    expect(todayMatches.map((match) => match.record.id)).toContain('task_coi_halifax')
+    expect(todayMatches.map((match) => match.record.id)).toContain('task_permit_toronto')
     expect(todayLanes.map((lane) => lane.id)).toEqual(['now', 'waiting', 'next'])
-    expect(laneRecordIds).toContain('task_coi_halifax')
+    expect(laneRecordIds).toContain('task_permit_toronto')
     expect(new Set(laneRecordIds).size).toBe(laneRecordIds.length)
   })
 
@@ -161,9 +180,9 @@ describe('view read models', () => {
 
   it('derives screen stats for the home summary', () => {
     expect(getScreenStats(workbase)).toEqual([
-      { label: 'Communities', value: 3, detail: '1 need attention' },
-      { label: 'Open work', value: 3, detail: '1 blocked' },
-      { label: 'Waiting On', value: 1, detail: '2 approvals open' },
+      { label: 'Communities', value: 4, detail: '2 need attention' },
+      { label: 'Open work', value: 4, detail: '1 blocked' },
+      { label: 'Waiting On', value: 2, detail: '2 approvals open' },
       { label: 'Risks', value: 1, detail: '1 high' },
     ])
   })

@@ -43,9 +43,23 @@ describe('Sundesk education state helpers', () => {
       },
       lab: {
         activeModuleId: null,
-        sampleWorkspaceVersion: 1,
+        sampleWorkspaceVersion: 2,
         sampleWorkspaceResetAt: null,
         modules: {},
+        sandbox: {
+          version: 1,
+          activeLessonId: null,
+          activeSurface: 'start',
+          sampleWorkspaceVersion: 2,
+          selectedView: 'grid',
+          selectedFilterTag: null,
+          coachOpen: true,
+          inspectorOpen: true,
+          completedTaskIds: [],
+          generatedReceipts: {},
+          records: expect.any(Array),
+          updatedAt: null,
+        },
       },
       help: {
         recentQueries: [],
@@ -86,6 +100,22 @@ describe('Sundesk education state helpers', () => {
           },
           bad: 'not-a-module',
         },
+        sandbox: {
+          version: 1,
+          activeLessonId: 'tags',
+          completedTaskIds: ['tag-risk-row', 9],
+          selectedView: 'kanban',
+          selectedFilterTag: 'Permit risk',
+          generatedReceipts: {
+            tags: 'Permit risk route visible.',
+            bad: false,
+          },
+          records: [
+            { id: 'fyre-permit', table: 'work', title: 'Permit risk memo', fake: true },
+            { id: 'real-record', table: 'work', title: 'Real record', fake: false },
+          ],
+          updatedAt: '2026-05-10T12:30:00.000Z',
+        },
       },
       help: {
         recentQueries: ['pdf', 9, 'linked records'],
@@ -114,7 +144,7 @@ describe('Sundesk education state helpers', () => {
       },
       lab: {
         activeModuleId: 'meetings',
-        sampleWorkspaceVersion: 1,
+        sampleWorkspaceVersion: 2,
         modules: {
           meetings: {
             status: 'completed',
@@ -123,6 +153,22 @@ describe('Sundesk education state helpers', () => {
             completedActionIds: ['export-pdf'],
             completedAt: '2026-05-10T12:10:00.000Z',
           },
+        },
+        sandbox: {
+          activeLessonId: 'tags',
+          completedTaskIds: ['tag-risk-row'],
+          selectedView: 'kanban',
+          selectedFilterTag: 'Permit risk',
+          generatedReceipts: {
+            tags: 'Permit risk route visible.',
+          },
+          records: [
+            expect.objectContaining({
+              id: 'fyre-permit',
+              fake: true,
+            }),
+          ],
+          updatedAt: '2026-05-10T12:30:00.000Z',
         },
       },
       help: {

@@ -27,10 +27,25 @@ describe('local Help search', () => {
     expect(searchHelpArticles('login shared data')[0]?.id).toBe('shared-access')
     expect(searchHelpArticles('desktop bookmark icon')[0]?.id).toBe('install-bookmark')
     expect(searchHelpArticles('start over tutorial')[0]?.id).toBe('restart-onboarding')
+    expect(searchHelpArticles('showtime voice layer')[0]?.id).toBe('rupaul')
+    expect(searchHelpArticles('diva copy')[0]?.id).toBe('rupaul')
   })
 
   it('returns suggested defaults for an empty query and no results for unmatched local search', () => {
     expect(searchHelpArticles('').map((article) => article.id)).toEqual(['start', 'build', 'tags', 'meetings', 'privacy'])
     expect(searchHelpArticles('zebra launch fog')).toEqual([])
+  })
+
+  it('uses Sundesk Lab as the user-facing route while keeping lab as the article id', () => {
+    const labArticle = helpArticles.find((article) => article.id === 'lab')
+    const tableArticle = helpArticles.find((article) => article.id === 'tables')
+
+    expect(labArticle).toMatchObject({
+      id: 'lab',
+      title: 'Sundesk Lab',
+      routeLabel: 'Sundesk Lab',
+    })
+    expect(tableArticle?.routeLabel).toBe('Sundesk Lab')
+    expect(helpArticles.map((article) => `${article.title} ${article.routeLabel} ${article.body}`).join(' ')).not.toContain('Skills Lab')
   })
 })

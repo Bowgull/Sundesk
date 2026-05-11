@@ -46,14 +46,20 @@ export function BuildRulesPanel({
   getRuleMatchedRecords,
   openBuildRecord,
 }: BuildRulesPanelProps) {
+  const totalMatches = localRules.reduce((sum, rule) => sum + getRuleMatchCount(rule), 0)
+
   return (
-    <article className="automation-panel build-sidecar" data-testid="rules-panel">
-      <div className="panel-title">
+    <details className="automation-panel build-sidecar build-rules-disclosure" data-testid="rules-panel">
+      <summary>
         <div>
-          <span className="eyebrow">Rules</span>
-          <h2>When this happens, do this.</h2>
+          <span className="eyebrow">More</span>
+          <h2>Advanced checks.</h2>
         </div>
-        <button className="primary" type="button" onClick={createLocalRule}>New rule</button>
+        <span>{localRules.length} checks · {totalMatches} matches</span>
+      </summary>
+      <div className="panel-title build-rules-title">
+        <p>Change what feeds Today, Communities, Waiting On, Meetings, or Timeline.</p>
+        <button className="primary" type="button" onClick={createLocalRule}>New check</button>
       </div>
       <div className="rules editable-rules">
         {localRules.map((rule) => {
@@ -202,6 +208,6 @@ export function BuildRulesPanel({
           )
         })}
       </div>
-    </article>
+    </details>
   )
 }

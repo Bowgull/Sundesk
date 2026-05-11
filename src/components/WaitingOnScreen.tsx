@@ -18,7 +18,6 @@ export function WaitingOnScreen({
   followupRecords,
   getFieldDisplayValue,
   onCreateFollowup,
-  onOpenBuild,
   onOpenRecord,
 }: WaitingOnScreenProps) {
   const waitingRows = followupRecords.map((record) => {
@@ -38,23 +37,23 @@ export function WaitingOnScreen({
   })
 
   return (
-    <section className="screen-grid" id="followups">
+    <section className="screen-grid waiting-on-screen" id="followups">
       <article className="screen-panel wide">
         <div className="panel-title compact">
           <div>
             <span className="eyebrow">Waiting On</span>
-            <h2>Who owes the next move.</h2>
+            <h2>Waiting On is the chase list.</h2>
           </div>
           <span className="metric-pill">{waitingRows.length} waiting</span>
-          <button className="primary" type="button" onClick={onCreateFollowup}>Log next touch</button>
+          <button className="primary" type="button" onClick={onCreateFollowup}>Add waiting item</button>
         </div>
-        <p className="panel-lede">Operational answer first. Open the row when the receipt matters.</p>
+        <p className="panel-lede">Who owes it. How long it has been sitting. Why it blocks the work.</p>
         <div className="waiting-table">
           <div className="waiting-row waiting-head">
             <span>Community</span>
-            <span>Waiting on</span>
+            <span>Who owes it</span>
             <span>Item</span>
-            <span>Age</span>
+            <span>How long</span>
             <span>Why it matters</span>
           </div>
           {waitingRows.map((row) => (
@@ -66,21 +65,6 @@ export function WaitingOnScreen({
               <small>{row.context}</small>
             </button>
           ))}
-        </div>
-      </article>
-
-      <article className="screen-panel">
-        <div className="panel-title compact">
-          <div>
-            <span className="eyebrow">Receipts</span>
-            <h2>Manual logic.</h2>
-          </div>
-          <button type="button" onClick={onOpenBuild}>Adjust rule</button>
-        </div>
-        <div className="rules">
-          <p><span>Read</span> Community, owner, item, date. <span>Then</span> pick the next touch.</p>
-          <p><span>When</span> a row is waiting. <span>Do</span> show who owes the next move.</p>
-          <p><span>When</span> waiting blocks readiness. <span>Do</span> surface it in Today.</p>
         </div>
       </article>
     </section>

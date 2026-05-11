@@ -27,8 +27,8 @@ describe('rule helpers', () => {
       action: 'showInScreen',
       destination: 'today',
     }
-    const blockedTask = getRecord(workbase, 'task_coi_halifax')
-    const waitingTask = getRecord(workbase, 'task_permit_moncton')
+    const blockedTask = getRecord(workbase, 'task_permit_toronto')
+    const waitingTask = getRecord(workbase, 'task_vendor_cois_mississauga')
 
     expect(blockedTask).toBeDefined()
     expect(waitingTask).toBeDefined()
@@ -48,9 +48,9 @@ describe('rule helpers', () => {
     }
 
     expect(getRuleMatchedRecords(workbase, rule, todayDate).map((record) => record.id)).toEqual([
-      'task_coi_halifax',
-      'task_permit_moncton',
-      'task_meeting_charlottetown',
+      'task_permit_toronto',
+      'task_vendor_cois_mississauga',
+      'task_meeting_brampton',
     ])
   })
 
@@ -60,14 +60,14 @@ describe('rule helpers', () => {
       tableId: 'tasks',
       fieldId: 'community',
       operator: 'linkedTo',
-      value: 'community_halifax',
+      value: 'community_toronto',
       action: 'showInScreen',
       destination: 'today',
     }
     const missingRule = { ...rule, value: 'missing_community' }
 
     expect(getRuleMatchedRecords(workbase, rule, todayDate).map((record) => record.id)).toEqual([
-      'task_coi_halifax',
+      'task_permit_toronto',
     ])
     expect(getRuleValidationMessages(workbase, missingRule)).toEqual(['Linked record missing.'])
   })
@@ -88,14 +88,14 @@ describe('rule helpers', () => {
   })
 
   it('renders computed fields and rule previews consistently', () => {
-    const task = getRecord(workbase, 'task_coi_halifax')
+    const task = getRecord(workbase, 'task_permit_toronto')
     const lookupField = getField(workbase, 'tasks', 'communityEventDate')
     const rule: LocalRule = {
       id: 'test-preview',
       tableId: 'tasks',
       fieldId: 'community',
       operator: 'linkedTo',
-      value: 'community_halifax',
+      value: 'community_toronto',
       action: 'showInScreen',
       destination: 'today',
     }
@@ -103,6 +103,6 @@ describe('rule helpers', () => {
     expect(task).toBeDefined()
     expect(lookupField).toBeDefined()
     expect(getFieldDisplayValue(workbase, task!, lookupField!)).toBe('2026-05-22')
-    expect(getRulePreview(workbase, rule)).toBe('Work.Community is linked to "Halifax". show in screen: Today.')
+    expect(getRulePreview(workbase, rule)).toBe('Work.Community is linked to "Toronto". show in screen: Today.')
   })
 })

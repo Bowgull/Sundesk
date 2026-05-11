@@ -63,15 +63,19 @@ export function MeetingPrepPanel({
   const riskDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Risks')
   const nextStepDraft = getWeeklyNoteSection(weeklyNoteDraft, 'Next steps')
   const sectionInsertRecords = [...prep.communities, ...prep.linkedTasks, ...prep.overdueFollowups, ...prep.unresolvedApprovals, ...prep.risks].slice(0, 6)
+  const meetingDateValue = getStringValue(prep.meeting, 'date') || getFirstDateValue(prep.meeting)
+  const meetingDateLabel = meetingDateValue
+    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: meetingDateValue.includes('T') ? 'short' : undefined }).format(new Date(meetingDateValue))
+    : 'No date'
 
   return (
     <div className="meeting-prep" data-testid="meeting-prep">
       <div className="meeting-prep-head">
         <div>
-          <span className="eyebrow">Computed prep</span>
+          <span className="eyebrow">Ready to review</span>
           <strong>{getRecordTitle(base, prep.meeting)}</strong>
         </div>
-        <span>Not saved. Rebuilt from source records.</span>
+        <span>Built from connected work.</span>
       </div>
       <div className="meeting-prep-stats">
         <span>{prep.communities.length} communities</span>
@@ -83,9 +87,9 @@ export function MeetingPrepPanel({
       <div className="meeting-note-shell" data-testid="meeting-weekly-note">
         <div className="meeting-note-paper">
           <div className="meeting-note-title">
-            <span>Generated weekly note</span>
+            <span>Weekly note</span>
             <strong>{getRecordTitle(base, prep.meeting)}</strong>
-            <small>Edit this note here. It stays local to this screen until copied or exported.</small>
+            <small>Edit the note before copying or exporting.</small>
             <div className="meeting-note-actions" aria-label="Weekly note actions">
               <button
                 aria-label="Copy note"
@@ -110,12 +114,12 @@ export function MeetingPrepPanel({
           </div>
           <div className="meeting-note-summary">
             <p><strong>Focus.</strong> {prep.agenda[0]?.detail || 'No agenda items surfaced yet.'}</p>
-            <p><strong>Next steps.</strong> {prep.nextSteps.length} records need a next move.</p>
+            <p><strong>Next steps.</strong> {prep.nextSteps.length} items need a next move.</p>
           </div>
-          <div className="meeting-note-fields" aria-label="Weekly note fields">
+          <div className="meeting-note-fields" aria-label="Weekly note details">
             <article>
               <span>Meeting date</span>
-              <strong>{getStringValue(prep.meeting, 'date') || getFirstDateValue(prep.meeting) || 'No date'}</strong>
+              <strong>{meetingDateLabel}</strong>
             </article>
             <article>
               <span>Communities</span>
@@ -139,7 +143,7 @@ export function MeetingPrepPanel({
             </article>
             <article>
               <span>Note state</span>
-              <strong>{hasSavedWeeklyNote ? 'Saved draft' : 'Generated'}</strong>
+              <strong>{hasSavedWeeklyNote ? 'Saved draft' : 'Ready'}</strong>
             </article>
           </div>
           <div className="meeting-note-sections" aria-label="Weekly note sections">
@@ -159,8 +163,8 @@ export function MeetingPrepPanel({
                 </label>
               </div>
             ))}
-            <div className="meeting-note-routed-sources" aria-label="Routed source inserts">
-              <span>Source inserts</span>
+            <div className="meeting-note-routed-sources" aria-label="Add to note">
+              <span>Add to note</span>
               {sectionInsertRecords.map((record) => {
                 const route = getWeeklyNoteSectionRoute(record)
 
@@ -200,10 +204,10 @@ export function MeetingPrepPanel({
         <div className="meeting-agenda" data-testid="meeting-agenda">
           <div className="meeting-agenda-head">
             <div className="mini-title">
-              <strong>Generated agenda</strong>
+                <strong>Agenda</strong>
               <span className="metric-pill">{prep.agenda.length}</span>
             </div>
-            <div className="agenda-actions" aria-label="Computed agenda actions">
+            <div className="agenda-actions" aria-label="Agenda actions">
               <button
                 aria-label="Copy agenda"
                 data-copy-plain="Copy agenda"
@@ -236,7 +240,7 @@ export function MeetingPrepPanel({
           </div>
           {activeDigestPreviewMeetingId === prep.meeting.id && (
             <div className="agenda-digest-preview" data-testid="agenda-digest-preview">
-              <strong>Command send preview</strong>
+              <strong>Preview</strong>
               <pre>{getMeetingDigestPreview(base, prep)}</pre>
             </div>
           )}
@@ -262,10 +266,10 @@ export function MeetingPrepPanel({
             ))}
           </ol>
         </div>
-        <div className="meeting-source-receipts" aria-label="Meeting prep source records">
-          <strong>Source records</strong>
+        <div className="meeting-source-receipts" aria-label="Built from">
+          <strong>Built from</strong>
           {[...prep.communities, ...prep.linkedTasks].length === 0 ? (
-            <p className="empty-line">Link a community or work item to compute prep.</p>
+            <p className="empty-line">Link a community or work item to prepare the note.</p>
           ) : (
             <div>
               {[...prep.communities, ...prep.linkedTasks].map((record) => (
@@ -286,7 +290,7 @@ export function MeetingPrepPanel({
               <span className="metric-pill">{section.records.length}</span>
             </div>
             {section.records.length === 0 ? (
-              <p className="empty-line">No records surfaced.</p>
+              <p className="empty-line">Nothing open here.</p>
             ) : (
               <div className="meeting-prep-list">
                 {section.records.slice(0, 4).map((record) => (

@@ -25,7 +25,7 @@ import {
   sortRecordsByDate,
 } from './rules'
 
-const buildTableOrder = ['risks', 'tasks', 'followups', 'approvals', 'meetings', 'people']
+const buildTableOrder = ['tasks', 'approvals', 'followups', 'meetings', 'people', 'risks']
 
 export type RuleMatch = {
   rule: LocalRule

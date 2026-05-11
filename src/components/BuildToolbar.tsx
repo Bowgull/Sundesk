@@ -16,7 +16,6 @@ type BuildToolbarProps = {
   localGridViews: readonly LocalGridView[]
   visibleFieldCount: number
   visibleFieldIds: readonly string[]
-  onAddField: () => void
   onApplyGridView: (view: LocalGridView) => void
   onClearActiveGridView: () => void
   onExportCsv: () => void
@@ -41,7 +40,6 @@ export function BuildToolbar({
   localGridViews,
   visibleFieldCount,
   visibleFieldIds,
-  onAddField,
   onApplyGridView,
   onClearActiveGridView,
   onExportCsv,
@@ -74,36 +72,33 @@ export function BuildToolbar({
   return (
     <>
       <div className="grid-toolbar build-toolbar" data-onboarding-target="build-view-controls">
-        <label>
-          <span>View</span>
-          <select value={activeGridViewId} onChange={(event) => applySelectedGridView(event.target.value)}>
-            <option value="">Current view</option>
-            {localGridViews.map((view) => (
-              <option key={view.id} value={view.id}>
-                {view.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Filter</span>
-          <input
-            value={gridFilter}
-            onChange={(event) => onGridFilterChange(event.target.value)}
-            placeholder="Find in visible table"
-          />
-        </label>
-        <button className="toolbar-export-button" type="button" onClick={onExportCsv}>
-          Export CSV
-        </button>
         <details className="grid-shape-controls">
-          <summary>Shape grid</summary>
+          <summary>Ways to look</summary>
           <div>
             <label>
-              <span>Fields</span>
-              <button className="toolbar-field-count" type="button" onClick={onAddField}>
+              <span>Find</span>
+              <input
+                value={gridFilter}
+                onChange={(event) => onGridFilterChange(event.target.value)}
+                placeholder="Find in this area"
+              />
+            </label>
+            <label>
+              <span>Saved scan</span>
+              <select value={activeGridViewId} onChange={(event) => applySelectedGridView(event.target.value)}>
+                <option value="">Current scan</option>
+                {localGridViews.map((view) => (
+                  <option key={view.id} value={view.id}>
+                    {view.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Shown</span>
+              <strong className="toolbar-field-count" aria-label={`${visibleFieldCount} columns shown`}>
                 {visibleFieldCount} shown
-              </button>
+              </strong>
             </label>
             <label>
               <span>Sort</span>
@@ -150,10 +145,14 @@ export function BuildToolbar({
                 <option value="expanded">Expanded</option>
               </select>
             </label>
+            <button className="toolbar-export-button" type="button" onClick={onExportCsv}>
+              Download sheet
+            </button>
           </div>
         </details>
       </div>
-      <div className="view-bar">
+      <details className="view-bar">
+        <summary>Shown columns</summary>
         <div className="visible-field-list">
           {fieldsForSelectedTable.map((field) => (
             <button
@@ -178,7 +177,7 @@ export function BuildToolbar({
             </button>
           ))}
         </div>
-      </div>
+      </details>
     </>
   )
 }

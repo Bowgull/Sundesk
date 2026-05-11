@@ -20,6 +20,67 @@
   grid-column: span 2;
 }
 
+.settings-summary-panel {
+  order: 0;
+  grid-column: span 2;
+}
+
+.settings-appearance-panel {
+  order: 2;
+}
+
+.settings-copy-mode-panel {
+  order: 2;
+}
+
+.settings-privacy-panel,
+.data-access-panel {
+  order: 1;
+}
+
+.settings-backup-panel,
+.settings-setup-panel {
+  order: 4;
+}
+
+.settings-command-send-panel,
+.settings-web-app-panel,
+.settings-launch-panel {
+  order: 5;
+}
+
+.settings-help-panel {
+  order: 6;
+}
+
+.settings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.settings-summary-grid div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.settings-summary-grid span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-summary-grid strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
 .settings-help-search {
   display: grid;
   gap: 6px;
@@ -100,52 +161,158 @@
 
 .rupaul-toggle {
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
   margin-top: 14px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--coral) 30%, var(--line));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--sun-2) 28%, var(--surface));
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--coral) 36%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--sun-2) 34%, transparent), transparent 48%),
+    var(--surface);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .rupaul-toggle::before {
   position: absolute;
-  top: 8px;
-  right: 44px;
-  color: color-mix(in srgb, var(--coral) 74%, var(--ink));
-  content: "*";
-  font-size: 17px;
+  top: -34px;
+  right: -20px;
+  width: 86px;
+  height: 86px;
+  border: 1px solid color-mix(in srgb, var(--coral) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--coral-2) 34%, transparent);
+  content: "";
+}
+
+.rupaul-toggle::after {
+  position: absolute;
+  right: 16px;
+  bottom: 10px;
+  color: color-mix(in srgb, var(--coral) 76%, var(--ink));
+  content: "SHOWTIME";
+  font-size: 9px;
   font-weight: 900;
+  letter-spacing: 0;
+  opacity: 0.64;
 }
 
 .rupaul-toggle.selected {
-  border-color: color-mix(in srgb, var(--coral) 72%, var(--line));
-  background: color-mix(in srgb, var(--coral-2) 54%, var(--surface));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 14%, transparent);
-}
-
-.rupaul-toggle span {
-  display: grid;
-  gap: 4px;
-}
-
-.rupaul-toggle strong {
-  color: var(--ink);
-  font-size: 14px;
-}
-
-.rupaul-toggle small {
-  color: var(--muted);
-  font-size: 12px;
+  border-color: color-mix(in srgb, var(--coral) 82%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--coral-2) 58%, transparent), transparent 52%),
+    color-mix(in srgb, var(--surface) 86%, var(--sun-2));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--coral) 18%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--coral) 14%, transparent);
 }
 
 .rupaul-toggle input {
-  width: 22px;
-  min-height: 22px;
-  accent-color: var(--coral);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.rupaul-toggle-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rupaul-toggle-kicker {
+  color: color-mix(in srgb, var(--coral) 78%, var(--ink));
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.rupaul-toggle-copy strong {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.rupaul-toggle-copy small,
+.rupaul-toggle-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.rupaul-toggle-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 132px;
+  min-height: 34px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--coral) 34%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--paper));
+}
+
+.rupaul-toggle-stage span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.rupaul-toggle-stage i {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--night) 18%, transparent);
+  transition: transform 140ms ease;
+}
+
+.rupaul-toggle.selected .rupaul-toggle-stage i {
+  transform: translateX(100%);
+  background: color-mix(in srgb, var(--coral) 72%, var(--ink));
+}
+
+.rupaul-toggle:not(.selected) .rupaul-toggle-stage span:first-child,
+.rupaul-toggle.selected .rupaul-toggle-stage span:nth-child(2) {
+  color: var(--primary-fg);
+}
+
+.rupaul-toggle input:focus-visible ~ .rupaul-toggle-stage {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 3px;
+}
+
+.rupaul-toggle:hover {
+  border-color: color-mix(in srgb, var(--coral) 64%, var(--line-strong));
+  transform: translateY(-1px);
+}
+
+.rupaul-toggle-note {
+  margin: 8px 2px 0;
 }
 
 .theme-grid {
@@ -823,6 +990,14 @@
 }
 
 @media (max-width: 780px) {
+  .rupaul-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .rupaul-toggle-stage {
+    width: 100%;
+  }
+
   .engine-stat-grid,
   .read-shadow-compare,
   .rule-destination-grid {

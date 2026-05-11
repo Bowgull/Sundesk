@@ -260,7 +260,7 @@ export function getFieldDisplayValue(base: Workbase, record: BaseRecord, field: 
     return value ? 'Yes' : 'No'
   }
 
-  if (value === null || value === '') {
+  if (value === null || value === undefined || value === '') {
     return 'Empty'
   }
 

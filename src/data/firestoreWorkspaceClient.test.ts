@@ -183,7 +183,7 @@ describe('Firestore workspace client', () => {
       },
       meetingPdf: {
         templateVersion: 1 as const,
-        lastExportedMeetingId: 'meeting_charlottetown',
+        lastExportedMeetingId: 'meeting_brampton',
       },
     }
     const client = createFirestoreWorkspaceClient({
@@ -223,7 +223,7 @@ describe('Firestore workspace client', () => {
     })
     expect(saved.snapshot.educationState?.copyMode.rupaulMode).toBe(true)
     expect(saved.snapshot.educationState?.lab.activeModuleId).toBe('tags')
-    expect(saved.snapshot.educationState?.meetingPdf.lastExportedMeetingId).toBe('meeting_charlottetown')
+    expect(saved.snapshot.educationState?.meetingPdf.lastExportedMeetingId).toBe('meeting_brampton')
     expect(writes).toEqual([{
       path: 'workspaces/lindsay-sundesk/state/current',
       updatedByUid: 'lindsay',

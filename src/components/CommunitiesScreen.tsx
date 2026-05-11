@@ -43,67 +43,116 @@ type CommunitiesScreenProps = {
 }
 
 export function CommunitiesScreen({
-  addCommunityLink,
-  atRiskCommunityRecords,
   base,
-  communityDetailBlockers,
-  communityDetailMeetings,
-  communityDetailNextAction,
   communityDetailRecord,
-  communityDetailRecords,
-  communityDetailWaiting,
-  communityLinkableRecords,
-  communityLinkRecordId,
-  communityNewLinkDate,
-  communityNewLinkDateField,
-  communityNewLinkExtraFields,
-  communityNewLinkExtraValues,
-  communityNewLinkStatus,
-  communityNewLinkStatusField,
-  communityNewLinkTableId,
-  communityNewLinkTitle,
   communityRecords,
-  createCommunityLinkedRecord,
-  getCommunityLinkField,
-  getCommunityLinkedRowExtraSummary,
-  getPickerRecordMeta,
   onOpenCommunitySourceRoute,
   onOpenDailyRecord,
   onSelectCommunityDetail,
-  onUpdateRecordField,
-  removeCommunityLink,
-  setCommunityLinkRecordId,
-  setCommunityNewLinkDate,
-  setCommunityNewLinkExtraValues,
-  setCommunityNewLinkStatus,
-  setCommunityNewLinkTableId,
-  setCommunityNewLinkTitle,
   timelineSourceRecords,
 }: CommunitiesScreenProps) {
+  const getReadinessBand = (readiness: number) => {
+    if (readiness < 65) return 'Stalled'
+    if (readiness < 75) return 'Waiting'
+    if (readiness < 86) return 'Moving'
+
+    return 'Ready check'
+  }
+
+  const getReadinessReason = (status: string, primaryIssue: string) => {
+    if (status === 'At risk' || status === 'Blocked') return `${primaryIssue} is holding readiness.`
+    if (status === 'Waiting') return 'Waiting on reply before readiness can move.'
+    if (status === 'Prep') return `${primaryIssue} is ready for meeting prep.`
+    if (status === 'On track') return `${primaryIssue} is in hand.`
+
+    return `${primaryIssue} is the current read.`
+  }
+
+  const getVelocityLabel = (status: string) => {
+    if (status === 'At risk' || status === 'Blocked') return 'No movement'
+    if (status === 'Waiting') return 'Waiting on reply'
+    if (status === 'Prep') return 'Moving into prep'
+    if (status === 'On track') return 'Holding'
+
+    return 'Needs read'
+  }
+
+  const getSelectedSummary = (
+    readiness: number,
+    blockerCount: number,
+    waitingCount: number,
+    meetingCount: number,
+  ) => {
+    const parts = [`${readiness}% ready`]
+
+    if (blockerCount > 0) parts.push(`${blockerCount} blocker${blockerCount === 1 ? '' : 's'}`)
+    if (waitingCount > 0) parts.push(`${waitingCount} waiting`)
+    if (meetingCount > 0) parts.push(`${meetingCount} meeting note${meetingCount === 1 ? '' : 's'}`)
+    if (parts.length === 1) parts.push('No fire items')
+
+    return parts.join('. ')
+  }
+
+  const getCommunityLinkedRecords = (record: BaseRecord) =>
+    timelineSourceRecords.filter((sourceRecord) =>
+      sourceRecord.id !== record.id && base.fields.some((field) => {
+        const value = sourceRecord.values[field.id]
+
+        return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(record.id)
+      }),
+    )
+
+  const getCommunityTone = (record: BaseRecord) => {
+    const status = getStringValue(record, 'status').toLowerCase()
+
+    if (status.includes('risk') || status.includes('blocked')) return 'risk'
+    if (status.includes('waiting')) return 'waiting'
+    if (status.includes('prep')) return 'prep'
+    if (status.includes('track')) return 'track'
+
+    return 'neutral'
+  }
+
+  const getPrimaryIssue = (record: BaseRecord, linkedRecords: BaseRecord[]) => {
+    const status = getStringValue(record, 'status')
+    const missingApproval = linkedRecords.find((linkedRecord) =>
+      linkedRecord.tableId === 'approvals' && getStringValue(linkedRecord, 'status') === 'Missing',
+    )
+    const blocker = linkedRecords.find((linkedRecord) =>
+      ['Missing', 'Blocked', 'High'].includes(getStringValue(linkedRecord, 'status') || getStringValue(linkedRecord, 'level')),
+    )
+    const waiting = linkedRecords.find((linkedRecord) =>
+      getStringValue(linkedRecord, 'status') === 'Waiting' || linkedRecord.tableId === 'followups',
+    )
+    const meeting = linkedRecords.find((linkedRecord) => linkedRecord.tableId === 'meetings')
+    const received = linkedRecords.find((linkedRecord) => getStringValue(linkedRecord, 'status') === 'Received')
+
+    if (status === 'Prep' && meeting) return 'Agenda ready'
+    if (status === 'On track' && received) return getRecordTitle(base, received)
+
+    return getRecordTitle(base, missingApproval || blocker || waiting || linkedRecords[0] || record)
+  }
+
+  const selectedCommunityRecord = communityDetailRecord || communityRecords[0]
+
   return (
-    <section className="screen-grid" id="communities">
-      <article className="screen-panel wide">
-        <div className="panel-title compact">
+    <section className="communities-deck-screen" id="communities">
+      <article className="communities-deck-board">
+        <div className="communities-deck-header">
           <div>
-            <span className="eyebrow">Communities</span>
+            <span>Communities · Fyre Festival GTA</span>
             <h2>Communities are the command center.</h2>
+            <p>Scan every place. Open the one that needs attention. The selected card shows what is stuck, waiting, or ready for prep.</p>
           </div>
-          <span className="metric-pill">{communityRecords.length} records</span>
         </div>
-        <p className="panel-lede">Each place gathers pasted rows, readiness fields, missing info, waiting items, meeting prep, and date pressure.</p>
-        <div className="community-command-grid">
+
+        <div className="community-command-grid" data-testid="community-command-board">
           {communityRecords.map((record) => {
             const readiness = getNumberValue(record, 'readiness')
             const status = getStringValue(record, 'status')
-            const linkedRecords = timelineSourceRecords.filter((sourceRecord) =>
-              sourceRecord.id !== record.id && base.fields.some((field) => {
-                const value = sourceRecord.values[field.id]
-
-                return field.type === 'linkedRecord' && Array.isArray(value) && value.includes(record.id)
-              }),
-            )
+            const linkedRecords = getCommunityLinkedRecords(record)
             const blockerCount = linkedRecords.filter((linkedRecord) =>
-              ['Blocked', 'High'].includes(getStringValue(linkedRecord, 'status') || getStringValue(linkedRecord, 'level')),
+              ['Blocked', 'Missing', 'High'].includes(getStringValue(linkedRecord, 'status') || getStringValue(linkedRecord, 'level')),
             ).length
             const waitingCount = linkedRecords.filter((linkedRecord) =>
               getStringValue(linkedRecord, 'status') === 'Waiting' || linkedRecord.tableId === 'followups',
@@ -112,264 +161,72 @@ export function CommunitiesScreen({
             const nextAction = linkedRecords.find((linkedRecord) =>
               getStringValue(linkedRecord, 'status') === 'Blocked' || getStringValue(linkedRecord, 'level') === 'High',
             ) || linkedRecords[0]
+            const tone = getCommunityTone(record)
+            const isSelected = selectedCommunityRecord?.id === record.id
+            const primaryIssue = getPrimaryIssue(record, linkedRecords)
+            const readinessBand = getReadinessBand(readiness)
+            const velocityLabel = getVelocityLabel(status)
+            const readinessReason = getReadinessReason(status, primaryIssue)
+            const selectedSummary = getSelectedSummary(readiness, blockerCount, waitingCount, meetingCount)
 
             return (
-              <button
-                className={`work-record-card community-command-card ${communityDetailRecord?.id === record.id ? 'selected-community-card' : ''}`}
+              <article
+                className={`community-command-card community-tone-${tone} ${isSelected ? 'selected-community-card' : ''}`}
                 key={record.id}
-                type="button"
-                onClick={() => onSelectCommunityDetail(record.id)}
               >
-                <span>{status || 'No status'} · {getStringValue(record, 'eventDate') || 'No date set'}</span>
-                <strong>{getRecordTitle(base, record)}</strong>
-                <i aria-hidden="true"><b style={{ width: `${Math.max(8, readiness)}%` }} /></i>
-                <div className="community-command-card-metrics">
-                  <small><b>{readiness}%</b> ready</small>
-                  <small><b>{blockerCount}</b> blockers</small>
-                  <small><b>{waitingCount}</b> waiting</small>
-                  <small><b>{meetingCount}</b> meetings</small>
-                </div>
-                <em>{nextAction ? `Next action. ${getRecordTitle(base, nextAction)}.` : 'Next action. Add the first linked row.'}</em>
-              </button>
-            )
-          })}
-        </div>
-        {communityDetailRecord && (
-          <section className="community-place-detail" data-testid="community-place-detail">
-            <div className="community-place-head">
-              <div>
-                <span className="eyebrow">Place detail</span>
-                <h3>{getRecordTitle(base, communityDetailRecord)}</h3>
-                <p>{getStringValue(communityDetailRecord, 'status') || 'No status'}. Event date {getStringValue(communityDetailRecord, 'eventDate') || 'not set'}.</p>
-              </div>
-              <button type="button" onClick={() => onOpenDailyRecord(communityDetailRecord)}>Open record</button>
-            </div>
-            <div className="community-place-edit" aria-label="Place quick edit">
-              <label>
-                <span>Status</span>
-                <select
-                  value={getStringValue(communityDetailRecord, 'status')}
-                  onChange={(event) => onUpdateRecordField(communityDetailRecord.id, 'status', event.target.value)}
-                >
-                  <option value="">No status</option>
-                  <option value="On track">On track</option>
-                  <option value="At risk">At risk</option>
-                  <option value="Blocked">Blocked</option>
-                  <option value="Waiting">Waiting</option>
-                  <option value="Prep">Prep</option>
-                </select>
-              </label>
-              <label>
-                <span>Event date</span>
-                <input
-                  type="date"
-                  value={getStringValue(communityDetailRecord, 'eventDate')}
-                  onChange={(event) => onUpdateRecordField(communityDetailRecord.id, 'eventDate', event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Readiness</span>
-                <input
-                  max="100"
-                  min="0"
-                  type="number"
-                  value={getNumberValue(communityDetailRecord, 'readiness')}
-                  onChange={(event) => onUpdateRecordField(communityDetailRecord.id, 'readiness', Number(event.target.value))}
-                />
-              </label>
-            </div>
-            <div className="community-place-metrics">
-              <article>
-                <span>Readiness</span>
-                <strong>{getNumberValue(communityDetailRecord, 'readiness')}%</strong>
-              </article>
-              <article>
-                <span>Blockers</span>
-                <strong>{communityDetailBlockers.length}</strong>
-              </article>
-              <article>
-                <span>Waiting</span>
-                <strong>{communityDetailWaiting.length}</strong>
-              </article>
-              <article>
-                <span>Meetings</span>
-                <strong>{communityDetailMeetings.length}</strong>
-              </article>
-            </div>
-            <div className="community-route-strip" aria-label="Community routes">
-              <span>Routes</span>
-              <div>
-                <button type="button" onClick={() => onOpenCommunitySourceRoute(communityDetailRecord, 'tasks', 'Work')}>
-                  Work
+                <button className="community-card-select" type="button" onClick={() => onSelectCommunityDetail(record.id)}>
+                  <span className="community-chip-row">
+                    <span>{readiness}% ready</span>
+                    <span>
+                      {blockerCount > 0 ? `${blockerCount} blockers` : waitingCount > 0 ? `${waitingCount} waiting` : meetingCount > 0 ? 'meeting prep' : status || 'on track'}
+                    </span>
+                  </span>
+                  <strong className="community-card-title">{getRecordTitle(base, record)}</strong>
+                  <span className="community-readiness-meter" aria-label={`${getRecordTitle(base, record)} readiness ${readiness}%`}>
+                    <span className="community-readiness-meta">
+                      <strong>{readinessBand}</strong>
+                      <small>{velocityLabel}</small>
+                    </span>
+                    <i aria-hidden="true" className="community-readiness-bar">
+                      <b style={{ width: `${Math.max(8, readiness)}%` }} />
+                      <em style={{ left: '50%' }} />
+                      <em style={{ left: '75%' }} />
+                      <em style={{ left: '90%' }} />
+                    </i>
+                    <span className="community-readiness-scale" aria-hidden="true">
+                      <small>50</small>
+                      <small>75</small>
+                      <small>90</small>
+                    </span>
+                  </span>
+                  <span className="community-local-block">
+                    <strong>{primaryIssue}</strong>
+                    <small>{status === 'On track' ? 'No fire items' : status === 'Prep' ? `${meetingCount || 1} action items` : status === 'Waiting' ? 'Vendor replies pending' : 'Venue readiness waiting'}</small>
+                  </span>
+                  <span className="community-next-block">
+                    <strong>Next chase</strong>
+                    <small>{nextAction ? getRecordTitle(base, nextAction) : 'Add related work.'}</small>
+                  </span>
+                  {isSelected && (
+                    <span className="community-selected-state" data-testid="community-place-detail">
+                      <span>What needs attention</span>
+                      <strong>{getRecordTitle(base, record)}</strong>
+                      <small>{selectedSummary}.</small>
+                      <small>{readinessReason}</small>
+                      <small>{linkedRecords.slice(0, 2).map((linkedRecord) => getRecordTitle(base, linkedRecord)).join(' · ') || 'No linked rows yet.'}</small>
+                    </span>
+                  )}
                 </button>
-                <button type="button" onClick={() => onOpenCommunitySourceRoute(communityDetailRecord, 'followups', 'Waiting')}>
-                  Waiting
-                </button>
-                <button type="button" onClick={() => onOpenCommunitySourceRoute(communityDetailRecord, 'meetings', 'Meetings')}>
-                  Meetings
-                </button>
-              </div>
-            </div>
-            <div className="community-place-work">
-              <article>
-                <span>Next action</span>
-                {communityDetailNextAction ? (
-                  <button type="button" onClick={() => onOpenDailyRecord(communityDetailNextAction)}>
-                    <strong>{getRecordTitle(base, communityDetailNextAction)}</strong>
-                    <small>{getPickerRecordMeta(communityDetailNextAction)}</small>
-                  </button>
-                ) : (
-                  <p className="empty-line">Add linked work, waiting, risk, or meeting rows.</p>
+                {isSelected && (
+                  <div className="community-card-actions" aria-label="Community routes">
+                    <button type="button" onClick={() => onOpenDailyRecord(record)}>Open community</button>
+                    <button type="button" onClick={() => onOpenCommunitySourceRoute(record, 'followups', 'Waiting')}>See waiting</button>
+                    <button type="button" onClick={() => onOpenCommunitySourceRoute(record, 'meetings', 'Meetings')}>Prep meeting</button>
+                  </div>
                 )}
               </article>
-              <article>
-                <span>Linked rows</span>
-                <div className="community-link-row-actions">
-                  <label>
-                    <span>Add linked row</span>
-                    <select value={communityLinkRecordId} onChange={(event) => setCommunityLinkRecordId(event.target.value)}>
-                      <option value="">Choose row</option>
-                      {communityLinkableRecords.map((record) => (
-                        <option key={record.id} value={record.id}>
-                          {getRecordTitle(base, record)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button disabled={!communityLinkRecordId} type="button" onClick={addCommunityLink}>Add</button>
-                </div>
-                <div className="community-link-row-actions">
-                  <label>
-                    <span>New linked row</span>
-                    <select
-                      value={communityNewLinkTableId}
-                      onChange={(event) => {
-                        setCommunityNewLinkTableId(event.target.value)
-                        setCommunityNewLinkStatus('')
-                        setCommunityNewLinkDate('')
-                        setCommunityNewLinkExtraValues({})
-                      }}
-                    >
-                      {base.tables
-                        .filter((table) => table.id !== 'communities' && base.fields.some((field) => field.tableId === table.id && field.type === 'linkedRecord' && field.linkedTableId === 'communities'))
-                        .map((table) => (
-                          <option key={table.id} value={table.id}>{table.label}</option>
-                        ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Title</span>
-                    <input
-                      value={communityNewLinkTitle}
-                      onChange={(event) => setCommunityNewLinkTitle(event.target.value)}
-                      placeholder="Name the row"
-                    />
-                  </label>
-                  {communityNewLinkStatusField?.options && (
-                    <label>
-                      <span>{communityNewLinkStatusField.label}</span>
-                      <select value={communityNewLinkStatus} onChange={(event) => setCommunityNewLinkStatus(event.target.value)}>
-                        <option value="">Default</option>
-                        {communityNewLinkStatusField.options.map((option) => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  {communityNewLinkDateField && (
-                    <label>
-                      <span>{communityNewLinkDateField.label}</span>
-                      <input type="date" value={communityNewLinkDate} onChange={(event) => setCommunityNewLinkDate(event.target.value)} />
-                    </label>
-                  )}
-                  {communityNewLinkExtraFields.map((field) => (
-                    <label key={field.id}>
-                      <span>{field.label}</span>
-                      {field.type === 'singleSelect' && field.options ? (
-                        <select
-                          value={communityNewLinkExtraValues[field.id] || ''}
-                          onChange={(event) => setCommunityNewLinkExtraValues((current) => ({ ...current, [field.id]: event.target.value }))}
-                        >
-                          <option value="">Default</option>
-                          {field.options.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={['number', 'currency', 'percent', 'rating'].includes(field.type) ? 'number' : 'text'}
-                          value={communityNewLinkExtraValues[field.id] || ''}
-                          onChange={(event) => setCommunityNewLinkExtraValues((current) => ({ ...current, [field.id]: event.target.value }))}
-                          placeholder={field.type === 'multiSelect' ? 'Comma separated' : field.label}
-                        />
-                      )}
-                    </label>
-                  ))}
-                  <button disabled={!communityNewLinkTitle.trim()} type="button" onClick={createCommunityLinkedRecord}>Create</button>
-                </div>
-                <div>
-                  {communityDetailRecords.slice(0, 5).map((linkedRecord) => {
-                    const editableStatusField = base.fields.find((field) =>
-                      field.tableId === linkedRecord.tableId &&
-                      ['status', 'level'].includes(field.id) &&
-                      (field.type === 'singleSelect' || field.type === 'status'),
-                    )
-
-                    return (
-                      <div className="community-linked-row" key={linkedRecord.id}>
-                        <button type="button" onClick={() => onOpenDailyRecord(linkedRecord)}>
-                          <strong>{getRecordTitle(base, linkedRecord)}</strong>
-                          <small>{getPickerRecordMeta(linkedRecord)}</small>
-                          {getCommunityLinkedRowExtraSummary(linkedRecord) && (
-                            <small>{getCommunityLinkedRowExtraSummary(linkedRecord)}</small>
-                          )}
-                        </button>
-                        {editableStatusField?.options && (
-                          <label>
-                            <span>{editableStatusField.label}</span>
-                            <select
-                              value={getStringValue(linkedRecord, editableStatusField.id)}
-                              onChange={(event) => onUpdateRecordField(linkedRecord.id, editableStatusField.id, event.target.value)}
-                            >
-                              <option value="">None</option>
-                              {editableStatusField.options.map((option) => (
-                                <option key={option} value={option}>{option}</option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-                        {getCommunityLinkField(linkedRecord) && (
-                          <button className="ghost" type="button" onClick={() => removeCommunityLink(linkedRecord)}>
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                  {communityDetailRecords.length === 0 && <p className="empty-line">No linked rows yet.</p>}
-                </div>
-              </article>
-            </div>
-          </section>
-        )}
-      </article>
-
-      <article className="screen-panel">
-        <div className="panel-title compact">
-          <div>
-            <span className="eyebrow">At risk</span>
-            <h2>Watch these first.</h2>
-          </div>
-          <span className="metric-pill">{atRiskCommunityRecords.length}</span>
-        </div>
-        <div className="record-list">
-          {atRiskCommunityRecords.map((record) => (
-            <article key={record.id}>
-              <span>{getStringValue(record, 'status') || 'No status'}</span>
-              <strong>{getRecordTitle(base, record)}</strong>
-              <small>{getNumberValue(record, 'readiness')}% ready.</small>
-            </article>
-          ))}
+            )
+          })}
         </div>
       </article>
     </section>

@@ -75,7 +75,7 @@ describe('local storage helpers', () => {
     clonedBase.records[0].values.name = 'Changed'
 
     expect(workbase.fields[1].options).not.toContain('Paused')
-    expect(workbase.records[0].values.name).toBe('Halifax')
+    expect(workbase.records[0].values.name).toBe('Toronto')
   })
 
   it('repairs malformed stored workbase state', () => {
@@ -87,27 +87,46 @@ describe('local storage helpers', () => {
     expect(storedMigrationReport.workbaseReset).toBe(true)
   })
 
+  it('resets legacy community seed records to the deck GTA seed', () => {
+    const storedBase = cloneWorkbase(workbase)
+
+    storedBase.records = [
+      { id: 'community_halifax', tableId: 'communities', values: { name: 'Halifax', status: 'At risk', eventDate: '2026-05-22', readiness: 62 } },
+      ...storedBase.records,
+    ]
+
+    stubLocalStorage({
+      [workbaseStorageKey]: JSON.stringify({ version: 1, base: storedBase }),
+    })
+
+    const repairedBase = readStoredWorkbase()
+
+    expect(repairedBase.records.find((record) => record.id === 'community_halifax')).toBeUndefined()
+    expect(repairedBase.records.find((record) => record.id === 'community_toronto')?.values.name).toBe('Toronto')
+    expect(storedMigrationReport.workbaseReset).toBe(true)
+  })
+
   it('repairs malformed linked values and dependency links in stored workbase state', () => {
     const storedBase = cloneWorkbase(workbase)
-    const task = storedBase.records.find((record) => record.id === 'task_coi_halifax')
+    const task = storedBase.records.find((record) => record.id === 'task_permit_toronto')
 
     if (task) {
-      task.values.community = ['community_halifax', 7] as unknown as string[]
+      task.values.community = ['community_toronto', 7] as unknown as string[]
     }
 
     storedBase.dependencies = [
       storedBase.dependencies[0],
       {
         id: 'dependency_missing',
-        fromRecordId: 'task_coi_halifax',
+        fromRecordId: 'task_permit_toronto',
         toRecordId: 'missing_record',
         relationship: 'dependsOn',
         reason: 'Missing target.',
       },
       {
         id: 'dependency_self',
-        fromRecordId: 'task_coi_halifax',
-        toRecordId: 'task_coi_halifax',
+        fromRecordId: 'task_permit_toronto',
+        toRecordId: 'task_permit_toronto',
         relationship: 'dependsOn',
         reason: 'Self link.',
       },
@@ -117,16 +136,16 @@ describe('local storage helpers', () => {
     })
 
     const repairedBase = readStoredWorkbase()
-    const repairedTask = repairedBase.records.find((record) => record.id === 'task_coi_halifax')
+    const repairedTask = repairedBase.records.find((record) => record.id === 'task_permit_toronto')
 
     expect(repairedTask?.values.community).toEqual([])
-    expect(repairedBase.dependencies.map((dependency) => dependency.id)).toEqual(['dependency_coi_halifax'])
+    expect(repairedBase.dependencies.map((dependency) => dependency.id)).toEqual(['dependency_permit_toronto'])
     expect(storedMigrationReport.workbaseReset).toBe(false)
   })
 
   it('repairs malformed field definitions and restores missing editable values', () => {
     const storedBase = cloneWorkbase(workbase)
-    const task = storedBase.records.find((record) => record.id === 'task_coi_halifax')
+    const task = storedBase.records.find((record) => record.id === 'task_permit_toronto')
 
     storedBase.fields.push(
       { id: 'orphan', tableId: 'missing_table', label: 'Orphan', type: 'text' },
@@ -140,7 +159,7 @@ describe('local storage helpers', () => {
     })
 
     const repairedBase = readStoredWorkbase()
-    const repairedTask = repairedBase.records.find((record) => record.id === 'task_coi_halifax')
+    const repairedTask = repairedBase.records.find((record) => record.id === 'task_permit_toronto')
 
     expect(repairedBase.fields.map((field) => field.id)).not.toContain('orphan')
     expect(repairedBase.fields.map((field) => field.id)).not.toContain('bad_type')
@@ -268,7 +287,7 @@ describe('local storage helpers', () => {
         gridFilter: 'permit',
       },
     })
-    expect(workbase.records[0].values.name).toBe('Halifax')
+    expect(workbase.records[0].values.name).toBe('Toronto')
     expect(getItem).not.toHaveBeenCalled()
     expect(setItem).not.toHaveBeenCalled()
   })
@@ -315,12 +334,12 @@ describe('local storage helpers', () => {
       },
     })
     const importedBase = cloneWorkbase(workbase)
-    const importedTask = importedBase.records.find((record) => record.id === 'task_coi_halifax')
+    const importedTask = importedBase.records.find((record) => record.id === 'task_permit_toronto')
 
     importedBase.fields.push({ id: 'bad_type', tableId: 'tasks', label: 'Bad type', type: 'bad' as never })
     if (importedTask) {
       delete importedTask.values.status
-      importedTask.values.community = ['community_halifax', 7] as unknown as string[]
+      importedTask.values.community = ['community_toronto', 7] as unknown as string[]
     }
 
     const result = normalizeSundeskLocalBackupImport({
@@ -364,7 +383,7 @@ describe('local storage helpers', () => {
       throw new Error(result.reason)
     }
 
-    const repairedTask = result.workbase.records.find((record) => record.id === 'task_coi_halifax')
+    const repairedTask = result.workbase.records.find((record) => record.id === 'task_permit_toronto')
 
     expect(result.backup.appName).toBe('Sundesk')
     expect(result.workbase.fields.map((field) => field.id)).not.toContain('bad_type')

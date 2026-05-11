@@ -26,7 +26,7 @@ describe('command send preview', () => {
     const todayMatches = getRuleMatchesForDestination(workbase, rules, 'today', todayDate)
     const todayLanes = getTodayLanes(workbase, todayMatches)
     const firstFocusRecord = todayLanes[0].records[0]
-    const meetingPrep = getMeetingPrep(workbase, 'meeting_charlottetown', todayDate)
+    const meetingPrep = getMeetingPrep(workbase, 'meeting_brampton', todayDate)
 
     const preview = buildCommandSendPreview({
       base: workbase,
@@ -39,8 +39,8 @@ describe('command send preview', () => {
     expect(preview).toBe([
       'Sundesk command send preview.',
       'Mode: local preview only. No send happened.',
-      'Now: 4. Waiting: 3. Next: 1.',
-      'First focus: Confirm COI status. (Blocked · 2026-05-12).',
+      'Now: 4. Waiting: 4. Next: 2.',
+      'First focus: Send permit follow-up. (Blocked · 2026-05-12).',
       'Why: Waiting On.Status is "Waiting". show in screen: Today.',
       'Meeting prep: 5 items.',
     ].join('\n'))

@@ -215,7 +215,7 @@ export function BuildModals({
                 <h2>Delete {pendingDeleteTable.label}.</h2>
               </div>
             </div>
-            <p>This removes the table, its fields, its records, its saved views, and any links pointing to those records.</p>
+            <p>This removes the table, its columns, its rows, saved scans, and connected work.</p>
             <p>This cannot be undone in this local build.</p>
             <div className="modal-actions">
               <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
@@ -235,7 +235,7 @@ export function BuildModals({
               </div>
             </div>
             <p>This restores the starter workbase in this browser.</p>
-            <p>Saved views and rules stay local. Record, table, and field edits return to the starter set.</p>
+            <p>Saved scans and checks stay local. Table, row, and column edits return to the starter set.</p>
             <div className="modal-actions">
               <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>
               <button className="danger" {...copyButtonProps('button.resetLocalData')} type="button" onClick={resetLocalWorkbase}>{copyButtonText('button.resetLocalData')}</button>
@@ -246,12 +246,12 @@ export function BuildModals({
 
       {buildModal === 'field' && (
         <div className="modal-backdrop" role="presentation">
-          <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add field">
+          <section className="build-modal" role="dialog" aria-modal="true" aria-label="Add column">
             <div className="modal-header">
               <div>
                 <span className="eyebrow">Column behavior</span>
                 <h2>Choose what this column does.</h2>
-                <p className="modal-lede">Start with the behavior. Sundesk handles the field type underneath.</p>
+                <p className="modal-lede">Start with what the column should help you do.</p>
               </div>
               <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={closeBuildModal}>{copyButtonText('button.close')}</button>
             </div>
@@ -278,10 +278,10 @@ export function BuildModals({
               <label>
                 <span>Column name</span>
                 <input
-                  aria-label="Field name"
+                  aria-label="Column name"
                   value={fieldDraft.label}
                   onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
-                  placeholder="COI status"
+                  placeholder="Permit status"
                 />
               </label>
               <label>
@@ -361,7 +361,7 @@ export function BuildModals({
               {fieldDraft.type === 'linkedRecord' && (
                 <>
                   <label>
-                    <span>Linked table</span>
+                    <span>Connected table</span>
                     <select
                       value={fieldDraft.linkedTableId}
                       onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
@@ -376,7 +376,7 @@ export function BuildModals({
                     </select>
                   </label>
                   <label className="checkbox-row">
-                    <span>Allow multiple linked records</span>
+                    <span>Allow several connected items</span>
                     <input
                       checked={fieldDraft.allowMultiple}
                       type="checkbox"
@@ -387,7 +387,7 @@ export function BuildModals({
               )}
               {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count') && (
                 <label>
-                  <span>Source link</span>
+                  <span>Connection</span>
                   <select
                     value={effectiveSourceLinkedFieldId}
                     onChange={(event) => setFieldDraft((current) => ({ ...current, sourceLinkedFieldId: event.target.value, sourceFieldId: '' }))}
@@ -402,7 +402,7 @@ export function BuildModals({
               )}
               {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') && (
                 <label>
-                  <span>Source field</span>
+                  <span>Detail to show</span>
                   <select
                     value={fieldDraft.sourceFieldId || sourceFields[0]?.id || ''}
                     onChange={(event) => setFieldDraft((current) => ({ ...current, sourceFieldId: event.target.value }))}
@@ -426,7 +426,7 @@ export function BuildModals({
 
       {buildModal === 'fieldSettings' && settingsField && (
         <div className="modal-backdrop" role="presentation">
-          <section className="build-modal" role="dialog" aria-modal="true" aria-label="Field settings">
+          <section className="build-modal" role="dialog" aria-modal="true" aria-label="Column settings">
             <div className="modal-header">
               <div>
                 <span className="eyebrow">Column behavior</span>
@@ -457,7 +457,7 @@ export function BuildModals({
               <label>
                 <span>Column name</span>
                 <input
-                  aria-label="Field name"
+                  aria-label="Column name"
                   value={settingsField.label}
                   onChange={(event) => updateField(settingsField.id, { label: event.target.value })}
                 />
@@ -531,7 +531,7 @@ export function BuildModals({
               {settingsField.type === 'linkedRecord' && (
                 <>
                   <label>
-                    <span>Linked table</span>
+                    <span>Connected table</span>
                     <select
                       value={settingsField.linkedTableId || ''}
                       onChange={(event) => updateField(settingsField.id, { linkedTableId: event.target.value })}
@@ -546,7 +546,7 @@ export function BuildModals({
                     </select>
                   </label>
                   <label className="checkbox-row">
-                    <span>Allow multiple linked records</span>
+                    <span>Allow several connected items</span>
                     <input
                       checked={settingsField.allowMultiple ?? true}
                       type="checkbox"
@@ -565,14 +565,14 @@ export function BuildModals({
 
       {buildModal === 'deleteField' && pendingDeleteField && (
         <div className="modal-backdrop" role="presentation">
-          <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete field">
+          <section className="build-modal confirm-modal" role="dialog" aria-modal="true" aria-label="Delete column">
             <div className="modal-header">
               <div>
                 <span className="eyebrow">Delete</span>
-                <h2>Delete field.</h2>
+                <h2>Delete column.</h2>
               </div>
             </div>
-            <p>This removes the field from every record in this table.</p>
+            <p>This removes the column from every row in this table.</p>
             <p>This cannot be undone in this local build.</p>
             <div className="modal-actions">
               <button className="ghost" {...copyButtonProps('button.cancel')} type="button" onClick={closeBuildModal}>{copyButtonText('button.cancel')}</button>

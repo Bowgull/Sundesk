@@ -98,6 +98,7 @@ export function SettingsScreen({
   const [helpQuery, setHelpQuery] = useState('')
   const [backupImportArmed, setBackupImportArmed] = useState(false)
   const helpResults = useMemo(() => searchHelpArticles(helpQuery), [helpQuery])
+  const visibleHelpResults = helpQuery.trim() ? helpResults : helpResults.slice(0, 4)
   const dataAccessTitle = authRequired ? 'Shared workspace.' : 'Local workspace.'
   const dataAccessPill = authRequired
     ? authAllowed && workspaceHydrated ? 'Shared ready' : 'Sign-in gated'
@@ -109,6 +110,21 @@ export function SettingsScreen({
   const canExportBackup = Boolean(onExportBackup)
   const canImportBackup = Boolean(onImportBackup)
   const importBackupInputId = 'settings-import-backup-input'
+
+  function humanizeSetupText(value: string) {
+    return value
+      .replaceAll('Firebase config', 'shared setup')
+      .replaceAll('Firebase services', 'shared services')
+      .replaceAll('Firebase writes', 'shared saves')
+      .replaceAll('Firestore writes', 'shared saves')
+      .replaceAll('Firestore write', 'shared save')
+      .replaceAll('Firestore', 'shared storage')
+      .replaceAll('config fields', 'setup values')
+      .replaceAll('config', 'setup')
+      .replaceAll('write gate', 'shared save gate')
+      .replaceAll('remote writes', 'remote saves')
+      .replaceAll('remote data', 'shared data')
+  }
 
   function handleImportBackupChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0]
@@ -122,7 +138,7 @@ export function SettingsScreen({
   }
 
   function getReadinessStatusLabel(status: string) {
-    return status.replace(/-/g, ' ')
+    return humanizeSetupText(status.replace(/-/g, ' '))
   }
 
   function getHelpRouteScreen(routeLabel: HelpRouteLabel): AppScreen {
@@ -169,13 +185,37 @@ export function SettingsScreen({
 
   return (
     <section className="settings-zone" data-testid="settings-screen" id="settings">
+      <article className="settings-panel settings-summary-panel">
+        <div className="panel-title">
+          <div>
+            <span className="eyebrow">Settings</span>
+            <h2>Keep the app plain.</h2>
+          </div>
+          <span className="metric-pill">{dataAccessPill}</span>
+        </div>
+        <div className="settings-summary-grid" aria-label="Settings summary">
+          <div>
+            <span>Look</span>
+            <strong>{themes.find((theme) => theme.value === selectedTheme)?.label || 'Selected theme'}</strong>
+          </div>
+          <div>
+            <span>Voice</span>
+            <strong>{rupaulMode ? 'Diva' : 'Plain'}</strong>
+          </div>
+          <div>
+            <span>Data</span>
+            <strong>{authRequired ? 'Shared gated' : 'Local only'}</strong>
+          </div>
+        </div>
+      </article>
+
       <article className="settings-panel settings-help-panel">
         <div className="panel-title">
           <div>
             <span className="eyebrow">Help</span>
-            <h2>Find the local answer.</h2>
+            <h2>Find an answer.</h2>
           </div>
-          <span className="metric-pill">Local search</span>
+          <span className="metric-pill">{helpQuery.trim() ? 'Search' : 'Top answers'}</span>
         </div>
         <label className="settings-help-search">
           <span>Search Help</span>
@@ -188,7 +228,7 @@ export function SettingsScreen({
           />
         </label>
         <div className="help-result-grid" aria-label="Help results">
-          {helpResults.length > 0 ? helpResults.map((article) => (
+          {visibleHelpResults.length > 0 ? visibleHelpResults.map((article) => (
             <article className="help-result-card" key={article.id}>
               <span>{article.routeLabel}</span>
               <strong>{article.title}</strong>
@@ -207,7 +247,7 @@ export function SettingsScreen({
         </div>
       </article>
 
-      <article className="settings-panel">
+      <article className="settings-panel settings-appearance-panel">
         <div className="panel-title">
           <div>
             <span className="eyebrow">Settings</span>
@@ -242,22 +282,30 @@ export function SettingsScreen({
       <article className="settings-panel settings-copy-mode-panel">
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Copy mode</span>
-            <h2>Voice layer.</h2>
+            <span className="eyebrow">Showtime</span>
+            <h2>Diva voice layer.</h2>
           </div>
+          <span className="metric-pill">{rupaulMode ? 'Diva on' : 'Plain on'}</span>
         </div>
-        <label className={`rupaul-toggle ${rupaulMode ? 'selected' : ''}`}>
-          <span>
-            <strong>RuPaul Mode</strong>
-            <small>Long hover shows plain version</small>
-          </span>
+        <label className={`rupaul-toggle ${rupaulMode ? 'selected' : ''}`} data-state={rupaulMode ? 'showtime' : 'plain'}>
           <input
             aria-label="RuPaul Mode"
             checked={rupaulMode}
             type="checkbox"
             onChange={(event) => onRupaulModeChange(event.target.checked)}
           />
+          <span className="rupaul-toggle-copy">
+            <span className="rupaul-toggle-kicker">RuPaul Mode</span>
+            <strong>{rupaulMode ? 'Main stage copy is live.' : 'Plain copy is live.'}</strong>
+            <small>{rupaulMode ? 'Camp glamour for labels and actions.' : 'Switch on runway-coded labels and actions.'}</small>
+          </span>
+          <span className="rupaul-toggle-stage" aria-hidden="true">
+            <span>Plain</span>
+            <span>Diva</span>
+            <i />
+          </span>
         </label>
+        <p className="rupaul-toggle-note">Long hover still shows the plain version where Sundesk supports copy reveal.</p>
       </article>
 
       <article className="settings-panel settings-command-send-panel">
@@ -329,11 +377,11 @@ export function SettingsScreen({
         <div className="settings-list">
           <p><strong>Access.</strong> {accessLine}</p>
           <p><strong>Workspace.</strong> {workspaceLine}</p>
-          <p><strong>Firebase setup.</strong> {firebaseSetupState.statusLabel}. {firebaseSetupState.configComplete ? 'Config present.' : `${firebaseSetupState.missingConfigKeys.length} config fields missing.`} {firebaseSetupState.allowlistCount} approved accounts in local config.</p>
-          <p><strong>Next setup step.</strong> {firebaseSetupState.nextAction}</p>
-          <p><strong>Storage.</strong> Tables, fields, records, dependencies, rules, and Build views are saved locally and can sync to Firestore only when the write gate and approval record are enabled.</p>
-          <p><strong>Read shadow.</strong> {firestoreReadShadowState.label}. {firestoreReadShadowState.detail}</p>
-          <p><strong>Write gate.</strong> {firestoreWriteGateState.label}. {firestoreWriteGateState.detail}</p>
+          <p><strong>Shared setup.</strong> {firebaseSetupState.statusLabel}. {firebaseSetupState.configComplete ? 'Config present.' : `${firebaseSetupState.missingConfigKeys.length} setup values missing.`} {firebaseSetupState.allowlistCount} approved accounts in local config.</p>
+          <p><strong>Next setup step.</strong> {humanizeSetupText(firebaseSetupState.nextAction)}</p>
+          <p><strong>Storage.</strong> Work, columns, connections, checks, and saved scans are kept locally. Shared saving stays off until approved.</p>
+          <p><strong>Shared read.</strong> {humanizeSetupText(firestoreReadShadowState.label)}. {humanizeSetupText(firestoreReadShadowState.detail)}</p>
+          <p><strong>Shared save.</strong> {humanizeSetupText(firestoreWriteGateState.label)}. {humanizeSetupText(firestoreWriteGateState.detail)}</p>
           <p><strong>Repair.</strong> {migrationMessages.length > 0 ? migrationMessages.join(' ') : 'No local repair was needed on this load.'}</p>
         </div>
         <details className="settings-details">
@@ -362,17 +410,17 @@ export function SettingsScreen({
           )}
         </details>
         <details className="settings-details">
-          <summary>Show command routing</summary>
+          <summary>Show screen checks</summary>
           <div className="rule-destination-grid" data-testid="rule-destination-grid">
             {ruleDestinationStats.map((stat) => (
               <div key={stat.label}>
                 <span>{stat.label}</span>
                 <strong>{stat.matches}</strong>
-                <small>{stat.rules} rules</small>
+                <small>{stat.rules} checks</small>
               </div>
             ))}
           </div>
-          <p className="settings-detail-note">{localRules.length} rules route records into command surfaces.</p>
+          <p className="settings-detail-note">{localRules.length} saved checks route work into command surfaces.</p>
         </details>
       </article>
 
@@ -388,9 +436,9 @@ export function SettingsScreen({
           {launchReadinessItems.length > 0 ? launchReadinessItems.map((item) => (
             <div className="launch-readiness-item" data-status={item.status.toLowerCase()} key={`${item.label}-${item.status}`}>
               <span className="launch-readiness-mark" aria-hidden="true" />
-              <strong>{item.label}</strong>
+              <strong>{humanizeSetupText(item.label)}</strong>
               <span className="launch-readiness-status">{getReadinessStatusLabel(item.status)}</span>
-              <p>{item.detail}</p>
+              <p>{humanizeSetupText(item.detail)}</p>
             </div>
           )) : (
             <p className="launch-readiness-empty">No launch readiness items connected.</p>
@@ -418,10 +466,10 @@ export function SettingsScreen({
               <p><strong>Desktop.</strong> Bookmark the approved address in the work browser. Today stays home.</p>
             </div>
             <p className="settings-web-app-readiness">
-              <strong>Before hosted use.</strong> Check Launch readiness for Firebase config, deploy approval, write approval, and no Firebase writes.
+              <strong>Before hosted use.</strong> Check launch readiness for shared setup and approval.
             </p>
             <p className="settings-web-app-note">
-              This install surface is manual. No deploy runs from this panel. No Firebase write starts here.
+              This install surface is manual. No deploy runs from this panel. No shared save starts here.
             </p>
           </div>
         </div>
@@ -441,10 +489,10 @@ export function SettingsScreen({
               Export a backup before large edits. Import only from a Sundesk backup you trust.
             </p>
             <p className="settings-backup-note" id="settings-backup-note">
-              Backup controls are local commands. They do not change Firebase setup or write remote data.
+              Backup controls are local commands. They do not change shared setup or write remote data.
             </p>
             <p className="settings-backup-note">
-              Import replaces local tables, records, rules, and Build views after you choose a file.
+              Import replaces local work, checks, and saved scans after you choose a file.
             </p>
           </div>
           <div className="settings-backup-actions" aria-describedby="settings-backup-note">
@@ -487,7 +535,7 @@ export function SettingsScreen({
         )}
       </article>
 
-      <article className="settings-panel">
+      <article className="settings-panel settings-setup-panel">
         <div className="panel-title">
           <div>
             <span className="eyebrow">Setup</span>
@@ -507,7 +555,7 @@ export function SettingsScreen({
           <p><strong>Review privacy.</strong> Show the warning again.</p>
           <p><strong>Choose theme.</strong> Keep or change the saved theme.</p>
           <p><strong>Check summary.</strong> Recipient, time, timezone, and included items.</p>
-          <p><strong>Review starter tables.</strong> No data will be deleted.</p>
+          <p><strong>Review starter work.</strong> No data will be deleted.</p>
         </div>
       </article>
     </section>

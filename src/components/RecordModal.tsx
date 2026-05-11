@@ -66,11 +66,11 @@ export function RecordModal({
 
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="build-modal record-modal" data-testid="record-modal" role="dialog" aria-modal="true" aria-label="Record editor">
+      <section className="build-modal record-modal" data-testid="record-modal" role="dialog" aria-modal="true" aria-label="Item editor">
         <div className="modal-header">
           <div>
             <span className="eyebrow">{selectedTableLabel}</span>
-            <h2>{isCreatingRecord || !selectedRecord ? 'New record.' : selectedRecordTitle}</h2>
+            <h2>{isCreatingRecord || !selectedRecord ? 'New item.' : selectedRecordTitle}</h2>
           </div>
           <button className="ghost" {...copyButtonProps('button.close')} type="button" onClick={onClose}>{copyButtonText('button.close')}</button>
         </div>
@@ -90,9 +90,9 @@ export function RecordModal({
         {!isCreatingRecord && selectedRecord && (
           <div className="record-modal-links">
             <section>
-              <strong>Backlinks</strong>
+              <strong>Related here</strong>
               <div className="linked-list">
-                {drawerBacklinks.length === 0 && <p className="empty-note">No records point here.</p>}
+                {drawerBacklinks.length === 0 && <p className="empty-note">Nothing points here yet.</p>}
                 {drawerBacklinks.map((backlink) => (
                   <button
                     className="linked-record-card"
@@ -108,9 +108,9 @@ export function RecordModal({
               </div>
             </section>
             <section>
-              <strong>Linked records</strong>
+              <strong>Connected work</strong>
               <div className="linked-list">
-                {drawerLinkedRecords.length === 0 && <p className="empty-note">No linked records selected.</p>}
+                {drawerLinkedRecords.length === 0 && <p className="empty-note">Nothing connected yet.</p>}
                 {drawerLinkedRecords.map((link) => (
                   <button
                     className="linked-record-card"

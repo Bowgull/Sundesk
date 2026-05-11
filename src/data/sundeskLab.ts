@@ -1,4 +1,16 @@
-import type { SundeskEducationProgress, SundeskEducationState } from './educationState'
+import type { SundeskEducationProgress, SundeskEducationState, SundeskLabRecord } from './educationState'
+
+export type SundeskLabSurface =
+  | 'start'
+  | 'build'
+  | 'fields'
+  | 'tags'
+  | 'links'
+  | 'communities'
+  | 'today'
+  | 'meetings'
+  | 'timeline'
+  | 'data'
 
 export type SundeskLabModule = {
   id: string
@@ -7,6 +19,12 @@ export type SundeskLabModule = {
   requiredPractice: string
   sampleData: string
   steps: SundeskLabModuleStep[]
+  deckSlide: number
+  sourceTruth: string
+  scenarioBrief: string
+  taskInstruction: string
+  expectedReceipt: string
+  surface: SundeskLabSurface
 }
 
 export type SundeskLabModuleStep = {
@@ -15,386 +33,404 @@ export type SundeskLabModuleStep = {
   guidance: string
   scenario: string
   actionId: string
+  sourceTruth: string
+  expectedReceipt: string
 }
 
-export const sundeskLabModules: SundeskLabModule[] = [
+type LessonSeed = Omit<SundeskLabModule, 'deckSlide' | 'sourceTruth'>
+
+const lessons: LessonSeed[] = [
   {
-    id: 'first-look',
-    title: 'First look',
-    teaches: 'Today, Build, Meetings, Lab',
-    requiredPractice: 'Navigate each surface',
-    sampleData: 'Scarborough night-market prep, North York vendor calls, and one fake sponsor named Mina.',
+    id: 'start',
+    title: 'Start with the map',
+    teaches: 'Source material, command center, practice boundary',
+    requiredPractice: 'Open the map and name what belongs in each surface',
+    sampleData: 'Fyre island site notes, permit risk memo, water run, villa keys, medical tent, and weekly readiness meeting.',
+    scenarioBrief: 'Fyre planning starts with scattered fake source material. The Lab turns it into one visible operating map.',
+    taskInstruction: 'Read the source list, open the command map, and confirm the practice boundary before editing records.',
+    expectedReceipt: 'Source material mapped. Practice records only. Real workspace untouched.',
+    surface: 'start',
     steps: [
       {
-        id: 'first-look-today',
-        title: 'Open Today',
-        guidance: 'Start where the day starts. Today shows what can slip first.',
-        scenario: 'Scarborough night-market setup has 3 moving pieces and one calm fake sponsor named Mina.',
-        actionId: 'view-today',
+        id: 'start-open-map',
+        title: 'Open the command map',
+        guidance: 'Read the fake source list and open the map.',
+        scenario: 'Fyre source material needs one place to land.',
+        actionId: 'open-command-map',
+        sourceTruth: 'Start. Map source material before editing records.',
+        expectedReceipt: 'Command map opened.',
       },
       {
-        id: 'first-look-build',
-        title: 'Open Build',
-        guidance: 'Build is where the structure lives. Tables, records, fields.',
-        scenario: 'North York vendor calls need a place to land before they become noise.',
-        actionId: 'view-build',
-      },
-      {
-        id: 'first-look-meetings',
-        title: 'Open Meetings',
-        guidance: 'Meetings pull linked work into one prep surface.',
-        scenario: 'Mina wants the update without the spreadsheet archaeology.',
-        actionId: 'view-meetings',
-      },
-      {
-        id: 'first-look-return',
-        title: 'Return to Lab',
-        guidance: 'Come back here to keep the practice thread visible.',
-        scenario: 'Fake chaos stays contained. The real workspace stays clean.',
-        actionId: 'return-to-lab',
+        id: 'start-confirm-boundary',
+        title: 'Confirm the boundary',
+        guidance: 'Confirm that this Lab uses fake practice records only.',
+        scenario: 'Lindsay needs a safe place to learn without touching real work.',
+        actionId: 'confirm-practice-boundary',
+        sourceTruth: 'Start. Fake records only.',
+        expectedReceipt: 'Practice boundary confirmed.',
       },
     ],
   },
   {
-    id: 'tables',
-    title: 'Tables',
-    teaches: 'What tables are',
-    requiredPractice: 'Switch tables and open table menu',
-    sampleData: 'Mississauga venues, Etobicoke vendors, and a table for fake approval lanes.',
+    id: 'build-grid',
+    title: 'Build the first grid',
+    teaches: 'Paste-first Build, inline edits, added rows',
+    requiredPractice: 'Paste rows, edit one cell, and add one missing row',
+    sampleData: 'Permit risk, water run, medical tent, villa keys, sponsor deck, and weather comms rows.',
+    scenarioBrief: 'Fyre planning begins as a pasted grid. Sundesk should keep the spreadsheet move, then show what changed.',
+    taskInstruction: 'Paste the starter rows, edit one status, and add the missing weather comms row.',
+    expectedReceipt: 'Starter grid exists with one edited status and one added row.',
+    surface: 'build',
     steps: [
       {
-        id: 'tables-switch',
-        title: 'Switch the sample table',
-        guidance: 'A table is one kind of thing. Move between them before editing anything.',
-        scenario: 'Mississauga venues and Etobicoke vendors belong in different buckets.',
-        actionId: 'switch-table',
+        id: 'build-grid-paste-rows',
+        title: 'Paste starter rows',
+        guidance: 'Paste the fake Fyre rows into the Lab grid.',
+        scenario: 'The first move is paste. No import wizard.',
+        actionId: 'paste-lab-rows',
+        sourceTruth: 'Build. Paste first.',
+        expectedReceipt: 'Starter rows pasted.',
       },
       {
-        id: 'tables-options',
-        title: 'Open table options',
-        guidance: 'Table controls change the bucket. Use them slowly.',
-        scenario: 'The fake approval lane needs a name that says what it tracks.',
-        actionId: 'open-table-options',
+        id: 'build-grid-edit-row',
+        title: 'Edit one cell',
+        guidance: 'Mark the permit row as blocked.',
+        scenario: 'Rows should look saved after editing.',
+        actionId: 'edit-permit-status',
+        sourceTruth: 'Build. Edit inline.',
+        expectedReceipt: 'Permit status changed.',
       },
       {
-        id: 'tables-purpose',
-        title: 'Read the table purpose',
-        guidance: 'If the purpose is fuzzy, the table will collect junk.',
-        scenario: 'Approvals are not vendors. That distinction saves the week later.',
-        actionId: 'read-table-purpose',
-      },
-    ],
-  },
-  {
-    id: 'records',
-    title: 'Records',
-    teaches: 'What records are',
-    requiredPractice: 'Open, edit, and close one record',
-    sampleData: 'One Brampton stage riser, one Toronto food truck, one very calm fake coordinator.',
-    steps: [
-      {
-        id: 'records-open',
-        title: 'Open a sample row',
-        guidance: 'A record is one actual thing. Open it before judging the table.',
-        scenario: 'The Brampton stage riser is one row, not a whole system.',
-        actionId: 'open-record',
-      },
-      {
-        id: 'records-edit',
-        title: 'Change one field',
-        guidance: 'Edit one field. Watch how the record stays the same object.',
-        scenario: 'Toronto food truck status moves from waiting to booked.',
-        actionId: 'edit-record-field',
-      },
-      {
-        id: 'records-close',
-        title: 'Close the record',
-        guidance: 'Close the drawer and return to the table read.',
-        scenario: 'The very calm fake coordinator can wait.',
-        actionId: 'close-record',
+        id: 'build-grid-add-row',
+        title: 'Add the missing row',
+        guidance: 'Add weather comms as a new row.',
+        scenario: 'A late source note needs a visible row.',
+        actionId: 'add-weather-row',
+        sourceTruth: 'Build. Add row stays visible.',
+        expectedReceipt: 'Weather comms row added.',
       },
     ],
   },
   {
     id: 'fields',
-    title: 'Fields',
-    teaches: 'Field types',
-    requiredPractice: 'Add one field in sample data',
-    sampleData: 'Add a field for weather risk before the fake Lake Shore setup gets loud.',
+    title: 'Give columns behaviour',
+    teaches: 'Field type, helper suggestion, typed values',
+    requiredPractice: 'Convert one plain column into a typed field',
+    sampleData: 'Status, owner, due date, tags, and connected place columns.',
+    scenarioBrief: 'Fyre rows need fields that behave like records, not loose text.',
+    taskInstruction: 'Open the field helper and convert the due column into a date field.',
+    expectedReceipt: 'Due column behaves like a date field. Other fields stay optional.',
+    surface: 'fields',
     steps: [
       {
-        id: 'fields-open-controls',
-        title: 'Open field controls',
-        guidance: 'Fields tell Sundesk what kind of information this is.',
-        scenario: 'Lake Shore weather risk needs structure before it gets loud.',
-        actionId: 'open-field-controls',
+        id: 'fields-open-helper',
+        title: 'Open the helper',
+        guidance: 'Read the helper suggestion on the due column.',
+        scenario: 'Helpers appear after there is context.',
+        actionId: 'open-field-helper',
+        sourceTruth: 'Fields. Helpers after context.',
+        expectedReceipt: 'Date helper read.',
       },
       {
-        id: 'fields-pick-type',
-        title: 'Pick a field type',
-        guidance: 'A date routes differently than text. Type matters.',
-        scenario: 'Rain date is not a note. It has to land on the calendar.',
-        actionId: 'pick-field-type',
-      },
-      {
-        id: 'fields-add',
-        title: 'Add the field',
-        guidance: 'Add it to the sample data only. Real records are not involved.',
-        scenario: 'The fake Lake Shore setup gets a risk field.',
-        actionId: 'add-field',
+        id: 'fields-set-date',
+        title: 'Set the date field',
+        guidance: 'Convert Due into a date field.',
+        scenario: 'Date pressure should be computable.',
+        actionId: 'set-due-date-field',
+        sourceTruth: 'Fields. Choose type.',
+        expectedReceipt: 'Due field typed as date.',
       },
     ],
   },
   {
     id: 'tags',
-    title: 'Tags',
-    teaches: 'Multi-label work',
-    requiredPractice: 'Add several custom tags to one record',
-    sampleData: 'Tag Steph, vendor, waiting, and needs-eyes on the fake Scarborough permit row.',
+    title: 'Make tags route work',
+    teaches: 'Tags as grouping, surfacing, routing, and blocker markers',
+    requiredPractice: 'Tag one row and filter the Lab by that tag',
+    sampleData: 'Permit risk, water, medical, artist arrivals, meeting prep, waiting, and weather tags.',
+    scenarioBrief: 'Fyre planning uses tags to surface real work without hand sorting.',
+    taskInstruction: 'Add the Permit risk tag to a row, then filter the Lab by that tag.',
+    expectedReceipt: 'Permit risk route visible.',
+    surface: 'tags',
     steps: [
       {
-        id: 'tags-open-cell',
-        title: 'Open a tag cell',
-        guidance: 'Tags are labels you control. Open the cell before naming the mess.',
-        scenario: 'Tag Steph, vendor, waiting, and needs-eyes on the fake Scarborough permit row.',
-        actionId: 'open-tag-cell',
+        id: 'tags-tag-risk-row',
+        title: 'Tag the risk row',
+        guidance: 'Add Permit risk to the permit memo.',
+        scenario: 'The tag should change where the row appears.',
+        actionId: 'tag-risk-row',
+        sourceTruth: 'Tags. Mark blockers.',
+        expectedReceipt: 'Permit risk tag applied.',
       },
       {
-        id: 'tags-add-two',
-        title: 'Add 2 tags',
-        guidance: 'One label is rarely enough. Add the second one while the signal is fresh.',
-        scenario: 'Steph is the person. Waiting is the state. Both can be true.',
-        actionId: 'add-two-tags',
-      },
-      {
-        id: 'tags-filter',
-        title: 'Filter by one tag',
-        guidance: 'Filtering turns tags from decoration into a working lane.',
-        scenario: 'Show only the fake vendor rows before the call block.',
-        actionId: 'filter-by-tag',
+        id: 'tags-filter-risk-tag',
+        title: 'Open the route',
+        guidance: 'Filter by Permit risk and read the routed result.',
+        scenario: 'Tags are signals. They should route work.',
+        actionId: 'filter-risk-tag',
+        sourceTruth: 'Tags. Group, surface, route.',
+        expectedReceipt: 'Permit risk route visible.',
       },
     ],
   },
   {
     id: 'links',
-    title: 'Links',
-    teaches: 'Relationships',
-    requiredPractice: 'Link a task to a community',
-    sampleData: 'Connect the fake Liberty Village AV task to the fake Liberty Village community.',
+    title: 'Link rows to places',
+    teaches: 'Linked records, communities, backlinks',
+    requiredPractice: 'Connect a work row to a place and read the backlink',
+    sampleData: 'Island dock, villa ridge, medical tent, catering compound, security gate, and connected work rows.',
+    scenarioBrief: 'Fyre planning needs place records to show their work without retyping facts.',
+    taskInstruction: 'Link the permit memo to the island dock, then read the place backlink.',
+    expectedReceipt: 'Permit row linked to island dock. Backlink visible.',
+    surface: 'links',
     steps: [
       {
-        id: 'links-open-control',
-        title: 'Open link control',
-        guidance: 'Links connect records without copying the same fact twice.',
-        scenario: 'The Liberty Village AV task needs to point at the Liberty Village community.',
-        actionId: 'open-link-control',
+        id: 'links-connect-place',
+        title: 'Choose the place',
+        guidance: 'Connect the permit memo to Island dock.',
+        scenario: 'One fact should not be retyped.',
+        actionId: 'link-permit-to-dock',
+        sourceTruth: 'Links. Choose community.',
+        expectedReceipt: 'Permit memo linked.',
       },
       {
-        id: 'links-choose-community',
-        title: 'Choose a community',
-        guidance: 'Pick the record this work belongs to.',
-        scenario: 'The task belongs to Liberty Village, not the general Toronto bucket.',
-        actionId: 'choose-community',
-      },
-      {
-        id: 'links-check-backlink',
-        title: 'Check the backlink',
-        guidance: 'A good link reads both ways.',
-        scenario: 'Open Liberty Village and the AV work should be visible from there.',
-        actionId: 'check-backlink',
+        id: 'links-read-backlink',
+        title: 'Read the backlink',
+        guidance: 'Open the place read and confirm the permit row appears.',
+        scenario: 'Backlinks prove the connection.',
+        actionId: 'read-dock-backlink',
+        sourceTruth: 'Links. Backlink appears.',
+        expectedReceipt: 'Backlink visible.',
       },
     ],
   },
   {
-    id: 'views',
-    title: 'Views',
-    teaches: 'Filter, sort, group, colour, save',
-    requiredPractice: 'Create or modify one sample view',
-    sampleData: 'Build a view for West End work that is waiting, dated, or carrying heat.',
+    id: 'communities',
+    title: 'Read place readiness',
+    teaches: 'Community command center, local state, linked work',
+    requiredPractice: 'Open one place and explain what is ready, waiting, and blocked',
+    sampleData: 'Island dock, villa ridge, medical tent, catering compound, security gate.',
+    scenarioBrief: 'Fyre planning treats each island zone as a command-center record.',
+    taskInstruction: 'Open Island dock and read its linked work.',
+    expectedReceipt: 'Island dock shows blocked, waiting, and next work.',
+    surface: 'communities',
     steps: [
       {
-        id: 'views-filter',
-        title: 'Filter sample rows',
-        guidance: 'Start by narrowing the table.',
-        scenario: 'West End work has enough noise. Filter for what is waiting.',
-        actionId: 'filter-rows',
+        id: 'communities-open-place',
+        title: 'Open Island dock',
+        guidance: 'Open the place with the highest risk.',
+        scenario: 'The place record should explain local state.',
+        actionId: 'open-island-dock',
+        sourceTruth: 'Communities. Open one.',
+        expectedReceipt: 'Island dock opened.',
       },
       {
-        id: 'views-group',
-        title: 'Group by status',
-        guidance: 'Grouping turns a flat list into lanes.',
-        scenario: 'Waiting, blocked, and done should not sit in one pile.',
-        actionId: 'group-by-status',
-      },
-      {
-        id: 'views-save',
-        title: 'Save the view',
-        guidance: 'Save the angle that helps. Pin it if it earns the rail.',
-        scenario: 'West End waiting work becomes a reusable read.',
-        actionId: 'save-view',
+        id: 'communities-read-state',
+        title: 'Read the state',
+        guidance: 'Confirm the blocker, waiting item, and next move.',
+        scenario: 'A command center answers what matters now.',
+        actionId: 'read-place-state',
+        sourceTruth: 'Communities. Read local state.',
+        expectedReceipt: 'Place state read.',
       },
     ],
   },
   {
-    id: 'today',
-    title: 'Today',
-    teaches: 'Surfacing work',
-    requiredPractice: 'Route from Today into Build',
-    sampleData: 'A fake Vaughan delivery issue bubbles up because the date is too close.',
+    id: 'today-waiting',
+    title: 'Separate now from waiting',
+    teaches: 'Today lanes, waiting receipts, slip risk',
+    requiredPractice: 'Move one item into Today and write one chase receipt',
+    sampleData: 'Water delivery now, catering confirmation waiting, weather comms next.',
+    scenarioBrief: 'Fyre planning needs Today to show what can slip before the schedule lies.',
+    taskInstruction: 'Route water delivery into Now and write the waiting receipt for catering.',
+    expectedReceipt: 'Now, Waiting, and Next are separated with a chase reason.',
+    surface: 'today',
     steps: [
       {
-        id: 'today-open',
-        title: 'Open Today',
-        guidance: 'Today is not a dashboard. It is the first read.',
-        scenario: 'A fake Vaughan delivery issue is too close to ignore.',
-        actionId: 'open-today',
+        id: 'today-waiting-route-now',
+        title: 'Route the now item',
+        guidance: 'Move water delivery into Now.',
+        scenario: 'Due work should surface first.',
+        actionId: 'route-water-now',
+        sourceTruth: 'Today. Now, Waiting, Next.',
+        expectedReceipt: 'Water delivery routed to Now.',
       },
       {
-        id: 'today-read-reason',
-        title: 'Read the reason',
-        guidance: 'The receipt matters. Do not trust a surfaced item without a why.',
-        scenario: 'The delivery issue surfaced because the date is near and status is waiting.',
-        actionId: 'read-reason',
-      },
-      {
-        id: 'today-route-build',
-        title: 'Route into Build',
-        guidance: 'When Today points at structure, Build is the next stop.',
-        scenario: 'Open the fake task where the fields and links live.',
-        actionId: 'route-into-build',
+        id: 'today-waiting-chase-receipt',
+        title: 'Write the chase receipt',
+        guidance: 'Write who owes catering, age, and consequence.',
+        scenario: 'Waiting needs a reason, not a vague status.',
+        actionId: 'write-catering-chase',
+        sourceTruth: 'Waiting On. Who owes it.',
+        expectedReceipt: 'Catering chase receipt written.',
       },
     ],
   },
   {
     id: 'meetings',
-    title: 'Meetings',
-    teaches: 'Meeting prep and PDF',
-    requiredPractice: 'Build and export a sample meeting PDF',
-    sampleData: 'Prep a fake Monday check-in for Oakville vendors and Toronto production.',
+    title: 'Generate the weekly note',
+    teaches: 'Meeting templates, generated notes, editable receipts',
+    requiredPractice: 'Generate and edit the weekly readiness note',
+    sampleData: 'Blocked permits, water delivery, medical setup, villa keys, and weather comms.',
+    scenarioBrief: 'Fyre planning meetings should pull linked work into one note instead of asking someone to remember the plan.',
+    taskInstruction: 'Generate the weekly note, then edit it into a planning receipt.',
+    expectedReceipt: 'Weekly note generated and edited.',
+    surface: 'meetings',
     steps: [
       {
-        id: 'meetings-open-prep',
-        title: 'Open meeting prep',
-        guidance: 'Meeting prep is the linked work, compressed.',
-        scenario: 'Oakville vendors and Toronto production need one Monday read.',
-        actionId: 'open-meeting-prep',
+        id: 'meetings-generate-note',
+        title: 'Generate the note',
+        guidance: 'Build the weekly note from connected fake rows.',
+        scenario: 'Meetings should pull from work already in the system.',
+        actionId: 'generate-weekly-note',
+        sourceTruth: 'Meetings. Generated recap.',
+        expectedReceipt: 'Weekly note generated.',
       },
       {
-        id: 'meetings-read-linked-work',
-        title: 'Read linked work',
-        guidance: 'A meeting without linked work is just theatre.',
-        scenario: 'The fake Oakville agenda pulls tasks instead of relying on memory.',
-        actionId: 'read-linked-work',
-      },
-      {
-        id: 'meetings-export-pdf',
-        title: 'Export sample PDF',
-        guidance: 'Export the sample note. Keep it fake.',
-        scenario: 'The PDF is for practice, not a real send.',
-        actionId: 'export-sample-pdf',
+        id: 'meetings-edit-note',
+        title: 'Edit the receipt',
+        guidance: 'Add the next move to the generated note.',
+        scenario: 'Generated notes stay editable.',
+        actionId: 'edit-weekly-note',
+        sourceTruth: 'Meetings. Edit notes.',
+        expectedReceipt: 'Weekly note edited.',
       },
     ],
   },
   {
     id: 'timeline',
-    title: 'Timeline',
-    teaches: 'Time-based work',
-    requiredPractice: 'Inspect a dated record route',
-    sampleData: 'A dated Hamilton pickup has to land before the fake weekend setup.',
+    title: 'Switch timeline views',
+    teaches: 'Grid, kanban, calendar, readiness, graph',
+    requiredPractice: 'Switch view modes and read the same work differently',
+    sampleData: 'Permit deadline, water run, medical setup, artist arrivals, weather comms.',
+    scenarioBrief: 'Fyre planning needs different reads for the same event pressure.',
+    taskInstruction: 'Open kanban, calendar, and graph views for the fake plan.',
+    expectedReceipt: 'Same work read as movement, date pressure, and risk.',
+    surface: 'timeline',
     steps: [
       {
-        id: 'timeline-open',
-        title: 'Open Timeline',
-        guidance: 'Timeline is for dated pressure.',
-        scenario: 'The Hamilton pickup has a date that can slip.',
-        actionId: 'open-timeline',
+        id: 'timeline-open-kanban',
+        title: 'Open kanban',
+        guidance: 'Switch to kanban to read movement.',
+        scenario: 'Status needs movement.',
+        actionId: 'view-kanban',
+        sourceTruth: 'Timeline. Kanban is movement.',
+        expectedReceipt: 'Kanban view opened.',
       },
       {
-        id: 'timeline-find-dated-row',
-        title: 'Find a dated row',
-        guidance: 'Find the date before you chase the detail.',
-        scenario: 'The fake weekend setup depends on that pickup landing first.',
-        actionId: 'find-dated-row',
+        id: 'timeline-open-calendar',
+        title: 'Open calendar',
+        guidance: 'Switch to calendar to read date pressure.',
+        scenario: 'Dates need a calendar read.',
+        actionId: 'view-calendar',
+        sourceTruth: 'Timeline. Calendar is date pressure.',
+        expectedReceipt: 'Calendar view opened.',
       },
       {
-        id: 'timeline-open-source',
-        title: 'Open the source record',
-        guidance: 'The timeline is a route. The record is the source.',
-        scenario: 'Open the pickup row and inspect the linked work.',
-        actionId: 'open-source-record',
+        id: 'timeline-open-graph',
+        title: 'Open graph',
+        guidance: 'Switch to graph to read linked risk.',
+        scenario: 'Risk needs visible connections.',
+        actionId: 'view-graph',
+        sourceTruth: 'Timeline. Graph explains risk.',
+        expectedReceipt: 'Graph view opened.',
       },
     ],
   },
   {
-    id: 'safety',
-    title: 'Safety',
-    teaches: 'Backup, import, privacy disclaimer',
-    requiredPractice: 'Find the settings disclaimer',
-    sampleData: 'Practice with fake files only. Real workspace data stays out of the Lab.',
+    id: 'data-routine',
+    title: 'Run the routine',
+    teaches: 'Data boundary, morning read, meeting prep, end-of-day receipt',
+    requiredPractice: 'Confirm the fake-data boundary and write the end-of-day receipt',
+    sampleData: 'Morning slip read, weekly meeting prep, and end-of-day updates for water, permits, security, and weather.',
+    scenarioBrief: 'Fyre planning becomes useful only if the routine repeats.',
+    taskInstruction: 'Confirm the data boundary, then write the end-of-day receipt.',
+    expectedReceipt: 'Practice boundary confirmed. End-of-day receipt written.',
+    surface: 'data',
     steps: [
       {
-        id: 'safety-open-settings',
-        title: 'Open Settings',
-        guidance: 'Safety work lives where the system explains itself.',
-        scenario: 'Fake files only. No real permits, contracts, or private data.',
-        actionId: 'open-settings',
+        id: 'data-routine-boundary',
+        title: 'Confirm data boundary',
+        guidance: 'Confirm fake records only.',
+        scenario: 'Practice data must never be confused with Lindsay data.',
+        actionId: 'confirm-data-boundary',
+        sourceTruth: 'Data. Records only.',
+        expectedReceipt: 'Data boundary confirmed.',
       },
       {
-        id: 'safety-find-backup',
-        title: 'Find backup controls',
-        guidance: 'Backup before risky work. Manual, visible, boring.',
-        scenario: 'Export the practice shape before importing anything.',
-        actionId: 'find-backup-controls',
-      },
-      {
-        id: 'safety-read-local-note',
-        title: 'Read the local data note',
-        guidance: 'Know what is local before you trust it.',
-        scenario: 'The Lab stays fake. The real workspace stays separate.',
-        actionId: 'read-local-note',
-      },
-    ],
-  },
-  {
-    id: 'iphone',
-    title: 'iPhone',
-    teaches: 'PWA habits',
-    requiredPractice: 'Practice the mobile navigation pattern',
-    sampleData: 'Move through the same fake GTA setup from a small screen.',
-    steps: [
-      {
-        id: 'iphone-open-nav',
-        title: 'Open mobile nav',
-        guidance: 'Small screens need fewer choices at once.',
-        scenario: 'Move through the fake GTA setup from the bottom rail.',
-        actionId: 'open-mobile-nav',
-      },
-      {
-        id: 'iphone-switch-screens',
-        title: 'Switch screens',
-        guidance: 'Use the short labels. Today, Lab, Build.',
-        scenario: 'Check the same fake work without losing the thread.',
-        actionId: 'switch-mobile-screens',
-      },
-      {
-        id: 'iphone-return-lab',
-        title: 'Return to Lab',
-        guidance: 'Return here when the practice step is done.',
-        scenario: 'The small-screen habit is the point.',
-        actionId: 'return-lab-mobile',
+        id: 'data-routine-receipt',
+        title: 'Write end-of-day receipt',
+        guidance: 'Write what changed, what waits, and what opens tomorrow.',
+        scenario: 'The routine closes with a receipt.',
+        actionId: 'write-end-day-receipt',
+        sourceTruth: 'Routine. End of day.',
+        expectedReceipt: 'End-of-day receipt written.',
       },
     ],
   },
 ]
+
+export const sundeskLabModules: SundeskLabModule[] = lessons.map((lesson, index) => ({
+  ...lesson,
+  deckSlide: index + 1,
+  sourceTruth: `${String(index + 1).padStart(2, '0')} ${lesson.title}. ${lesson.teaches}.`,
+  steps: lesson.steps.map((step) => ({
+    ...step,
+    sourceTruth: step.sourceTruth || `${String(index + 1).padStart(2, '0')} ${lesson.title}.`,
+    scenario: step.scenario || lesson.scenarioBrief,
+  })),
+}))
+
+const legacyLessonAliases: Record<string, string> = {
+  'slide-01-start-here': 'start',
+  'slide-02-product-map': 'start',
+  'slide-03-blank-grid': 'build-grid',
+  'slide-04-after-paste': 'build-grid',
+  'slide-05-fields': 'fields',
+  'slide-06-tags': 'tags',
+  'slide-07-links': 'links',
+  'slide-08-communities': 'communities',
+  'slide-09-today': 'today-waiting',
+  'slide-10-waiting-on': 'today-waiting',
+  'slide-11-meetings': 'meetings',
+  'slide-12-timeline-views': 'timeline',
+  'slide-13-kanban': 'timeline',
+  'slide-14-calendar': 'timeline',
+  'slide-15-readiness-timeline': 'timeline',
+  'slide-16-risk-graph': 'timeline',
+  'slide-17-freeform-build': 'build-grid',
+  'slide-18-context-helpers': 'fields',
+  'slide-19-data-access': 'data-routine',
+  'slide-20-routine': 'data-routine',
+}
+
+export function normalizeSundeskLabLessonId(moduleId: string | null | undefined) {
+  if (!moduleId) {
+    return null
+  }
+
+  return legacyLessonAliases[moduleId] || moduleId
+}
+
+function getLesson(moduleId: string | null | undefined) {
+  const lessonId = normalizeSundeskLabLessonId(moduleId)
+
+  return sundeskLabModules.find((module) => module.id === lessonId) || sundeskLabModules[0] || null
+}
 
 export function startSundeskLabModule(
   educationState: SundeskEducationState,
   moduleId: string,
   now = new Date().toISOString(),
 ): SundeskEducationState {
-  const existingProgress = educationState.lab.modules[moduleId]
-  const module = sundeskLabModules.find((item) => item.id === moduleId)
-  const firstStepId = module?.steps[0]?.id || `${moduleId}-start`
+  const module = getLesson(moduleId)
+
+  if (!module) {
+    return educationState
+  }
+
+  const existingProgress = educationState.lab.modules[module.id]
+  const firstStepId = module.steps[0]?.id || `${module.id}-start`
   const nextProgress: SundeskEducationProgress = {
     status: existingProgress?.status === 'completed' ? 'completed' : 'inProgress',
     currentStepId: existingProgress?.currentStepId || (existingProgress?.status === 'completed' ? null : firstStepId),
@@ -409,10 +445,20 @@ export function startSundeskLabModule(
     ...educationState,
     lab: {
       ...educationState.lab,
-      activeModuleId: moduleId,
+      activeModuleId: module.id,
+      sampleWorkspaceVersion: 2,
       modules: {
         ...educationState.lab.modules,
-        [moduleId]: nextProgress,
+        [module.id]: nextProgress,
+      },
+      sandbox: {
+        ...educationState.lab.sandbox,
+        version: 1,
+        activeLessonId: module.id,
+        activeSurface: module.surface,
+        sampleWorkspaceVersion: 2,
+        selectedView: module.surface === 'timeline' ? educationState.lab.sandbox.selectedView : 'grid',
+        updatedAt: now,
       },
     },
   }
@@ -423,7 +469,8 @@ export function getSundeskLabCurrentStep(
   moduleId: string,
   progress?: SundeskEducationProgress,
 ): SundeskLabModuleStep | null {
-  const module = modules.find((item) => item.id === moduleId)
+  const lessonId = normalizeSundeskLabLessonId(moduleId)
+  const module = modules.find((item) => item.id === lessonId)
 
   if (!module) {
     return null
@@ -432,52 +479,108 @@ export function getSundeskLabCurrentStep(
   return module.steps.find((step) => step.id === progress?.currentStepId) || module.steps[0] || null
 }
 
+export function applySundeskLabAction(
+  educationState: SundeskEducationState,
+  modules: SundeskLabModule[],
+  moduleId: string,
+  actionId: string,
+  now = new Date().toISOString(),
+): SundeskEducationState {
+  const module = modules.find((item) => item.id === normalizeSundeskLabLessonId(moduleId))
+
+  if (!module || !module.steps.some((step) => step.actionId === actionId)) {
+    return educationState
+  }
+
+  const started = startSundeskLabModule(educationState, module.id, now)
+  const sandbox = started.lab.sandbox
+  const completedTaskIds = sandbox.completedTaskIds.includes(actionId)
+    ? [...sandbox.completedTaskIds]
+    : [...sandbox.completedTaskIds, actionId]
+  const records = applyRecordAction(sandbox.records, actionId)
+  const generatedReceipts = {
+    ...sandbox.generatedReceipts,
+    [module.id]: getActionReceipt(module, actionId, completedTaskIds),
+  }
+
+  return {
+    ...started,
+    lab: {
+      ...started.lab,
+      sandbox: {
+        ...sandbox,
+        completedTaskIds,
+        generatedReceipts,
+        records,
+        selectedFilterTag: actionId === 'filter-risk-tag' ? 'Permit risk' : sandbox.selectedFilterTag,
+        selectedView: getSelectedViewForAction(actionId, sandbox.selectedView),
+        updatedAt: now,
+      },
+    },
+  }
+}
+
+export function canCompleteSundeskLabLesson(
+  educationState: SundeskEducationState,
+  modules: SundeskLabModule[],
+  moduleId: string,
+) {
+  const module = modules.find((item) => item.id === normalizeSundeskLabLessonId(moduleId))
+
+  if (!module) {
+    return false
+  }
+
+  return module.steps.every((step) => educationState.lab.sandbox.completedTaskIds.includes(step.actionId))
+}
+
 export function completeSundeskLabModuleStep(
   educationState: SundeskEducationState,
   modules: SundeskLabModule[],
   moduleId: string,
   now = new Date().toISOString(),
 ): SundeskEducationState {
-  const module = modules.find((item) => item.id === moduleId)
+  const module = modules.find((item) => item.id === normalizeSundeskLabLessonId(moduleId))
 
   if (!module) {
     return educationState
   }
 
-  const progress = educationState.lab.modules[moduleId] ||
-    startSundeskLabModule(educationState, moduleId, now).lab.modules[moduleId]
-  const currentStep = getSundeskLabCurrentStep(modules, moduleId, progress)
+  const started = startSundeskLabModule(educationState, module.id, now)
+  const progress = started.lab.modules[module.id]
 
-  if (!currentStep) {
-    return educationState
+  if (!canCompleteSundeskLabLesson(started, modules, module.id)) {
+    return started
   }
 
-  const currentStepIndex = module.steps.findIndex((step) => step.id === currentStep.id)
-  const nextStep = module.steps[currentStepIndex + 1]
-  const completedStepIds = progress.completedStepIds.includes(currentStep.id)
-    ? [...progress.completedStepIds]
-    : [...progress.completedStepIds, currentStep.id]
-  const completedActionIds = progress.completedActionIds.includes(currentStep.actionId)
-    ? [...progress.completedActionIds]
-    : [...progress.completedActionIds, currentStep.actionId]
+  const completedActionIds = module.steps.map((step) => step.actionId)
+  const completedStepIds = module.steps.map((step) => step.id)
   const nextProgress: SundeskEducationProgress = {
     ...progress,
-    status: nextStep ? 'inProgress' : 'completed',
-    currentStepId: nextStep?.id || null,
+    status: 'completed',
+    currentStepId: null,
     completedStepIds,
     completedActionIds,
-    completedAt: nextStep ? null : now,
+    completedAt: now,
     lastSeenAt: now,
   }
 
   return {
-    ...educationState,
+    ...started,
     lab: {
-      ...educationState.lab,
-      activeModuleId: moduleId,
+      ...started.lab,
+      activeModuleId: module.id,
       modules: {
-        ...educationState.lab.modules,
-        [moduleId]: nextProgress,
+        ...started.lab.modules,
+        [module.id]: nextProgress,
+      },
+      sandbox: {
+        ...started.lab.sandbox,
+        generatedReceipts: {
+          ...started.lab.sandbox.generatedReceipts,
+          [module.id]: module.expectedReceipt,
+        },
+        updatedAt: now,
       },
     },
   }
@@ -486,17 +589,31 @@ export function completeSundeskLabModuleStep(
 export function resetSundeskLabModuleProgress(
   educationState: SundeskEducationState,
   moduleId: string,
+  now = new Date().toISOString(),
 ): SundeskEducationState {
+  const normalizedModuleId = normalizeSundeskLabLessonId(moduleId)
   const remainingModules = { ...educationState.lab.modules }
 
-  delete remainingModules[moduleId]
+  if (normalizedModuleId) {
+    delete remainingModules[normalizedModuleId]
+  }
+
+  const activeModuleId = educationState.lab.activeModuleId === normalizedModuleId ? null : educationState.lab.activeModuleId
 
   return {
     ...educationState,
     lab: {
       ...educationState.lab,
-      activeModuleId: educationState.lab.activeModuleId === moduleId ? null : educationState.lab.activeModuleId,
+      activeModuleId,
       modules: remainingModules,
+      sandbox: {
+        ...educationState.lab.sandbox,
+        activeLessonId: activeModuleId || educationState.lab.sandbox.activeLessonId,
+        completedTaskIds: educationState.lab.sandbox.completedTaskIds.filter((taskId) =>
+          !sundeskLabModules.find((module) => module.id === normalizedModuleId)?.steps.some((step) => step.actionId === taskId),
+        ),
+        updatedAt: now,
+      },
     },
   }
 }
@@ -509,9 +626,144 @@ export function resetSundeskLabProgress(
     ...educationState,
     lab: {
       activeModuleId: null,
-      sampleWorkspaceVersion: 1,
+      sampleWorkspaceVersion: 2,
       sampleWorkspaceResetAt: now,
       modules: {},
+      sandbox: {
+        ...educationState.lab.sandbox,
+        activeLessonId: null,
+        selectedView: 'grid',
+        selectedFilterTag: null,
+        completedTaskIds: [],
+        generatedReceipts: {},
+        records: getResetLabRecords(),
+        updatedAt: now,
+      },
     },
   }
+}
+
+function applyRecordAction(records: SundeskLabRecord[], actionId: string): SundeskLabRecord[] {
+  if (actionId === 'tag-risk-row') {
+    return records.map((record) => record.id === 'fyre-permit-risk'
+      ? { ...record, tags: Array.from(new Set([...record.tags, 'Permit risk'])) }
+      : record)
+  }
+
+  if (actionId === 'edit-permit-status') {
+    return records.map((record) => record.id === 'fyre-permit-risk' ? { ...record, status: 'Blocked' } : record)
+  }
+
+  if (actionId === 'add-weather-row' && !records.some((record) => record.id === 'fyre-weather-comms')) {
+    return [
+      ...records,
+      {
+        id: 'fyre-weather-comms',
+        table: 'work',
+        title: 'Weather comms update',
+        status: 'Open',
+        owner: 'Comms lead',
+        due: '2026-06-15',
+        tags: ['Weather'],
+        communityId: 'fyre-island-dock',
+        notes: 'Late source note added from the Lab.',
+        fake: true,
+      },
+    ]
+  }
+
+  if (actionId === 'link-permit-to-dock') {
+    return records.map((record) => record.id === 'fyre-permit-risk' ? { ...record, communityId: 'fyre-island-dock' } : record)
+  }
+
+  if (actionId === 'set-due-date-field') {
+    return records.map((record) => ({ ...record, notes: record.id === 'fyre-permit-risk' ? `${record.notes} Due is typed as date.` : record.notes }))
+  }
+
+  return records
+}
+
+function getSelectedViewForAction(actionId: string, currentView: string) {
+  const viewByAction: Record<string, string> = {
+    'view-kanban': 'kanban',
+    'view-calendar': 'calendar',
+    'view-graph': 'graph',
+  }
+
+  return viewByAction[actionId] || currentView
+}
+
+function getActionReceipt(module: SundeskLabModule, actionId: string, completedTaskIds: string[]) {
+  if (module.id === 'tags' && completedTaskIds.includes('tag-risk-row') && completedTaskIds.includes('filter-risk-tag')) {
+    return 'Permit risk route visible.'
+  }
+
+  const step = module.steps.find((item) => item.actionId === actionId)
+
+  return step?.expectedReceipt || module.expectedReceipt
+}
+
+function getResetLabRecords(): SundeskLabRecord[] {
+  return [
+    {
+      id: 'fyre-permit-risk',
+      table: 'work',
+      title: 'Permit risk memo',
+      status: 'Blocked',
+      owner: 'Operations',
+      due: '2026-06-11',
+      tags: ['Permit risk'],
+      communityId: 'fyre-island-dock',
+      notes: 'Permit status needs a visible owner before the weekly meeting.',
+      fake: true,
+    },
+    {
+      id: 'fyre-water-run',
+      table: 'work',
+      title: 'Water delivery run',
+      status: 'Waiting',
+      owner: 'Vendor lead',
+      due: '2026-06-12',
+      tags: ['Water', 'Waiting'],
+      communityId: 'fyre-catering-compound',
+      notes: 'Truck ETA is still missing.',
+      fake: true,
+    },
+    {
+      id: 'fyre-medical-tent',
+      table: 'work',
+      title: 'Medical tent setup',
+      status: 'In progress',
+      owner: 'Site lead',
+      due: '2026-06-13',
+      tags: ['Medical'],
+      communityId: 'fyre-medical-tent',
+      notes: 'Supply list needs one final pass.',
+      fake: true,
+    },
+    {
+      id: 'fyre-villa-keys',
+      table: 'work',
+      title: 'Villa key handoff',
+      status: 'Open',
+      owner: 'Guest ops',
+      due: '2026-06-14',
+      tags: ['Artist arrivals'],
+      communityId: 'fyre-villa-ridge',
+      notes: 'Keys are not matched to arrival windows yet.',
+      fake: true,
+    },
+    {
+      id: 'fyre-weekly-meeting',
+      table: 'meetings',
+      title: 'Weekly island readiness',
+      status: 'Draft',
+      owner: 'Lindsay',
+      due: '2026-06-10',
+      tags: ['Meeting prep'],
+      communityId: 'fyre-island-dock',
+      notes: 'Prep from blocked work, waiting work, and readiness notes.',
+      fake: true,
+    },
+  ]
 }

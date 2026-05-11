@@ -275,12 +275,12 @@ function cloneBuildViewState(state: StoredBuildViewState): StoredBuildViewState 
 function getDefaultBuildViewState(): StoredBuildViewState {
   return {
     version: 1,
-    selectedBuildTableId: 'risks',
+    selectedBuildTableId: 'tasks',
     visibleFieldIdsByTable: cloneStringArrayRecord(defaultVisibleFieldIdsByTable),
     gridFilter: '',
     gridSortFieldId: 'title',
     gridSortDirection: 'asc',
-    gridGroupFieldId: 'level',
+    gridGroupFieldId: '',
     gridColorFieldId: '',
     gridDensity: 'comfortable',
     localGridViews: [],
@@ -358,12 +358,12 @@ function normalizeStoredBuildViewState(value: unknown): { buildViewState: Stored
 
   const buildViewState: StoredBuildViewState = {
     version: 1,
-    selectedBuildTableId: typeof value.selectedBuildTableId === 'string' ? value.selectedBuildTableId : 'risks',
+    selectedBuildTableId: typeof value.selectedBuildTableId === 'string' ? value.selectedBuildTableId : 'tasks',
     visibleFieldIdsByTable: normalizeStringArrayRecord(value.visibleFieldIdsByTable),
     gridFilter: typeof value.gridFilter === 'string' ? value.gridFilter : '',
     gridSortFieldId: typeof value.gridSortFieldId === 'string' ? value.gridSortFieldId : 'title',
     gridSortDirection: value.gridSortDirection === 'desc' ? 'desc' : 'asc',
-    gridGroupFieldId: typeof value.gridGroupFieldId === 'string' ? value.gridGroupFieldId : 'level',
+    gridGroupFieldId: typeof value.gridGroupFieldId === 'string' ? value.gridGroupFieldId : '',
     gridColorFieldId: typeof value.gridColorFieldId === 'string' ? value.gridColorFieldId : '',
     gridDensity: value.gridDensity === 'compact' || value.gridDensity === 'expanded' ? value.gridDensity : 'comfortable',
     localGridViews: Array.isArray(value.localGridViews) ? value.localGridViews.filter(isLocalGridView) : [],
@@ -380,6 +380,14 @@ function normalizeStoredBuildViewState(value: unknown): { buildViewState: Stored
 
 function normalizeStoredWorkbase(base: Workbase) {
   const defaultBase = cloneWorkbase(workbase)
+  const hasLegacyCommunitySeed = base.records.some((record) =>
+    ['community_halifax', 'community_moncton', 'community_charlottetown'].includes(record.id),
+  )
+
+  if (hasLegacyCommunitySeed) {
+    return { base: defaultBase, reset: true }
+  }
+
   const tables = base.tables
     .filter((table) =>
       typeof table.id === 'string' &&

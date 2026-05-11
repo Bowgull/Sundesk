@@ -42,15 +42,15 @@ export const themes = [
     },
   },
   {
-    label: 'Coast',
+    label: 'Moss Paper',
     value: 'coast',
     swatch: {
-      background: 'linear-gradient(135deg, #cdeafb, #f6b8c7 52%, #ffe5ad)',
-      panel: '#ffffff',
-      text: '#173247',
-      accent: '#4ba7d0',
-      status: '#f19aa2',
-      primary: '#53639a',
+      background: 'linear-gradient(135deg, #f5ecd8, #d9dfbd 52%, #5f7a4a)',
+      panel: '#fff8e6',
+      text: '#22301d',
+      accent: '#6f7f3f',
+      status: '#c9824b',
+      primary: '#314a2c',
     },
   },
   {

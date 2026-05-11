@@ -57,16 +57,16 @@ export function RecordFieldInput({
         <div className="linked-record-picker" data-onboarding-target="linked-record-cell">
           <div className="linked-picker-head">
             <div>
-              <strong>{linkedTable ? linkedTable.label : 'No linked table'}</strong>
+              <strong>{linkedTable ? linkedTable.label : 'No connected area'}</strong>
               <small>{field.allowMultiple ? `${selectedLinkedIds.length} selected` : selectedLinkedIds.length > 0 ? '1 selected' : 'None selected'}</small>
             </div>
-            {linkedTable && <small>{linkedRecords.length} records</small>}
+            {linkedTable && <small>{linkedRecords.length} items</small>}
           </div>
           {field.linkedTableId ? (
             <>
               <input
                 aria-label={`Search ${field.label}`}
-                placeholder={`Search ${linkedTable?.label || 'records'}`}
+                placeholder={`Search ${linkedTable?.label || 'items'}`}
                 type="search"
                 value={searchTerm}
                 onChange={(event) =>
@@ -96,8 +96,8 @@ export function RecordFieldInput({
                 </div>
               )}
               <div className="linked-choice-grid">
-                {linkedRecords.length === 0 && <small>Add a record in the linked table.</small>}
-                {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
+                {linkedRecords.length === 0 && <small>Add an item in the connected area.</small>}
+                {linkedRecords.length > 0 && filteredLinkedRecords.length === 0 && <small>No items match. Change the search.</small>}
                 {filteredLinkedRecords.map((record) => {
                   const isSelected = selectedLinkedIds.includes(record.id)
 
@@ -117,7 +117,7 @@ export function RecordFieldInput({
               </div>
             </>
           ) : (
-            <p className="empty-note">Choose a linked table in field settings.</p>
+            <p className="empty-note">Choose a connected area in column settings.</p>
           )}
         </div>
       </label>

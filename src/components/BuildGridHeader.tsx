@@ -48,19 +48,19 @@ export function BuildGridHeader({
         }}
       >
         <span>{field.label}</span>
-        {isPrimaryField && <small>Name field</small>}
+        {isPrimaryField && <small>Name column</small>}
         <strong>⌄</strong>
       </button>
       {openFieldMenuId === menuKey && (
-        <div className="grid-field-menu" id={menuId} role="menu" aria-label={`${field.label} field actions`}>
-          <button role="menuitem" type="button" onClick={() => onOpenFieldSettings(field)}>Edit field</button>
+        <div className="grid-field-menu" id={menuId} role="menu" aria-label={`${field.label} column actions`}>
+          <button role="menuitem" type="button" onClick={() => onOpenFieldSettings(field)}>Edit column</button>
           <button role="menuitem" type="button" onClick={() => onOpenFieldSettings(field)}>Rename</button>
-          <button role="menuitem" type="button" onClick={() => onOpenFieldSettings(field)}>Change type</button>
-          <button role="menuitem" type="button" onClick={() => onToggleVisibleField(field.id)}>Hide from view</button>
+          <button role="menuitem" type="button" onClick={() => onOpenFieldSettings(field)}>Change behavior</button>
+          <button role="menuitem" type="button" onClick={() => onToggleVisibleField(field.id)}>Hide from scan</button>
           <button role="menuitem" type="button" onClick={() => onSortGridByField(field.id, 'asc')}>Sort ascending</button>
           <button role="menuitem" type="button" onClick={() => onSortGridByField(field.id, 'desc')}>Sort descending</button>
-          <button role="menuitem" type="button" onClick={() => onGroupGridByField(field.id)}>Group by this field</button>
-          <button role="menuitem" type="button" onClick={() => onDuplicateField(field)}>Duplicate field</button>
+          <button role="menuitem" type="button" onClick={() => onGroupGridByField(field.id)}>Group by this column</button>
+          <button role="menuitem" type="button" onClick={() => onDuplicateField(field)}>Duplicate column</button>
           <button
             className="danger menu-danger"
             disabled={isPrimaryField}
@@ -68,7 +68,7 @@ export function BuildGridHeader({
             type="button"
             onClick={() => onRequestDeleteField(field)}
           >
-            Delete field
+            Delete column
           </button>
         </div>
       )}

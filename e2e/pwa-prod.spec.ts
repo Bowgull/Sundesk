@@ -4,6 +4,9 @@ const productionPreviewUrl = 'http://127.0.0.1:5177'
 
 test('production preview registers the Sundesk offline shell and icons', async ({ page }) => {
   await page.goto(productionPreviewUrl)
+  if (await page.getByTestId('onboarding-choice').isVisible()) {
+    await page.getByRole('button', { name: 'Start on my own' }).click()
+  }
   await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
 
   const serviceWorkerScript = await page.waitForFunction(async () => {

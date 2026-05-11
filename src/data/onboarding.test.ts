@@ -77,9 +77,21 @@ describe('onboarding flow', () => {
     expect(fieldTypesStep?.body).toContain('Date: Due dates, meetings, follow-ups, expiry dates, renewal dates, and timelines.')
     expect(fieldTypesStep?.body).toContain('Status: One current stage, like Not started, Waiting, In review, or Done.')
     expect(fieldTypesStep?.body).toContain('Checkbox: Yes or no tracking, like sent, approved, received, urgent, or needs follow-up.')
-    expect(fieldTypesStep?.body).toContain('Tags: Multiple labels on one record, so a task can be Waiting, COI, Steph, and Friday all at once.')
-    expect(fieldTypesStep?.body).toContain('Link: A connection to another table, like a task connected to a community, person, meeting, or document.')
-    expect(fieldTypesStep?.body).toContain('Lookup: Information pulled from a linked record so she does not retype it.')
-    expect(fieldTypesStep?.body).toContain('Rollup: A calculated summary from linked records, like count, total, earliest date, latest date, or open items.')
+    expect(fieldTypesStep?.body).toContain('Tags: Multiple labels on one item, so a task can be Waiting, COI, Steph, and Friday all at once.')
+    expect(fieldTypesStep?.body).toContain('Connection: A tie to another area, like a task connected to a community, person, meeting, or document.')
+    expect(fieldTypesStep?.body).toContain('Lookup: Information pulled from connected work so she does not retype it.')
+    expect(fieldTypesStep?.body).toContain('Rollup: A calculated summary from connected work, like count, total, earliest date, latest date, or open items.')
+  })
+
+  it('points onboarding to the lab route with Sundesk Lab copy', () => {
+    expect(getOnboardingStep('lab')).toMatchObject({
+      id: 'lab',
+      title: 'Sundesk Lab',
+      targetId: 'nav-sundesk-lab',
+      requiredAction: 'targetClick',
+      screen: 'lab',
+      actionId: 'view-lab-placeholder',
+      actionHint: 'Click Sundesk Lab in the sidebar.',
+    })
   })
 })

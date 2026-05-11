@@ -63,17 +63,17 @@ export function TasksScreen({
       <article className="screen-panel">
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Dependencies</span>
+            <span className="eyebrow">Blockers</span>
             <h2>What blocks what.</h2>
           </div>
           <button disabled={!selectedTask} type="button" onClick={() => selectedTask && onOpenRecord(selectedTask)}>
-            Open dependency editor
+            Open blocker details
           </button>
         </div>
         <div className="dependency-list">
           {selectedTaskDependencies.map((dependency) => (
             <article key={dependency.id}>
-              <strong>{getDependencyLabel(dependency, 'task_coi_halifax')} {dependency.record.title}</strong>
+              <strong>{getDependencyLabel(dependency, 'task_permit_toronto')} {dependency.record.title}</strong>
               <span>{dependency.record.tableLabel}</span>
               <small>{dependency.reason}</small>
             </article>

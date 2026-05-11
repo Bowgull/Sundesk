@@ -24,6 +24,7 @@ type BuildGridCellProps = {
   isComputedField: (field: FieldDefinition) => boolean
   linkedRecordFilters: Record<string, string>
   onEditorKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLDivElement>) => void
+  onQuickUpdate: (recordId: string, fieldId: string, value: RecordValue) => void
   onSavedKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLButtonElement>) => void
   record: BaseRecord
   renderCheckboxIcon: (icon: FieldDefinition['checkboxIcon']) => ReactNode
@@ -85,6 +86,7 @@ export function BuildGridCell({
   isComputedField,
   linkedRecordFilters,
   onEditorKeyDown,
+  onQuickUpdate,
   onSavedKeyDown,
   record,
   renderCheckboxIcon,
@@ -230,13 +232,13 @@ export function BuildGridCell({
       return (
         <div className="grid-linked-editor" aria-label={`${field.label} editor`}>
           <div className="grid-linked-editor-head">
-            <strong>{getLinkedTableLabel(field.linkedTableId) || 'Linked records'}</strong>
+            <strong>{getLinkedTableLabel(field.linkedTableId) || 'Connected work'}</strong>
             <small>{selectedLinkedIds.length} selected</small>
           </div>
           <input
             autoFocus
             aria-label={`Search ${field.label}`}
-            placeholder="Search records"
+            placeholder="Search items"
             type="search"
             value={searchTerm}
             onChange={(event) =>
@@ -261,7 +263,7 @@ export function BuildGridCell({
             </div>
           )}
           <div className="grid-linked-pills">
-            {filteredLinkedRecords.length === 0 && <small>No records match. Change the search.</small>}
+            {filteredLinkedRecords.length === 0 && <small>No items match. Change the search.</small>}
             {filteredLinkedRecords.map((linkedRecord) => {
               const isSelectedLinkedRecord = selectedLinkedIds.includes(linkedRecord.id)
 
@@ -336,6 +338,9 @@ export function BuildGridCell({
         }
         selectGridCell(record.id, field.id)
         setSelectedBuildRecordId(record.id)
+        if (field.type === 'checkbox' && !isReadonly) {
+          onQuickUpdate(record.id, field.id, !record.values[field.id])
+        }
       }}
       onDoubleClick={(event) => {
         event.stopPropagation()

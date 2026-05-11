@@ -115,12 +115,12 @@ export function RecordDrawer({
     <section className={drawerClassName} data-testid="record-drawer" id="record">
       <div className="drawer-header">
         <div>
-          <span className="eyebrow">{selectedTableLabel || 'Record'}</span>
-          <h2>{selectedRecord ? getRecordTitle(base, selectedRecord) : 'Select a record'}</h2>
+          <span className="eyebrow">{selectedTableLabel || 'Item'}</span>
+          <h2>{selectedRecord ? getRecordTitle(base, selectedRecord) : 'Select an item'}</h2>
         </div>
         <div className="drawer-actions">
-          <span className="metric-pill">{drawerBacklinks.length} backlinks</span>
-          <span className="metric-pill">{drawerLinkedRecords.length} links out</span>
+          <span className="metric-pill">{drawerBacklinks.length} incoming</span>
+          <span className="metric-pill">{drawerLinkedRecords.length} connected</span>
           {!activeScreenIsBuild && (
             <button className="ghost" type="button" onClick={onClose}>Close</button>
           )}
@@ -129,10 +129,10 @@ export function RecordDrawer({
 
       {selectedRecord ? (
         <>
-          <div className="drawer-status-strip" aria-label="Record status">
+          <div className="drawer-status-strip" aria-label="Item status">
             <span>{drawerStatusText}</span>
             <strong>{drawerDateText}</strong>
-            <small>{drawerLinkedRecords.length} linked. {drawerBacklinks.length} backlinks. {drawerDependencies.length} dependencies.</small>
+            <small>{drawerLinkedRecords.length} connected. {drawerBacklinks.length} incoming. {drawerDependencies.length} blockers.</small>
           </div>
 
           {selectedRecord.tableId === 'communities' && (
@@ -164,7 +164,7 @@ export function RecordDrawer({
                     <small>{getPickerRecordMeta(drawerCommunityNextAction)}</small>
                   </button>
                 ) : (
-                  <p className="empty-line">Add linked work, waiting, risk, or meeting rows.</p>
+                  <p className="empty-line">Add work, waiting, risks, or meetings.</p>
                 )}
               </div>
             </section>
@@ -175,7 +175,7 @@ export function RecordDrawer({
               <article className="field-strip" key={field.id}>
                 <span>{field.label}</span>
                 <strong>{getFieldDisplayValue(selectedRecord, field)}</strong>
-                <small className="field-type-chip">{field.type}</small>
+                <small className="field-type-chip">Detail</small>
               </article>
             ))}
           </div>
@@ -185,7 +185,7 @@ export function RecordDrawer({
           <div className="record-section-grid">
             <section>
               <div className="mini-title">
-                <strong>Fields</strong>
+                <strong>Details</strong>
               </div>
               <div className="record-form">
                 {editableFieldsForSelectedTable.map((field) => (
@@ -198,10 +198,10 @@ export function RecordDrawer({
 
             <section>
               <div className="mini-title">
-                <strong>Linked records</strong>
+                <strong>Connected work</strong>
               </div>
               <div className="linked-list">
-                {drawerLinkedRecords.length === 0 && <p className="empty-line">No linked records selected.</p>}
+                {drawerLinkedRecords.length === 0 && <p className="empty-line">Nothing connected yet.</p>}
                 {drawerLinkedRecords.map((link) => (
                   <button
                     className="linked-record-card"
@@ -221,10 +221,10 @@ export function RecordDrawer({
           <div className="record-section-grid">
             <section>
               <div className="mini-title">
-                <strong>Backlinks</strong>
+                <strong>Related here</strong>
               </div>
               <div className="linked-list">
-                {drawerBacklinks.length === 0 && <p className="empty-line">No records point here.</p>}
+                {drawerBacklinks.length === 0 && <p className="empty-line">Nothing points here yet.</p>}
                 {drawerBacklinks.map((backlink) => (
                   <button
                     className="linked-record-card"
@@ -242,11 +242,11 @@ export function RecordDrawer({
 
             <section className="why-card">
               <div className="mini-title">
-                <strong>Dependencies</strong>
+                <strong>Blockers</strong>
               </div>
               <div className="dependency-editor" data-testid="dependency-editor">
                 <label>
-                  <span>Relationship</span>
+                  <span>Blocker type</span>
                   <select
                     value={dependencyDraft.relationship}
                     onChange={(event) =>
@@ -261,9 +261,9 @@ export function RecordDrawer({
                   </select>
                 </label>
                 <label>
-                  <span>Find record</span>
+                  <span>Find item</span>
                   <input
-                    placeholder="Search records"
+                    placeholder="Search items"
                     type="search"
                     value={dependencySearch}
                     onChange={(event) => onSetDependencySearch(event.target.value)}
@@ -276,11 +276,11 @@ export function RecordDrawer({
                     onClick={() => onSetDependencyDraft((current) => ({ ...current, toRecordId: '' }))}
                   >
                     <strong>{getRecordTitle(base, selectedDependencyTargetRecord)}</strong>
-                    <small>Clear selected record</small>
+                    <small>Clear selected item</small>
                   </button>
                 )}
                 <div className="dependency-picker-list">
-                  {dependencyPickerRecords.length === 0 && <p className="empty-note">No records match. Change the search.</p>}
+                  {dependencyPickerRecords.length === 0 && <p className="empty-note">No items match. Change the search.</p>}
                   {dependencyPickerRecords.slice(0, 6).map((record) => {
                     const table = base.tables.find((tableItem) => tableItem.id === record.tableId)
                     const isSelected = dependencyDraft.toRecordId === record.id
@@ -304,11 +304,11 @@ export function RecordDrawer({
                     rows={3}
                     value={dependencyDraft.reason}
                     onChange={(event) => onSetDependencyDraft((current) => ({ ...current, reason: event.target.value }))}
-                    placeholder="Why this link matters"
+                    placeholder="Why this matters"
                   />
                 </label>
                 <button className="primary" disabled={!dependencyDraft.toRecordId} type="button" onClick={onCreateDependency}>
-                  Add dependency
+                  Add blocker
                 </button>
               </div>
               {drawerDependencies.length > 0 ? (
@@ -326,7 +326,7 @@ export function RecordDrawer({
                         <span>{dependency.record.tableLabel}</span>
                       </div>
                       <label>
-                        <span>Type</span>
+                        <span>Blocker type</span>
                         <select
                           value={dependency.relationship}
                           onChange={(event) =>
@@ -346,20 +346,20 @@ export function RecordDrawer({
                         />
                       </label>
                       <div className="dependency-row-actions">
-                        <button type="button" onClick={() => onFlipDependencyDirection(dependency.id)}>Flip direction</button>
+                        <button type="button" onClick={() => onFlipDependencyDirection(dependency.id)}>Swap direction</button>
                         <button className="danger" type="button" onClick={() => onDeleteDependency(dependency.id)}>Remove</button>
                       </div>
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="empty-line">No dependency links for this record.</p>
+                <p className="empty-line">No blockers for this item.</p>
               )}
             </section>
           </div>
         </>
       ) : (
-        <p className="empty-note">Create a record in Build to edit it here.</p>
+        <p className="empty-note">Create an item in Build to edit it here.</p>
       )}
     </section>
   )

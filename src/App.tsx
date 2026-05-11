@@ -8,9 +8,6 @@ import { BuildGridCell } from './components/BuildGridCell'
 import { BuildGridHeader } from './components/BuildGridHeader'
 import { BuildModals } from './components/BuildModals'
 import { BuildPasteHelper } from './components/BuildPasteHelper'
-import { BuildRulesPanel } from './components/BuildRulesPanel'
-import { BuildToolbar } from './components/BuildToolbar'
-import { BuildViewsPanel } from './components/BuildViewsPanel'
 import { CommunitiesScreen } from './components/CommunitiesScreen'
 import { MeetingPrepPanel } from './components/MeetingPrepPanel'
 import { MeetingsScreen } from './components/MeetingsScreen'
@@ -26,14 +23,17 @@ import { TimelineScreen } from './components/TimelineScreen'
 import { TodayScreen } from './components/TodayScreen'
 import { WaitingOnScreen } from './components/WaitingOnScreen'
 import {
-  savedViews,
-} from './data/demoData'
-import {
   readSundeskEducationState,
   type SundeskEducationState,
   writeSundeskEducationState,
 } from './data/educationState'
 import { type CopyEntryId, getCopyModeText } from './data/copyMode'
+import {
+  coerceBuildPasteCellValue,
+  getBuildPasteOptionUpdates,
+  getBuildPasteOverflowColumns,
+  parseBuildPasteRows,
+} from './data/buildPaste'
 import {
   buildMeetingAgendaPdfExport,
   buildMeetingNotePdfExport,
@@ -47,7 +47,6 @@ import {
   restartOnboarding,
   startOnboarding,
 } from './data/onboarding'
-import { exportTableCsv } from './data/tableExport'
 import {
   type DependencyRelationship,
   getDependencySummary as getDependencySummaryForBase,
@@ -101,6 +100,7 @@ import {
 } from './data/localStorage'
 import {
   completeSundeskLabModuleStep,
+  applySundeskLabAction,
   resetSundeskLabModuleProgress,
   resetSundeskLabProgress,
   startSundeskLabModule,
@@ -112,11 +112,7 @@ import {
   getFieldDisplayValue as getRecordFieldDisplayValue,
   getFirstDateValue,
   getNumberValue,
-  getRuleMatchCount as getRuleMatchCountForBase,
-  getRuleMatchedRecords as getRuleMatchedRecordsForBase,
-  getRuleOperatorOptionsForField,
   getRulePreview as getRulePreviewForBase,
-  getRuleValidationMessages as getRuleValidationMessagesForBase,
   getStringValue,
   ruleOperatorOptions,
   ruleOperatorNeedsValue,
@@ -145,7 +141,6 @@ import {
 import {
   getBuildTableRows,
   getBuildGridDerivation,
-  getDailyTimelineRecords,
   getDependencyPickerRecords,
   getLocalEngineStats,
   getMeetingAgendaText,
@@ -176,11 +171,11 @@ const fieldTypeOptions: { label: string; value: FieldType }[] = [
   { label: 'Rating', value: 'rating' },
   { label: 'Phone', value: 'phone' },
   { label: 'URL', value: 'url' },
-  { label: 'Linked record', value: 'linkedRecord' },
+  { label: 'Connection', value: 'linkedRecord' },
   { label: 'Lookup', value: 'lookup' },
   { label: 'Rollup', value: 'rollup' },
   { label: 'Count', value: 'count' },
-  { label: 'System formula', value: 'systemFormula' },
+  { label: 'Sundesk note', value: 'systemFormula' },
   { label: 'Created time', value: 'createdTime' },
   { label: 'Last updated time', value: 'lastUpdatedTime' },
 ]
@@ -190,8 +185,8 @@ const fieldBehaviorOptions: { label: string; value: FieldType; description: stri
   { label: 'Track status', value: 'status', description: 'A short workflow state that can surface work in Today.' },
   { label: 'Add tags', value: 'multiSelect', description: 'Reusable marks for grouping, routing, and filtering.' },
   { label: 'Set a date', value: 'date', description: 'A deadline or event date the command center can watch.' },
-  { label: 'Link rows', value: 'linkedRecord', description: 'Connect this row to a community, person, meeting, or other table.' },
-  { label: 'Read from links', value: 'lookup', description: 'Show a value from a linked record without retyping it.' },
+  { label: 'Connect work', value: 'linkedRecord', description: 'Connect this item to a community, person, meeting, or other area.' },
+  { label: 'Reuse a detail', value: 'lookup', description: 'Show a connected detail without retyping it.' },
 ]
 
 const optionFieldTypes: FieldType[] = ['status', 'singleSelect', 'multiSelect']
@@ -258,16 +253,6 @@ function toSlug(value: string) {
     .replace(/^_+|_+$/g, '')
 
   return slug || 'local_item'
-}
-
-function toFileSlug(value: string) {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-
-  return slug || 'local-table'
 }
 
 function getUniqueSlug(baseId: string, existingIds: string[]) {
@@ -370,6 +355,11 @@ function App() {
   const allowedAuthEmails = useMemo(() => getAllowedEmailsFromEnv(), [])
   const authRequired = useMemo(() => hasFirebaseConfig() || allowedAuthEmails.length > 0, [allowedAuthEmails.length])
   const [initialBuildViewState] = useState(() => readStoredBuildViewState())
+  const initialSelectedBuildTableId = initialBuildViewState.selectedBuildTableId === 'risks' &&
+    !initialBuildViewState.activeGridViewId &&
+    !initialBuildViewState.gridFilter
+    ? 'tasks'
+    : initialBuildViewState.selectedBuildTableId || 'tasks'
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>(
     () => {
       const storedTheme = localStorage.getItem('sundesk-theme')
@@ -399,11 +389,10 @@ function App() {
   const [localRules, setLocalRules] = useState<LocalRule[]>(() => readStoredRules())
   const [educationState, setEducationState] = useState<SundeskEducationState>(() => readSundeskEducationState())
   const [localBackupRehearsed, setLocalBackupRehearsed] = useState(() => readLocalBackupRehearsed())
-  const [expandedRuleId, setExpandedRuleId] = useState('')
   const [initialMigrationReport] = useState<StoredMigrationReport>(() => ({ ...storedMigrationReport }))
   const [todayDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [selectedBuildTableId, setSelectedBuildTableId] = useState(
-    () => initialBuildViewState.selectedBuildTableId || 'risks',
+    () => initialSelectedBuildTableId,
   )
   const [tableDraft, setTableDraft] = useState({
     label: '',
@@ -425,7 +414,7 @@ function App() {
     sourceFieldId: '',
   })
   const [recordDraft, setRecordDraft] = useState<Record<string, RecordValue>>(() => getEmptyRecordValues(workbase, 'tasks'))
-  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('risk_venue_halifax')
+  const [selectedBuildRecordId, setSelectedBuildRecordId] = useState('risk_permit_toronto')
   const [selectedCommunityDetailId, setSelectedCommunityDetailId] = useState('')
   const [communityLinkRecordId, setCommunityLinkRecordId] = useState('')
   const [communityNewLinkTableId, setCommunityNewLinkTableId] = useState('tasks')
@@ -439,7 +428,9 @@ function App() {
   const [gridFilter, setGridFilter] = useState(() => initialBuildViewState.gridFilter || '')
   const [gridSortFieldId, setGridSortFieldId] = useState(() => initialBuildViewState.gridSortFieldId || 'title')
   const [gridSortDirection, setGridSortDirection] = useState<GridSortDirection>(() => initialBuildViewState.gridSortDirection || 'asc')
-  const [gridGroupFieldId, setGridGroupFieldId] = useState(() => initialBuildViewState.gridGroupFieldId || 'level')
+  const [gridGroupFieldId, setGridGroupFieldId] = useState<string>(
+    () => initialBuildViewState.activeGridViewId ? initialBuildViewState.gridGroupFieldId || '' : '',
+  )
   const [gridColorFieldId, setGridColorFieldId] = useState(() => initialBuildViewState.gridColorFieldId || '')
   const [gridDensity, setGridDensity] = useState<GridDensity>(() => initialBuildViewState.gridDensity || 'comfortable')
   const [localGridViews, setLocalGridViews] = useState<LocalGridView[]>(() => initialBuildViewState.localGridViews || [])
@@ -452,11 +443,11 @@ function App() {
   const [editingGridCell, setEditingGridCell] = useState<GridCell | null>(null)
   const [gridEditDraft, setGridEditDraft] = useState<RecordValue>('')
   const [buildPasteReceipt, setBuildPasteReceipt] = useState('')
-  const [buildPasteCellCount, setBuildPasteCellCount] = useState(0)
   const [buildPasteSummary, setBuildPasteSummary] = useState<BuildPasteSummary | null>(null)
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
     () => initialBuildViewState.columnWidths || {},
   )
+  const [isAddFieldMenuOpen, setIsAddFieldMenuOpen] = useState(false)
   const [buildModal, setBuildModal] = useState<BuildModal>('')
   const [pendingDeleteTableId, setPendingDeleteTableId] = useState('')
   const [selectedFieldSettingsId, setSelectedFieldSettingsId] = useState('')
@@ -478,13 +469,13 @@ function App() {
   const [workspaceHydrated, setWorkspaceHydrated] = useState(!authRequired)
   const [workspaceStatus, setWorkspaceStatus] = useState(authRequired ? 'Sign in to load the shared workspace.' : 'Local workspace active.')
   const workspaceHydrationRef = useRef(!authRequired)
-  const selectedTask = getRecord(base, 'task_coi_halifax')
-  const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_coi_halifax')
-  const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_coi_halifax')
-  const selectedTaskDependencies = getDependencyReferencesForRecord(base, 'task_coi_halifax')
+  const selectedTask = getRecord(base, 'task_permit_toronto')
+  const selectedTaskLinks = getLinkedRecordsForRecord(base, 'task_permit_toronto')
+  const selectedTaskBacklinks = getBacklinksForRecord(base, 'task_permit_toronto')
+  const selectedTaskDependencies = getDependencyReferencesForRecord(base, 'task_permit_toronto')
   const recordPickerItems = getRecordReferences(base).slice(0, 8)
   const materializedLinks = getMaterializedLinks(base)
-  const taskCommunityEventDate = getLookupPreview(base, 'task_coi_halifax', 'communityEventDate')
+  const taskCommunityEventDate = getLookupPreview(base, 'task_permit_toronto', 'communityEventDate')
   const buildTableRows = getBuildTableRows(base)
   const selectedBuildTable = base.tables.find((table) => table.id === selectedBuildTableId) || base.tables[0]
   const fieldsForSelectedTable = base.fields.filter((field) => field.tableId === selectedBuildTable?.id)
@@ -500,7 +491,6 @@ function App() {
   const nextMeetingRecord = sortRecordsByDate(meetingRecords)[0]
   const nextMeetingLinkedTasks = nextMeetingRecord ? getLinkedRecordsForRecord(base, nextMeetingRecord.id).filter((link) => link.record.tableId === 'tasks') : []
   const nextMeetingPrep = nextMeetingRecord ? getMeetingPrep(base, nextMeetingRecord.id, todayDate) : null
-  const dailyTimelineRecords = getDailyTimelineRecords(base)
   const timelineSourceRecords = getTimelineSourceRecords(base)
   const timelineStatusOptions = getTimelineStatusOptions(timelineSourceRecords)
   const timelineRecords = getTimelineRecords(base, timelineSourceRecords, timelineTableId, timelineStatus, timelineFilter)
@@ -510,11 +500,11 @@ function App() {
   const timelineDependencyRecordCount = timelineRecords.filter((record) => getDependencySummary(record.id).length > 0).length
   const timelineRuleReadCount = timelineRecords.filter((record) => getTimelineRuleMatchesForRecord(record.id).length > 0).length
   const timelineViewQuestion = {
-    grid: 'Which rows need a clean read.',
-    kanban: 'Where is the work stuck.',
-    calendar: 'Which dates are carrying pressure.',
-    timeline: 'Which places are ready before event day.',
-    graph: 'Why is this place at risk.',
+    grid: 'What needs a clean read.',
+    kanban: 'Where work is stuck.',
+    calendar: 'What is getting close.',
+    timeline: 'What must land before event day.',
+    graph: 'Why this place is at risk.',
   }[timelineView]
   const todayLanes = getTodayLanes(base, todayRuleMatches)
   const todayNowLane = todayLanes.find((lane) => lane.id === 'now')
@@ -534,6 +524,13 @@ function App() {
     meetingPrepCount: nextMeetingPrep?.agenda.length ?? nextMeetingLinkedTasks.length,
   })
   const screenStats = getScreenStats(base)
+  const railNavCounts: Partial<Record<AppScreen, number>> = {
+    today: todayChangedRecords.length,
+    communities: communityRecords.length,
+    followups: followupRecords.length,
+    meetings: meetingRecords.length,
+    timeline: timelineSourceRecords.length,
+  }
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
   const buildGridDerivation = getBuildGridDerivation(
@@ -665,17 +662,6 @@ function App() {
     selectedBuildTable && selectedBuildTable.id !== 'communities' && buildTableRows.length > 1,
   )
   const settingsField = fieldsForSelectedTable.find((field) => field.id === selectedFieldSettingsId)
-  const tagRouteOptions = Array.from(
-    new Set(
-      recordsForSelectedTable.flatMap((record) =>
-        fieldsForSelectedTable.flatMap((field) => {
-          const value = record.values[field.id]
-
-          return field.type === 'multiSelect' && Array.isArray(value) ? value.map(String) : []
-        }),
-      ),
-    ),
-  )
   const timelineTagRouteOptions = Array.from(
     timelineRecords.reduce((routes, record) => {
       getRecordWorkflowTags(record).forEach((tag) => {
@@ -783,6 +769,11 @@ function App() {
     showToast('Lab step marked done.')
   }
 
+  function applyLabAction(moduleId: string, actionId: string) {
+    updateEducationState((current) => applySundeskLabAction(current, sundeskLabModules, moduleId, actionId))
+    showToast('Lab receipt updated.')
+  }
+
   function resetLabProgress() {
     updateEducationState((current) => resetSundeskLabProgress(current))
     showToast('Lab sample data reset.')
@@ -793,12 +784,12 @@ function App() {
   }
 
   function applyRemoteBuildViewState(buildViewState: StoredBuildViewState) {
-    setSelectedBuildTableId(buildViewState.selectedBuildTableId || 'risks')
+    setSelectedBuildTableId(buildViewState.selectedBuildTableId || 'tasks')
     setVisibleFieldIdsByTable(buildViewState.visibleFieldIdsByTable || defaultVisibleFieldIdsByTable)
     setGridFilter(buildViewState.gridFilter || '')
     setGridSortFieldId(buildViewState.gridSortFieldId || 'title')
     setGridSortDirection(buildViewState.gridSortDirection || 'asc')
-    setGridGroupFieldId(buildViewState.gridGroupFieldId || 'level')
+    setGridGroupFieldId(buildViewState.activeGridViewId ? buildViewState.gridGroupFieldId : '')
     setGridColorFieldId(buildViewState.gridColorFieldId || '')
     setGridDensity(buildViewState.gridDensity || 'comfortable')
     setLocalGridViews(buildViewState.localGridViews || [])
@@ -939,23 +930,6 @@ function App() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     showToast('Local backup exported.')
-  }
-
-  function exportBuildCsv() {
-    const csv = exportTableCsv(base, visibleFieldsForGrid, sortedAndFilteredRecords)
-    const tableName = selectedBuildTable?.label || selectedBuildTable?.id || 'build'
-    const fileName = `sundesk-${toFileSlug(tableName)}.csv`
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    showToast(`CSV exported: ${fileName}.`)
   }
 
   function applyLocalBackupFile(file: File) {
@@ -1217,7 +1191,7 @@ function App() {
     setGridFilter('')
     setGridSortFieldId(nextBuildTable.primaryFieldId)
     setGridSortDirection('asc')
-    setGridGroupFieldId(base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '')
+    setGridGroupFieldId('')
     setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, nextBuildTable.id))
@@ -1231,7 +1205,7 @@ function App() {
       gridFilter: '',
       gridSortFieldId: nextBuildTable.primaryFieldId,
       gridSortDirection: 'asc',
-      gridGroupFieldId: base.fields.find((field) => field.tableId === nextBuildTable.id && field.id === 'status')?.id || '',
+      gridGroupFieldId: '',
       gridColorFieldId: '',
       localGridViews: nextGridViews,
       viewRenameDrafts: nextDrafts,
@@ -1294,23 +1268,24 @@ function App() {
 
       return nextBase
     })
-    if (!computedFieldTypes.includes(field.type)) {
-      const nextVisibleFieldIds = [...(visibleFieldIdsByTable[tableId] || getDefaultVisibleFieldIds(fieldsForSelectedTable)), field.id]
+    const nextVisibleFieldIds = [...(visibleFieldIdsByTable[tableId] || getDefaultVisibleFieldIds(fieldsForSelectedTable)), field.id]
 
+    if (!computedFieldTypes.includes(field.type)) {
       setRecordDraft((current) => ({
         ...current,
         [field.id]: getEmptyFieldValue(field.type),
       }))
-      setVisibleFieldIdsByTable((current) => ({
-        ...current,
-        [tableId]: nextVisibleFieldIds,
-      }))
-      writeBuildViewState({
-        visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
-      })
     }
+    setVisibleFieldIdsByTable((current) => ({
+      ...current,
+      [tableId]: nextVisibleFieldIds,
+    }))
+    writeBuildViewState({
+      visibleFieldIdsByTable: { ...visibleFieldIdsByTable, [tableId]: nextVisibleFieldIds },
+    })
     setFieldDraft((current) => ({ ...current, label: '' }))
-    showToast('Field added.')
+    setIsAddFieldMenuOpen(false)
+    showToast('Column added.')
     closeBuildModal()
   }
 
@@ -1322,11 +1297,27 @@ function App() {
     }
 
     setBase((current) => {
+      const currentField = current.fields.find((field) => field.tableId === tableId && field.id === fieldId)
+      const nextField = currentField ? { ...currentField, ...updates } : null
+      const shouldMigrateValues = Boolean(currentField && nextField && updates.type && updates.type !== currentField.type)
       const nextBase = {
         ...current,
         fields: current.fields.map((field) =>
           field.tableId === tableId && field.id === fieldId ? { ...field, ...updates } : field,
         ),
+        records: shouldMigrateValues && nextField
+          ? current.records.map((record) =>
+              record.tableId === tableId && Object.prototype.hasOwnProperty.call(record.values, fieldId)
+                ? {
+                    ...record,
+                    values: {
+                      ...record.values,
+                      [fieldId]: coerceStoredFieldValue(nextField, record.values[fieldId]),
+                    },
+                  }
+                : record,
+            )
+          : current.records,
       }
 
       writeWorkbaseState(nextBase)
@@ -1426,7 +1417,7 @@ function App() {
     setGridFilter('')
     setGridSortFieldId(base.tables.find((table) => table.id === tableId)?.primaryFieldId || '')
     setGridSortDirection('asc')
-    setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setGridGroupFieldId('')
     setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
@@ -1445,7 +1436,7 @@ function App() {
     setGridFilter('')
     setGridSortFieldId(table.primaryFieldId)
     setGridSortDirection('asc')
-    setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setGridGroupFieldId('')
     setGridColorFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
@@ -1643,204 +1634,6 @@ function App() {
     }
   }
 
-  function updateGridView(viewId: string) {
-    if (!selectedBuildTable) {
-      return
-    }
-
-    const nextGridViews = localGridViews.map((view) =>
-      view.id === viewId
-        ? {
-            ...view,
-            tableId: selectedBuildTable.id,
-            filter: gridFilter,
-            sortFieldId: gridSortFieldId,
-            sortDirection: gridSortDirection,
-            groupFieldId: gridGroupFieldId,
-            colorFieldId: gridColorFieldId,
-            density: gridDensity,
-            visibleFieldIds,
-          }
-        : view,
-    )
-
-    setLocalGridViews((current) =>
-      current.map((view) =>
-        view.id === viewId
-          ? {
-              ...view,
-              tableId: selectedBuildTable.id,
-              filter: gridFilter,
-              sortFieldId: gridSortFieldId,
-              sortDirection: gridSortDirection,
-              groupFieldId: gridGroupFieldId,
-              colorFieldId: gridColorFieldId,
-              density: gridDensity,
-              visibleFieldIds,
-            }
-          : view,
-      ),
-    )
-    setActiveGridViewId(viewId)
-    writeBuildViewState({
-      localGridViews: nextGridViews,
-      activeGridViewId: viewId,
-    })
-    showToast('View updated.')
-  }
-
-  function togglePinnedGridView(viewId: string) {
-    const nextGridViews = localGridViews.map((view) => (view.id === viewId ? { ...view, pinned: !view.pinned } : view))
-
-    setLocalGridViews((current) =>
-      current.map((view) => (view.id === viewId ? { ...view, pinned: !view.pinned } : view)),
-    )
-    writeBuildViewState({ localGridViews: nextGridViews })
-  }
-
-  function duplicateGridView(view: LocalGridView) {
-    const copyCount = localGridViews.filter((gridView) => gridView.name.startsWith(`${view.name} copy`)).length + 1
-    const copyId = getUniqueSlug(
-      `${view.id}_copy_${copyCount}`,
-      localGridViews.map((gridView) => gridView.id),
-    )
-    const copy: LocalGridView = {
-      ...view,
-      id: copyId,
-      name: `${view.name} copy ${copyCount}`,
-      pinned: false,
-      visibleFieldIds: [...view.visibleFieldIds],
-    }
-
-    setLocalGridViews((current) => [copy, ...current])
-    setViewRenameDrafts((current) => ({ ...current, [copy.id]: copy.name }))
-    applyGridView(copy, {
-      localGridViews: [copy, ...localGridViews],
-      viewRenameDrafts: { ...viewRenameDrafts, [copy.id]: copy.name },
-    })
-  }
-
-  function resetActiveGridView() {
-    if (!activeGridView) {
-      return
-    }
-
-    applyGridView(activeGridView)
-  }
-
-  function renameGridView(viewId: string) {
-    const nextName = viewRenameDrafts[viewId]?.trim()
-
-    if (!nextName) {
-      return
-    }
-
-    setLocalGridViews((current) =>
-      current.map((view) => (view.id === viewId ? { ...view, name: nextName } : view)),
-    )
-    writeBuildViewState({
-      localGridViews: localGridViews.map((view) => (view.id === viewId ? { ...view, name: nextName } : view)),
-    })
-    showToast('View renamed.')
-  }
-
-  function deleteGridView(viewId: string) {
-    const nextGridViews = localGridViews.filter((view) => view.id !== viewId)
-    const nextDrafts = { ...viewRenameDrafts }
-
-    delete nextDrafts[viewId]
-    setLocalGridViews((current) => current.filter((view) => view.id !== viewId))
-    if (activeGridViewId === viewId) {
-      setActiveGridViewId('')
-    }
-    setViewRenameDrafts((current) => {
-      const nextDrafts = { ...current }
-      delete nextDrafts[viewId]
-
-      return nextDrafts
-    })
-    writeBuildViewState({
-      localGridViews: nextGridViews,
-      viewRenameDrafts: nextDrafts,
-      activeGridViewId: activeGridViewId === viewId ? '' : activeGridViewId,
-    })
-    showToast('View deleted.')
-  }
-
-  function updateViewRenameDraft(viewId: string, value: string) {
-    setViewRenameDrafts((current) => ({ ...current, [viewId]: value }))
-  }
-
-  function createLocalRule() {
-    setLocalRules((current) => {
-      const rule: LocalRule = {
-        id: `rule_${current.length + 1}_${selectedBuildTable?.id || 'tasks'}`,
-        tableId: selectedBuildTable?.id || 'tasks',
-        fieldId: fieldsForSelectedTable[0]?.id || 'title',
-        operator: 'is',
-        value: '',
-        action: 'showInScreen',
-        destination: 'today',
-      }
-      const nextRules = [rule, ...current]
-
-      writeRulesState(nextRules)
-      setExpandedRuleId(rule.id)
-
-      return nextRules
-    })
-  }
-
-  function updateLocalRule(ruleId: string, updates: Partial<LocalRule>) {
-    setLocalRules((current) => {
-      const nextRules = current.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule))
-
-      writeRulesState(nextRules)
-
-      return nextRules
-    })
-  }
-
-  function updateLocalRuleField(ruleId: string, tableId: string, fieldId: string) {
-    const field = base.fields.find((fieldItem) => fieldItem.tableId === tableId && fieldItem.id === fieldId)
-
-    setLocalRules((current) => {
-      const nextRules = current.map((rule) => {
-        if (rule.id !== ruleId) {
-          return rule
-        }
-
-        const operatorOptions = getRuleOperatorOptionsForField(field)
-        const operator = operatorOptions.some((option) => option.value === rule.operator)
-          ? rule.operator
-          : operatorOptions[0]?.value || 'is'
-
-        return {
-          ...rule,
-          tableId,
-          fieldId,
-          operator,
-          value: '',
-        }
-      })
-
-      writeRulesState(nextRules)
-
-      return nextRules
-    })
-  }
-
-  function deleteLocalRule(ruleId: string) {
-    setLocalRules((current) => {
-      const nextRules = current.filter((rule) => rule.id !== ruleId)
-
-      writeRulesState(nextRules)
-      setExpandedRuleId((currentRuleId) => currentRuleId === ruleId ? '' : currentRuleId)
-
-      return nextRules
-    })
-  }
-
   function getDependencySummary(recordId: string) {
     return getDependencySummaryForBase(base, recordId)
   }
@@ -1949,10 +1742,6 @@ function App() {
     })
   }
 
-  function getRulePreview(rule: LocalRule) {
-    return getRulePreviewForBase(base, rule)
-  }
-
   function getCommandReason(rule: LocalRule) {
     const field = base.fields.find((fieldItem) => fieldItem.tableId === rule.tableId && fieldItem.id === rule.fieldId)
     const operator = ruleOperatorOptions.find((option) => option.value === rule.operator)?.label.toLowerCase() || rule.operator
@@ -2001,18 +1790,6 @@ function App() {
     return base.tables.find((table) => table.id === tableId)?.label || tableId
   }
 
-  function getRuleValidationMessages(rule: LocalRule) {
-    return getRuleValidationMessagesForBase(base, rule)
-  }
-
-  function getRuleMatchCount(rule: LocalRule) {
-    return getRuleMatchCountForBase(base, rule, todayDate)
-  }
-
-  function getRuleMatchedRecords(rule: LocalRule) {
-    return getRuleMatchedRecordsForBase(base, rule, todayDate)
-  }
-
   function getTodayRuleMatchesForRecord(recordId: string) {
     return todayRuleMatches.filter((match) => match.record.id === recordId)
   }
@@ -2033,7 +1810,7 @@ function App() {
 
   function resetLocalWorkbase() {
     const nextBase = cloneWorkbase(workbase)
-    const nextTableId = 'risks'
+    const nextTableId = 'tasks'
 
     localStorage.removeItem(workbaseStorageKey)
     setBase(nextBase)
@@ -2042,39 +1819,20 @@ function App() {
     setRecordDraft(getEmptyRecordValues(nextBase, nextTableId))
     setGridFilter('')
     setGridSortFieldId('title')
-    setGridGroupFieldId('level')
+    setGridGroupFieldId('')
     setActiveGridViewId('')
     setBuildModal('')
   }
 
   function coercePastedCellValue(field: FieldDefinition, value: string): RecordValue {
-    const trimmedValue = value.trim()
+    const linkedRecords = field.linkedTableId
+      ? getRecordsForTable(base, field.linkedTableId).map((record) => ({
+          id: record.id,
+          title: getRecordTitle(base, record),
+        }))
+      : []
 
-    if (field.type === 'checkbox') {
-      return ['true', 'yes', 'y', '1', 'done', 'received'].includes(trimmedValue.toLowerCase())
-    }
-
-    if (field.type === 'multiSelect') {
-      return trimmedValue
-        .split(/[,;]/)
-        .map((option) => option.trim())
-        .filter(Boolean)
-    }
-
-    if (field.type === 'linkedRecord') {
-      const linkedRecords = field.linkedTableId ? getRecordsForTable(base, field.linkedTableId) : []
-      const matchedRecord = linkedRecords.find((record) => getRecordTitle(base, record).toLowerCase() === trimmedValue.toLowerCase())
-
-      return matchedRecord ? [matchedRecord.id] : []
-    }
-
-    if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
-      const numericValue = Number(trimmedValue.replace(/[$,%]/g, ''))
-
-      return Number.isFinite(numericValue) ? numericValue : 0
-    }
-
-    return trimmedValue
+    return coerceBuildPasteCellValue(field, value, linkedRecords)
   }
 
   function coerceStoredFieldValue(field: FieldDefinition, value: RecordValue): RecordValue {
@@ -2115,6 +1873,10 @@ function App() {
       return String(value).trim()
     }
 
+    if (field.type === 'text' || field.type === 'longText' || field.type === 'url' || field.type === 'phone') {
+      return Array.isArray(value) ? value.join(', ') : String(value ?? '')
+    }
+
     return value
   }
 
@@ -2138,7 +1900,7 @@ function App() {
     }
 
     if (field.type === 'linkedRecord') {
-      return `${field.label} reads as linked rows.`
+      return `${field.label} connects related work.`
     }
 
     if (field.type === 'text' && filledValues.every((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))) {
@@ -2270,10 +2032,7 @@ function App() {
     }
 
     const pastedText = event.clipboardData.getData('text/plain')
-    const rows = pastedText
-      .split(/\r?\n/)
-      .map((row) => row.split('\t'))
-      .filter((row) => row.some((cell) => cell.trim()))
+    const rows = parseBuildPasteRows(pastedText)
 
     if (rows.length === 0) {
       return
@@ -2294,6 +2053,7 @@ function App() {
     const pastedValuesByFieldId = new Map<string, string[]>()
     const updatedRowCount = rows.filter((_, rowIndex) => Boolean(flattenedRecords[startRecordIndex + rowIndex])).length
     const createdRowCount = rows.length - updatedRowCount
+    getBuildPasteOverflowColumns(rows, startFieldIndex, pasteFields.length).forEach((label) => skippedColumnLabels.add(label))
 
     rows.forEach((row) => {
       row.forEach((cell, cellIndex) => {
@@ -2326,6 +2086,7 @@ function App() {
 
         return action ? [action] : []
       })
+    const optionUpdatesByFieldId = getBuildPasteOptionUpdates(pasteFields, pastedValuesByFieldId)
 
     setBase((current) => {
       const nextRecords = [...current.records]
@@ -2381,6 +2142,11 @@ function App() {
 
       const nextBase = {
         ...current,
+        fields: current.fields.map((field) =>
+          field.tableId === selectedBuildTable.id && optionUpdatesByFieldId[field.id]
+            ? { ...field, options: optionUpdatesByFieldId[field.id] }
+            : field,
+        ),
         records: nextRecords,
       }
 
@@ -2391,7 +2157,6 @@ function App() {
 
     const pastedCellCount = rows.reduce((count, row) => count + row.length, 0)
 
-    setBuildPasteCellCount(pastedCellCount)
     setBuildPasteReceipt(`${rows.length} rows pasted. ${pastedCellCount} cells changed.`)
     setBuildPasteSummary({
       rows: rows.length,
@@ -2449,14 +2214,40 @@ function App() {
     showToast('Record added.')
   }
 
-  function openCreateRecordModal() {
-    if (!selectedBuildTable) {
+  function createBlankGridRow() {
+    const table = selectedBuildTable
+
+    if (!table) {
       return
     }
 
-    setRecordDraft(getEmptyRecordValues(base, selectedBuildTable.id))
-    setIsCreatingRecord(true)
-    setBuildModal('record')
+    const rowNumber = base.records.filter((record) => record.tableId === table.id).length + 1
+    const values = {
+      ...getEmptyRecordValues(base, table.id),
+      [table.primaryFieldId]: `New row ${rowNumber}`,
+    }
+    const record: BaseRecord = {
+      id: getUniqueSlug(`${table.id}_new_row_${rowNumber}`, base.records.map((baseRecord) => baseRecord.id)),
+      tableId: table.id,
+      values,
+    }
+    const nextCell = { recordId: record.id, fieldId: table.primaryFieldId }
+
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        records: [...current.records, record],
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    setSelectedBuildRecordId(record.id)
+    setSelectedGridCell(nextCell)
+    setEditingGridCell(nextCell)
+    setGridEditDraft(values[table.primaryFieldId])
+    showToast('Row added.')
   }
 
   function openCreateRecordForTable(tableId: string) {
@@ -2470,21 +2261,11 @@ function App() {
     setSelectedBuildRecordId(getRecordsForTable(base, tableId)[0]?.id || '')
     setGridFilter('')
     setGridSortFieldId(table.primaryFieldId)
-    setGridGroupFieldId(base.fields.find((field) => field.tableId === tableId && field.id === 'status')?.id || '')
+    setGridGroupFieldId('')
     setActiveGridViewId('')
     setRecordDraft(getEmptyRecordValues(base, tableId))
     setIsCreatingRecord(true)
     setBuildModal('record')
-  }
-
-  function openEditRecordModal(recordId: string) {
-    setSelectedBuildRecordId(recordId)
-    setIsCreatingRecord(false)
-    setBuildModal('')
-    setIsRecordDrawerOpen(true)
-    window.setTimeout(() => {
-      document.getElementById('record')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    }, 0)
   }
 
   function updateSelectedRecord(fieldId: string, value: RecordValue) {
@@ -2516,6 +2297,38 @@ function App() {
 
       return nextBase
     })
+  }
+
+  function deleteRecord(recordId: string) {
+    setBase((current) => {
+      const nextBase = {
+        ...current,
+        records: current.records
+          .filter((record) => record.id !== recordId)
+          .map((record) => ({
+            ...record,
+            values: Object.fromEntries(
+              Object.entries(record.values).map(([fieldId, value]) => [
+                fieldId,
+                Array.isArray(value) ? value.filter((linkedRecordId) => linkedRecordId !== recordId) : value,
+              ]),
+            ),
+          })),
+        dependencies: current.dependencies.filter(
+          (dependency) => dependency.fromRecordId !== recordId && dependency.toRecordId !== recordId,
+        ),
+      }
+
+      writeWorkbaseState(nextBase)
+
+      return nextBase
+    })
+    if (selectedBuildRecordId === recordId) {
+      setSelectedBuildRecordId('')
+    }
+    setSelectedGridCell((current) => current?.recordId === recordId ? null : current)
+    setEditingGridCell((current) => current?.recordId === recordId ? null : current)
+    showToast('Row deleted.')
   }
 
   function getCommunityLinkField(record: BaseRecord) {
@@ -2664,7 +2477,7 @@ function App() {
     setCommunityNewLinkStatus('')
     setCommunityNewLinkDate('')
     setCommunityNewLinkExtraValues({})
-    showToast('Linked row added.')
+    showToast('Connected item added.')
   }
 
   function getGridCellKey(cell: GridCell) {
@@ -2759,6 +2572,12 @@ function App() {
 
     if (event.key === ' ') {
       event.preventDefault()
+      if (field.type === 'checkbox') {
+        selectGridCell(record.id, field.id)
+        updateRecordField(record.id, field.id, !record.values[field.id])
+        return
+      }
+
       setSelectedBuildRecordId(record.id)
       setIsRecordDrawerOpen(true)
       return
@@ -2920,6 +2739,131 @@ function App() {
     )
   }
 
+  function openAddFieldMenu() {
+    setBuildModal('')
+    setOpenFieldMenuId('')
+    setIsAddFieldMenuOpen((current) => !current)
+  }
+
+  function renderAddFieldMenu() {
+    if (!isAddFieldMenuOpen) {
+      return null
+    }
+
+    const fieldNeedsSource = fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup' || fieldDraft.type === 'count'
+
+    return (
+      <form
+        className="grid-field-menu add-field-menu"
+        data-testid="build-add-column-menu"
+        aria-label="Add column"
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={(event) => {
+          event.preventDefault()
+          createField()
+        }}
+      >
+        <label>
+          <span>Column name</span>
+          <input
+            aria-label="Column name"
+            placeholder="Permit status"
+            value={fieldDraft.label}
+            onChange={(event) => setFieldDraft((current) => ({ ...current, label: event.target.value }))}
+          />
+        </label>
+        <label>
+          <span>Type</span>
+          <select
+            aria-label="Type"
+            value={fieldDraft.type}
+            onChange={(event) => {
+              const type = event.target.value as FieldType
+
+              setFieldDraft((current) => ({
+                ...current,
+                type,
+                sourceLinkedFieldId: linkedFieldsForSelectedTable[0]?.id || '',
+                sourceFieldId: '',
+              }))
+            }}
+          >
+            {fieldTypeOptions.map((fieldType) => (
+              <option key={fieldType.value} value={fieldType.value}>
+                {fieldType.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {optionFieldTypes.includes(fieldDraft.type) && (
+          <label>
+            <span>Options</span>
+            <textarea
+              aria-label="Options"
+              rows={2}
+              value={fieldDraft.options}
+              onChange={(event) => setFieldDraft((current) => ({ ...current, options: event.target.value }))}
+            />
+          </label>
+        )}
+        {fieldDraft.type === 'linkedRecord' && (
+          <label>
+            <span>Connected table</span>
+            <select
+              aria-label="Connected table"
+              value={fieldDraft.linkedTableId}
+              onChange={(event) => setFieldDraft((current) => ({ ...current, linkedTableId: event.target.value }))}
+            >
+              {base.tables
+                .filter((table) => table.id !== selectedBuildTable?.id)
+                .map((table) => (
+                  <option key={table.id} value={table.id}>
+                    {table.label}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+        {fieldNeedsSource && (
+          <label>
+            <span>Connection</span>
+            <select
+              aria-label="Connection"
+              value={effectiveSourceLinkedFieldId}
+              onChange={(event) => setFieldDraft((current) => ({ ...current, sourceLinkedFieldId: event.target.value, sourceFieldId: '' }))}
+            >
+              {linkedFieldsForSelectedTable.map((field) => (
+                <option key={field.id} value={field.id}>
+                  {field.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {(fieldDraft.type === 'lookup' || fieldDraft.type === 'rollup') && (
+          <label>
+            <span>Detail</span>
+            <select
+              aria-label="Detail"
+              value={fieldDraft.sourceFieldId || sourceFields[0]?.id || ''}
+              onChange={(event) => setFieldDraft((current) => ({ ...current, sourceFieldId: event.target.value }))}
+            >
+              {sourceFields.map((field) => (
+                <option key={field.id} value={field.id}>
+                  {field.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="add-field-menu-actions">
+          <button type="button" onClick={() => setIsAddFieldMenuOpen(false)}>Cancel</button>
+          <button className="primary" type="submit">Add column</button>
+        </div>
+      </form>
+    )
+  }
+
   function getFieldDisplayValue(record: BaseRecord, field: FieldDefinition) {
     return getRecordFieldDisplayValue(base, record, field)
   }
@@ -3071,7 +3015,7 @@ function App() {
 
   function openMeetingSourceRoute(record: BaseRecord) {
     openBuildRecord(record.tableId, record.id)
-    showToast(`Meeting source opened: ${getRecordTitle(base, record)}.`)
+    showToast(`Meeting item opened: ${getRecordTitle(base, record)}.`)
   }
 
   function renderMeetingPrep(prep: NonNullable<ReturnType<typeof getMeetingPrep>>) {
@@ -3117,6 +3061,7 @@ function App() {
         getRecordTitle={(recordItem) => getRecordTitle(base, recordItem)}
         isComputedField={(fieldItem) => computedFieldTypes.includes(fieldItem.type)}
         linkedRecordFilters={linkedRecordFilters}
+        onQuickUpdate={updateRecordField}
         record={record}
         renderCheckboxIcon={renderCheckboxIcon}
         selectedGridCell={selectedGridCell}
@@ -3136,20 +3081,13 @@ function App() {
       <TimelineModes
         base={base}
         communityRecords={communityRecords}
-        getDependencySummary={getDependencySummary}
-        getFirstDateValue={getFirstDateValue}
-        getNumberValue={getNumberValue}
-        getRecordContext={getRecordContext}
-        getRecordTitle={(record) => getRecordTitle(base, record)}
-        getRulePreview={getRulePreview}
-        getSemanticChipClass={getSemanticChipClass}
-        getStringValue={getStringValue}
-        getTimelineRuleMatchesForRecord={getTimelineRuleMatchesForRecord}
         timelineCalendarDate={timelineCalendarDate}
         timelineGraphCommunityId={timelineGraphCommunityId}
         timelineReadinessCommunityId={timelineReadinessCommunityId}
         timelineRecords={timelineRecords}
+        timelineRuleMatches={timelineRuleMatches}
         timelineView={timelineView}
+        todayDate={todayDate}
         onOpenDailyRecord={openDailyRecord}
         onSetTimelineCalendarDate={setTimelineCalendarDate}
         onSetTimelineGraphCommunityId={setTimelineGraphCommunityId}
@@ -3233,7 +3171,7 @@ function App() {
       const services = await getFirebaseServices()
 
       if (!services) {
-        return 'Firebase is not configured. Local workspace remains active.'
+        return 'Shared setup is not configured. Local workspace remains active.'
       }
 
       const client = createFirestoreWorkspaceClient({
@@ -3321,7 +3259,7 @@ function App() {
         return {
           state: 'missing-config',
           label: 'Missing config',
-          detail: 'Firebase services are not available.',
+          detail: 'Shared services are not available.',
         } satisfies FirestoreReadShadowState
       }
 
@@ -3399,7 +3337,7 @@ function App() {
         const services = await getFirebaseServices()
 
         if (!services) {
-          return 'Firebase is not configured. Shared save skipped.'
+          return 'Shared setup is not configured. Shared save skipped.'
         }
 
         const client = createFirestoreWorkspaceClient({
@@ -3487,6 +3425,11 @@ function App() {
         return
       }
 
+      if (isAddFieldMenuOpen) {
+        setIsAddFieldMenuOpen(false)
+        return
+      }
+
       if (buildModal && canDismissBuildModalWithEscape(buildModal)) {
         closeBuildModal()
       }
@@ -3495,7 +3438,7 @@ function App() {
     window.addEventListener('keydown', closeTransientSurfaces)
 
     return () => window.removeEventListener('keydown', closeTransientSurfaces)
-  }, [buildModal, openFieldMenuId])
+  }, [buildModal, isAddFieldMenuOpen, openFieldMenuId])
 
   useEffect(() => {
     function syncScreenFromHash() {
@@ -3594,7 +3537,7 @@ function App() {
         onSkip={dismissOnboardingTour}
         onStart={startOnboardingTour}
       />
-      <aside className="rail">
+      <aside className={`rail rail-screen-${activeScreen}`}>
         <div className="brand">
           <img src="/brand/sundesk-icon.png" alt="Sundesk logo" />
           <div>
@@ -3602,6 +3545,13 @@ function App() {
             <span>command center</span>
           </div>
         </div>
+
+        {activeScreen === 'communities' && (
+          <section className="rail-context-card" aria-label="Workspace Fyre Festival GTA">
+            <strong>Fyre Festival GTA</strong>
+            <span>Fake Ontario event data. GTA community shape.</span>
+          </section>
+        )}
 
         <nav className="main-nav" aria-label="Sundesk navigation">
           <span>Work</span>
@@ -3623,7 +3573,7 @@ function App() {
                   key={screen.id}
                   title={screen.label}
                 >
-                  {label}
+                  <span>{label}</span>
                 </a>
               )
             })}
@@ -3653,8 +3603,8 @@ function App() {
         </nav>
 
         {pinnedGridViews.length > 0 && (
-          <section className="pinned-view-nav" aria-label="Pinned Build views">
-            <span>Pinned views</span>
+          <section className="pinned-view-nav" aria-label="Pinned Build scans">
+            <span>Pinned scans</span>
             {pinnedGridViews.map((view) => (
               <button
                 aria-current={activeScreen === 'build' && activeGridViewId === view.id ? 'page' : undefined}
@@ -3672,18 +3622,22 @@ function App() {
 
         <details className="privacy-card workspace-card" data-testid="rail-workspace-card">
           <summary>
-            <span>Workspace</span>
-            <strong>Fyre Festival GTA</strong>
+            <span className="privacy-card-summary-copy">
+              <span>Workspace</span>
+              <strong>Fyre Festival GTA</strong>
+            </span>
           </summary>
           <p>{workspaceStatus || 'Fake Ontario event data. GTA community shape.'}</p>
         </details>
 
         <details className="privacy-card rule-card" data-testid="rail-system-read-card">
           <summary>
-            <span>System read</span>
-            <strong>{activeScreenRuleMatches.length} records surface here.</strong>
+            <span className="privacy-card-summary-copy">
+              <span>Why here</span>
+              <strong>{activeScreenRuleMatches.length} checks here.</strong>
+            </span>
           </summary>
-          <p>The system shows its work when a record needs attention.</p>
+          <p>Saved checks explain why work needs attention here.</p>
           {activeScreenRuleMatches.length > 0 && (
             <div className="rule-card-list">
               {activeScreenRuleMatches.slice(0, 3).map((match) => (
@@ -3700,8 +3654,6 @@ function App() {
       <section className="desk">
         {activeScreen === 'today' && (
           <TodayScreen
-            followupRecords={followupRecords}
-            getChipColorClass={getChipColorClass}
             getCommandReason={getCommandReason}
             getCommandTableLabel={getCommandTableLabel}
             getDependencySummary={getDependencySummary}
@@ -3710,24 +3662,13 @@ function App() {
             getRecordWorkflowTags={getRecordWorkflowTags}
             getTodayRuleMatchesForRecord={getTodayRuleMatchesForRecord}
             isCommandSendPreviewOpen={isTodayCommandPreviewOpen}
-            nextMeetingLinkedTasks={nextMeetingLinkedTasks}
-            nextMeetingRecord={nextMeetingRecord}
-            onOpenBuild={openBuildScreen}
             onOpenDailyRecord={openDailyRecord}
-            onOpenWorkflowTagRoute={openWorkflowTagRoute}
             onToggleCommandSendPreview={() => setIsTodayCommandPreviewOpen((isOpen) => !isOpen)}
             rupaulMode={rupaulMode}
-            screenStats={screenStats}
             todayCommandPreview={todayCommandPreview}
-            todayChangedRecord={todayChangedRecord}
-            todayChangedRecords={todayChangedRecords}
             todayFocusRecord={todayFocusRecord}
             todayLanes={todayLanes}
-            todayNextLane={todayNextLane}
-            todayNowLane={todayNowLane}
             todayRuleMatches={todayRuleMatches}
-            todaySlipRecord={todaySlipRecord}
-            todayWaitingLane={todayWaitingLane}
           />
         )}
 
@@ -3848,15 +3789,15 @@ function App() {
           onUpdateDependency={updateDependency}
           selectedDependencyTargetRecord={selectedDependencyTargetRecord}
           selectedRecord={selectedBuildRecord}
-          selectedTableLabel={selectedBuildTable?.label || 'Record'}
+          selectedTableLabel={selectedBuildTable?.label || 'Item'}
         />
 
-        <section className="connection-zone" id="connections">
+        {activeScreen === 'lab' && <section className="connection-zone" id="connections">
           <article className="connection-panel">
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Connection core</span>
-                <h2>Links are field values.</h2>
+                <h2>Connections have a home.</h2>
               </div>
               <span className="metric-pill">{materializedLinks.length} links</span>
             </div>
@@ -3872,14 +3813,14 @@ function App() {
                 <small>Community, approval, and owner are linked-record fields.</small>
               </article>
               <article>
-                <span>Backlinks</span>
+                <span>Related here</span>
                 <strong>{selectedTaskBacklinks.length}</strong>
                 <small>Risks and meetings can point back without duplicate entry.</small>
               </article>
               <article>
-                <span>Dependencies</span>
+                <span>Blockers</span>
                 <strong>{selectedTaskDependencies.length}</strong>
-                <small>Dependencies are typed links between records.</small>
+                <small>Blockers explain what is stuck and why.</small>
               </article>
             </div>
           </article>
@@ -3888,7 +3829,7 @@ function App() {
             <div className="panel-title">
               <div>
                 <span className="eyebrow">Universal picker</span>
-                <h2>Pick from any table.</h2>
+                <h2>Pick from any area.</h2>
               </div>
             </div>
             <div className="picker-list">
@@ -3901,12 +3842,11 @@ function App() {
               ))}
             </div>
           </article>
-        </section>
+        </section>}
 
         {activeScreen === 'timeline' && (
           <TimelineScreen
             base={base}
-            dailyTimelineRecords={dailyTimelineRecords}
             getChipColorClass={getChipColorClass}
             renderTimelineView={renderTimelineView}
             timelineDatedRecordCount={timelineDatedRecords.length}
@@ -3932,6 +3872,7 @@ function App() {
           <SundeskLabScreen
             educationState={educationState}
             modules={sundeskLabModules}
+            onApplyAction={applyLabAction}
             onCompleteStep={completeLabModuleStep}
             onContinueModule={continueLabModule}
             onResetLabProgress={resetLabProgress}
@@ -3943,20 +3884,118 @@ function App() {
         {activeScreen === 'build' && (
         <section className="build-zone build-reset" data-testid="build-screen" id="build">
           <article className="builder-panel wide build-workbench">
-            <div className="panel-title">
+            <div className="panel-title build-title-row">
               <div>
                 <span className="eyebrow">Build</span>
-                <h2>Build is freeform first.</h2>
-                <p>The grid should feel like Excel or Google Sheets. Paste into cells, edit directly, then let Sundesk suggest structure after the fact.</p>
+                <h2>{selectedBuildTable?.label || 'Tables'}</h2>
               </div>
-              <div className="drawer-actions">
-                <span className="metric-pill">{sortedAndFilteredRecords.length} shown</span>
-                {activeGridView && (
-                  <span className={`metric-pill ${activeGridViewChanged ? 'changed-view' : 'active-view'}`}>
-                    {activeGridViewChanged ? 'View changed' : 'View active'}: {activeGridView.name}
-                  </span>
-                )}
+              <details
+                className="build-options-menu build-table-menu"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.currentTarget.open = false
+                  }
+                }}
+              >
+                <summary>Table</summary>
+                <div>
+                  {activeGridView && (
+                    <button type="button" onClick={() => showToast(`${activeGridView.name} is active.`)}>
+                      {activeGridViewChanged ? 'View changed' : activeGridView.name}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      showToast('Click a cell, then paste from a sheet.')
+                    }}
+                  >
+                    Paste help
+                  </button>
+                  <button
+                    aria-label="Save view"
+                    data-copy-plain="Save view"
+                    data-onboarding-target="build-save-view"
+                    title="Save view"
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      saveGridView()
+                    }}
+                  >
+                    Save view
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      showToast('Tags live in cells and filters.')
+                    }}
+                  >
+                    Tags
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      showToast('Links connect rows across tables.')
+                    }}
+                  >
+                    Connections
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      openTableSettings()
+                    }}
+                  >
+                    Rename table
+                  </button>
+                  <button
+                    className="danger"
+                    disabled={!canDeleteSelectedBuildTable}
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      requestDeleteTable()
+                    }}
+                  >
+                    Delete table
+                  </button>
+                  <button
+                    className="danger"
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open')
+                      setBuildModal('resetLocalData')
+                    }}
+                  >
+                    Reset local data
+                  </button>
+                </div>
+              </details>
+            </div>
+            <div className="build-table-row">
+              <div className="table-tabs" data-onboarding-target="build-table-tabs" role="tablist" aria-label="Tables">
+                {buildTableRows.map((table) => (
+                  <button
+                    aria-selected={table.id === selectedBuildTable?.id}
+                    className={table.id === selectedBuildTable?.id ? 'selected' : ''}
+                    data-onboarding-target={table.id === selectedBuildTable?.id ? 'build-active-table' : undefined}
+                    data-testid={`build-table-${table.id}`}
+                    key={table.id}
+                    role="tab"
+                    type="button"
+                    onClick={() => selectBuildTable(table.id)}
+                  >
+                    <strong>{table.label}</strong>
+                    <span>{table.recordCount}</span>
+                  </button>
+                ))}
                 <button
+                  className="add-table-tab"
                   aria-label="Add table"
                   data-copy-plain="Add table"
                   data-onboarding-target="build-add-table"
@@ -3964,104 +4003,28 @@ function App() {
                   type="button"
                   onClick={() => setBuildModal('table')}
                 >
-                  {getCopy('button.addTable')}
+                  + Add table
                 </button>
-                <button
-                  aria-label="Add field"
-                  data-copy-plain="Add field"
-                  data-onboarding-target="build-add-field"
-                  title="Add field"
-                  type="button"
-                  onClick={() => setBuildModal('field')}
-                >
-                  {getCopy('button.addField')}
-                </button>
-                <button
-                  aria-label="Save view"
-                  data-copy-plain="Save view"
-                  data-onboarding-target="build-save-view"
-                  title="Save view"
-                  type="button"
-                  onClick={saveGridView}
-                >
-                  {getCopy('button.saveView')}
-                </button>
-                <details className="build-options-menu">
-                  <summary>Table options</summary>
-                  <div>
-                    <button type="button" onClick={openTableSettings}>Rename</button>
-                    <button className="danger" disabled={!canDeleteSelectedBuildTable} type="button" onClick={requestDeleteTable}>Delete table</button>
-                    <button className="danger" type="button" onClick={() => setBuildModal('resetLocalData')}>Reset local data</button>
-                  </div>
-                </details>
               </div>
             </div>
-            <div className="table-tabs" data-onboarding-target="build-table-tabs" role="tablist" aria-label="Tables">
-              {buildTableRows.map((table) => (
-                <button
-                  aria-selected={table.id === selectedBuildTable?.id}
-                  className={table.id === selectedBuildTable?.id ? 'selected' : ''}
-                  data-onboarding-target={table.id === selectedBuildTable?.id ? 'build-active-table' : undefined}
-                  data-testid={`build-table-${table.id}`}
-                  key={table.id}
-                  role="tab"
-                  type="button"
-                  onClick={() => selectBuildTable(table.id)}
-                >
-                  <strong>{table.label}</strong>
-                  <span>{table.recordCount}</span>
-                </button>
-              ))}
-            </div>
-            <BuildToolbar
-              activeGridViewId={activeGridViewId}
-              fieldsForSelectedTable={fieldsForSelectedTable}
-              gridColorFieldId={gridColorFieldId}
-              gridDensity={gridDensity}
-              gridFilter={gridFilter}
-              gridGroupFieldId={gridGroupFieldId}
-              gridSortDirection={gridSortDirection}
-              gridSortFieldId={gridSortFieldId}
-              localGridViews={localGridViews}
-              visibleFieldCount={visibleFieldsForGrid.length}
-              visibleFieldIds={visibleFieldIds}
-              onAddField={() => setBuildModal('field')}
-              onApplyGridView={applyGridView}
-              onClearActiveGridView={() => setActiveGridViewId('')}
-              onExportCsv={exportBuildCsv}
-              onGridColorFieldChange={setGridColorFieldId}
-              onGridDensityChange={setGridDensity}
-              onGridFilterChange={setGridFilter}
-              onGridGroupFieldChange={setGridGroupFieldId}
-              onGridSortDirectionChange={setGridSortDirection}
-              onGridSortFieldChange={setGridSortFieldId}
-              onToggleVisibleField={toggleVisibleField}
-            />
             <BuildPasteHelper
               applyPasteAction={applyPasteAction}
-              buildPasteCellCount={buildPasteCellCount}
               buildPasteReceipt={buildPasteReceipt}
               buildPasteSummary={buildPasteSummary}
-              selectedGridCell={selectedGridCell}
-              visibleFieldsForGrid={visibleFieldsForGrid}
             />
-            {tagRouteOptions.length > 0 && (
-              <div className="tag-route-strip" aria-label="Tag workflow routes" data-onboarding-target="tag-route-controls">
-                <span>Tag routes</span>
-                <div>
-                  {tagRouteOptions.map((tag) => (
-                    <button
-                      aria-pressed={gridFilter === tag}
-                      className={`select-tag ${getChipColorClass(tag)} ${gridFilter === tag ? 'selected' : ''}`}
-                      data-onboarding-target="tag-route-chip"
-                      key={tag}
-                      type="button"
-                      onClick={() => setGridFilter((current) => current === tag ? '' : tag)}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
+            {gridFilter && (
+              <div className="tag-route-strip active-filter-strip" aria-label="Active Build filter" data-onboarding-target="tag-route-controls">
+                <span>Showing</span>
+                <button
+                  aria-pressed="true"
+                  className={`select-tag ${getChipColorClass(gridFilter)} selected`}
+                  data-onboarding-target="tag-route-chip"
+                  type="button"
+                  onClick={() => setGridFilter('')}
+                >
+                  {gridFilter}
+                </button>
+                <button type="button" onClick={() => setGridFilter('')}>Clear</button>
               </div>
             )}
             {migrationMessages.length > 0 && (
@@ -4077,9 +4040,10 @@ function App() {
               groupedRecords={groupedRecords}
               gridDensity={gridDensity}
               isGridCellSelected={(cell) => isSameGridCell(selectedGridCell, cell)}
-              onAddField={() => setBuildModal('field')}
-              onCreateRecord={openCreateRecordModal}
-              onEditRecord={openEditRecordModal}
+              addFieldMenu={renderAddFieldMenu()}
+              onAddField={openAddFieldMenu}
+              onCreateRecord={createBlankGridRow}
+              onDeleteRecord={deleteRecord}
               onPaste={handleBuildGridPaste}
               onSelectRecord={setSelectedBuildRecordId}
               renderEditableGridCell={renderEditableGridCell}
@@ -4090,41 +4054,6 @@ function App() {
               visibleFieldsForGrid={visibleFieldsForGrid}
             />
           </article>
-
-          <BuildViewsPanel
-            activeGridViewChanged={activeGridViewChanged}
-            activeGridViewId={activeGridViewId}
-            localGridViews={localGridViews}
-            pinnedGridViewCount={pinnedGridViews.length}
-            savedViews={savedViews}
-            tables={base.tables}
-            viewRenameDrafts={viewRenameDrafts}
-            onApplyGridView={applyGridView}
-            onDeleteGridView={deleteGridView}
-            onDuplicateGridView={duplicateGridView}
-            onRenameDraftChange={updateViewRenameDraft}
-            onRenameGridView={renameGridView}
-            onResetActiveGridView={resetActiveGridView}
-            onTogglePinnedGridView={togglePinnedGridView}
-            onUpdateGridView={updateGridView}
-          />
-
-          <BuildRulesPanel
-            base={base}
-            localRules={localRules}
-            expandedRuleId={expandedRuleId}
-            createLocalRule={createLocalRule}
-            setExpandedRuleId={setExpandedRuleId}
-            updateLocalRule={updateLocalRule}
-            updateLocalRuleField={updateLocalRuleField}
-            deleteLocalRule={deleteLocalRule}
-            getCommandReason={getCommandReason}
-            getRulePreview={getRulePreview}
-            getRuleMatchCount={getRuleMatchCount}
-            getRuleValidationMessages={getRuleValidationMessages}
-            getRuleMatchedRecords={getRuleMatchedRecords}
-            openBuildRecord={openBuildRecord}
-          />
 
           <BuildModals
             base={base}

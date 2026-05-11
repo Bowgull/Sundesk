@@ -1,4 +1,3 @@
-import type { SavedView } from '../data/demoData'
 import type { LocalGridView } from '../data/localStorage'
 import type { TableDefinition } from '../data/workbase'
 
@@ -7,7 +6,6 @@ type BuildViewsPanelProps = {
   activeGridViewId: string
   localGridViews: readonly LocalGridView[]
   pinnedGridViewCount: number
-  savedViews: readonly SavedView[]
   tables: readonly TableDefinition[]
   viewRenameDrafts: Record<string, string>
   onApplyGridView: (view: LocalGridView) => void
@@ -25,7 +23,6 @@ export function BuildViewsPanel({
   activeGridViewId,
   localGridViews,
   pinnedGridViewCount,
-  savedViews,
   tables,
   viewRenameDrafts,
   onApplyGridView,
@@ -45,13 +42,13 @@ export function BuildViewsPanel({
     <article className="automation-panel build-sidecar" data-testid="build-views-panel">
       <div className="panel-title">
         <div>
-          <span className="eyebrow">Views</span>
+          <span className="eyebrow">Saved scans</span>
           <h2>Saved ways to work.</h2>
         </div>
         <span className="metric-pill">{pinnedGridViewCount} pinned</span>
       </div>
-      <p className="panel-copy">Saved views keep table context and can be pinned to the sidebar.</p>
-      {localGridViews.length > 0 && (
+      <p className="panel-copy">Saved scans keep the area, sort, filters, and pinning.</p>
+      {localGridViews.length > 0 ? (
         <div className="view-list">
           {localGridViews.map((view) => (
             <article className={`local-view-row ${view.id === activeGridViewId ? 'active-row' : ''}`} data-testid="local-view-row" key={view.id}>
@@ -64,7 +61,7 @@ export function BuildViewsPanel({
                 )}
               </div>
               <label>
-                <span>View name</span>
+                <span>Scan name</span>
                 <input
                   value={viewRenameDrafts[view.id] ?? view.name}
                   onChange={(event) => onRenameDraftChange(view.id, event.target.value)}
@@ -87,16 +84,9 @@ export function BuildViewsPanel({
             </article>
           ))}
         </div>
+      ) : (
+        <p className="panel-copy">Saved scans appear after she saves one.</p>
       )}
-      <div className="view-list">
-        {savedViews.map((view) => (
-          <article key={view.id}>
-            <span>{view.type}</span>
-            <strong>{view.name}</strong>
-            <p>{view.rule}</p>
-          </article>
-        ))}
-      </div>
     </article>
   )
 }

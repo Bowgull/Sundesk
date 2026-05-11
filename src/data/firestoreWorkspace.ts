@@ -109,12 +109,12 @@ export type FirestoreWorkspaceWriter = {
 export function getDefaultFirestoreBuildViewState(): StoredBuildViewState {
   return {
     version: 1,
-    selectedBuildTableId: 'risks',
+    selectedBuildTableId: 'tasks',
     visibleFieldIdsByTable: defaultVisibleFieldIdsByTable,
     gridFilter: '',
     gridSortFieldId: 'title',
     gridSortDirection: 'asc',
-    gridGroupFieldId: 'level',
+    gridGroupFieldId: '',
     gridColorFieldId: '',
     gridDensity: 'comfortable',
     localGridViews: [],
@@ -270,12 +270,12 @@ function normalizeFirestoreBuildViewState(value: unknown): { buildViewState: Sto
   return {
     buildViewState: {
       version: 1,
-      selectedBuildTableId: typeof value.selectedBuildTableId === 'string' ? value.selectedBuildTableId : 'risks',
+      selectedBuildTableId: typeof value.selectedBuildTableId === 'string' ? value.selectedBuildTableId : 'tasks',
       visibleFieldIdsByTable: normalizeStringArrayRecord(value.visibleFieldIdsByTable),
       gridFilter: typeof value.gridFilter === 'string' ? value.gridFilter : '',
       gridSortFieldId: typeof value.gridSortFieldId === 'string' ? value.gridSortFieldId : 'title',
       gridSortDirection: value.gridSortDirection === 'desc' ? 'desc' : 'asc',
-      gridGroupFieldId: typeof value.gridGroupFieldId === 'string' ? value.gridGroupFieldId : 'level',
+      gridGroupFieldId: typeof value.gridGroupFieldId === 'string' ? value.gridGroupFieldId : '',
       gridColorFieldId: typeof value.gridColorFieldId === 'string' ? value.gridColorFieldId : '',
       gridDensity: value.gridDensity === 'compact' || value.gridDensity === 'expanded' ? value.gridDensity : 'comfortable',
       localGridViews: Array.isArray(value.localGridViews) ? value.localGridViews.filter(isLocalGridView).map(cloneLocalGridView) : [],

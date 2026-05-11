@@ -1,3 +1,11 @@
+.waiting-on-screen {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.waiting-on-screen .screen-panel.wide {
+  grid-column: auto;
+}
+
 .meetings-screen {
   grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1.58fr);
 }
@@ -23,6 +31,31 @@
 
 .meeting-brief button {
   margin-top: 6px;
+}
+
+.meeting-prep-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.meeting-prep-panel .local-state-strip,
+.meeting-prep-panel .meeting-prep,
+.meeting-prep-panel .meeting-records-drawer .record-card-grid {
+  margin-top: 0;
+}
+
+.meeting-records-drawer {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.meeting-records-drawer h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.2;
 }
 
 .next-meeting {
