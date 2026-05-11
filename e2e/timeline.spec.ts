@@ -108,3 +108,75 @@ test('Timeline graph edge endpoints land inside visible node boxes', async ({ pa
 
   expect(graphCheck.ok).toBe(true)
 })
+
+test('Timeline Gantt uses a readable mobile stack without horizontal overflow', async ({ browser }) => {
+  const page = await browser.newPage({
+    isMobile: true,
+    viewport: { width: 390, height: 900 },
+  })
+
+  await openTimeline(page)
+  await page.getByRole('tab', { name: 'Timeline' }).click()
+  await expect(page.getByTestId('timeline-readiness')).toBeVisible()
+
+  const mobileCheck = await page.evaluate(() => {
+    const mobileBoard = document.querySelector('.gantt-mobile-board')
+    const desktopBoard = document.querySelector('.gantt-board')
+    const viewportWidth = document.documentElement.clientWidth
+    const overflowing = Array.from(document.querySelectorAll('.timeline-screen-layout *')).filter((element) => {
+      const rect = element.getBoundingClientRect()
+      const style = getComputedStyle(element)
+
+      return rect.right > viewportWidth + 2 && style.display !== 'none' && style.position !== 'fixed'
+    })
+
+    return {
+      desktopHidden: desktopBoard ? getComputedStyle(desktopBoard).display === 'none' : false,
+      mobileVisible: mobileBoard ? getComputedStyle(mobileBoard).display !== 'none' : false,
+      overflowingCount: overflowing.length,
+    }
+  })
+
+  expect(mobileCheck).toEqual({
+    desktopHidden: true,
+    mobileVisible: true,
+    overflowingCount: 0,
+  })
+
+  await page.close()
+})
+
+test('Timeline mobile views stay inside the viewport', async ({ browser }) => {
+  const views = [
+    ['Grid', 'timeline-list'],
+    ['Kanban', 'timeline-kanban'],
+    ['Calendar', 'timeline-calendar'],
+    ['Timeline', 'timeline-readiness'],
+    ['Graph', 'timeline-graph'],
+  ] as const
+
+  for (const [label, testId] of views) {
+    const page = await browser.newPage({
+      isMobile: true,
+      viewport: { width: 390, height: 900 },
+    })
+
+    await openTimeline(page)
+    await page.getByRole('tab', { name: label }).click()
+    await expect(page.getByTestId(testId)).toBeVisible()
+
+    const overflowingCount = await page.evaluate(() => {
+      const viewportWidth = document.documentElement.clientWidth
+
+      return Array.from(document.querySelectorAll('.timeline-screen-layout *')).filter((element) => {
+        const rect = element.getBoundingClientRect()
+        const style = getComputedStyle(element)
+
+        return rect.right > viewportWidth + 2 && style.display !== 'none' && style.position !== 'fixed'
+      }).length
+    })
+
+    expect(overflowingCount).toBe(0)
+    await page.close()
+  }
+})

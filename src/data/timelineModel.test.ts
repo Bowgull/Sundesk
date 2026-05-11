@@ -102,4 +102,37 @@ describe('Timeline command model', () => {
       'Permit risk may slip readiness. is high risk.',
     ])
   })
+
+  it('keeps graph data stable with sparse or missing records', () => {
+    const vaughan = communityRecords.find((record) => record.id === 'community_vaughan')
+    const sparseModel = buildTimelineModel({
+      base: workbase,
+      records: vaughan ? [vaughan] : [],
+      communityRecords: vaughan ? [vaughan] : [],
+      ruleMatches: [],
+      todayDate,
+      selectedGraphCommunityId: 'community_vaughan',
+    })
+
+    expect(sparseModel.graph.nodes.map((node) => node.id)).toEqual(['community_vaughan'])
+    expect(sparseModel.graph.edges).toEqual([])
+    expect(sparseModel.graph.nextMove).toBeNull()
+
+    const emptyModel = buildTimelineModel({
+      base: workbase,
+      records: [],
+      communityRecords: [],
+      ruleMatches: [],
+      todayDate,
+      selectedGraphCommunityId: 'missing',
+    })
+
+    expect(emptyModel.graph).toEqual({
+      center: null,
+      nodes: [],
+      edges: [],
+      whyAtRisk: [],
+      nextMove: null,
+    })
+  })
 })

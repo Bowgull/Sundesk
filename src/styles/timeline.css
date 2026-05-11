@@ -1088,12 +1088,12 @@
   }
 
   .timeline-grid-mode {
-    overflow-x: auto;
+    overflow: visible;
   }
 
   .timeline-grid-head,
   .timeline-grid-row {
-    min-width: 980px;
+    min-width: 0;
   }
 }
 
@@ -1164,6 +1164,44 @@
   .calendar-month button {
     min-height: 92px;
     border-right: 1px solid var(--line);
+  }
+
+  .timeline-grid-head {
+    display: none;
+  }
+
+  .timeline-grid-rows {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .timeline-grid-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    min-height: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-left-width: 5px;
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .timeline-grid-row span,
+  .timeline-grid-row strong,
+  .timeline-grid-row i {
+    white-space: normal;
+  }
+
+  .timeline-grid-row > span:first-child {
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .timeline-grid-row strong {
+    font-size: 15px;
   }
 
   .gantt-board {

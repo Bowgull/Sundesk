@@ -216,7 +216,7 @@ function buildTimelineCard(base: Workbase, record: BaseRecord, ruleMatches: read
     place: getRecordPlace(base, record),
     status,
     dueDate,
-    dueLabel: formatTimelineDate(dueDate) || 'No date',
+    dueLabel: formatTimelineDate(dueDate) || 'Date pending',
     tags,
     reason: blockers[0] || getNextMove(status, tone),
     blockers,
