@@ -74,7 +74,8 @@ test('Build field lifecycle persists add, rename, behavior change, resize, and d
 
   await openColumnMenu(page, /Launch notes/)
   await page.getByRole('menuitem', { name: 'Rename' }).click()
-  const settingsModal = page.getByRole('dialog', { name: 'Column settings' })
+  await expect(page.getByRole('dialog', { name: 'Column settings' })).toHaveCount(0)
+  const settingsModal = page.getByTestId('build-column-settings-menu')
 
   await settingsModal.getByLabel('Column name').fill('Launch tags')
   await settingsModal.getByLabel('Type').selectOption('multiSelect')

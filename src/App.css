@@ -2135,6 +2135,103 @@ h2 {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring), transparent 86%);
 }
 
+.today-command-panel,
+.today-receipts {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.today-command-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+}
+
+.today-command-panel strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.today-command-panel p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.today-command-panel .command-send-preview {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--accent), transparent 58%);
+  background: color-mix(in srgb, var(--sky-1) 62%, var(--surface));
+}
+
+.today-receipts {
+  overflow: hidden;
+}
+
+.today-receipts summary {
+  min-height: 42px;
+  padding: 12px 14px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.today-receipts summary:hover,
+.today-receipts summary:focus-visible {
+  color: var(--accent);
+}
+
+.today-receipts > div {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.today-receipts article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-wash);
+}
+
+.today-receipts article strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.today-receipts article span,
+.today-receipts article p {
+  grid-column: 1;
+}
+
+.today-receipts article p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.today-receipts article button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
 .data-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3967,6 +4064,23 @@ h2 {
   text-transform: uppercase;
 }
 
+.column-settings-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.column-settings-menu label {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.column-settings-menu input,
+.column-settings-menu select,
+.column-settings-menu textarea,
 .add-field-menu input,
 .add-field-menu select,
 .add-field-menu textarea {
@@ -5177,7 +5291,7 @@ h2 {
 
   .command-grid,
   .today-lane-grid,
-  .today-first-read,
+  .today-brief,
   .task-zone,
   .screen-grid,
   .connection-zone,
@@ -7014,22 +7128,34 @@ h2 {
   }
 
   .today-command-strip,
-  .today-first-read,
-  .today-focus-band,
+  .today-brief,
+  .today-focus-card,
+  .today-command-panel,
   .waiting-row {
     grid-template-columns: 1fr;
   }
 
-  .today-focus-band div {
-    padding-right: 0;
-    padding-bottom: 10px;
-    border-right: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 28%);
+  .today-focus-card button,
+  .today-command-panel button {
+    justify-self: start;
   }
 
-  .today-focus-band div:last-of-type {
-    padding-bottom: 0;
-    border-bottom: 0;
+  .today-focus-reason,
+  .today-focus-next {
+    padding-left: 0;
+    padding-top: 10px;
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--coral) 28%, var(--line));
+  }
+
+  .today-receipts article {
+    grid-template-columns: 1fr;
+  }
+
+  .today-receipts article button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
   }
 
   .paste-result-grid {

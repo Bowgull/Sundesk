@@ -109,7 +109,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   })
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'What can slip.' })).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 

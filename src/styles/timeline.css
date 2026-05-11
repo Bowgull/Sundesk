@@ -740,9 +740,9 @@
 
 .gantt-track {
   position: relative;
-  min-height: 74px;
+  min-height: 104px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 28px;
   background: var(--surface-soft);
   overflow: hidden;
 }
@@ -754,12 +754,30 @@
   width: 2px;
   background: var(--ink-2);
   transform: translateX(-1px);
+  z-index: 1;
+}
+
+.gantt-lane-list {
+  position: relative;
   z-index: 3;
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 44px;
+}
+
+.gantt-lane {
+  position: relative;
+  min-height: 38px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 56%, transparent);
+}
+
+.gantt-lane:last-child {
+  border-bottom: 0;
 }
 
 .gantt-bar {
   position: absolute;
-  top: 14px;
+  top: 0;
   display: grid;
   min-width: 110px;
   max-width: 260px;
@@ -803,7 +821,7 @@
   font-style: normal;
   font-weight: 850;
   transform: translateX(-50%);
-  z-index: 5;
+  z-index: 4;
 }
 
 .graph-focus-strip {

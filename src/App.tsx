@@ -687,6 +687,9 @@ function App() {
   const ruleDestinationStats = getRuleDestinationStats(base, localRules, todayDate)
   const activeOnboardingStep = getOnboardingStep(educationState.onboarding.currentStepId)
   const activeOnboardingProgress = getOnboardingStepProgress(activeOnboardingStep?.id)
+  const visibleOnboardingStatus = educationState.onboarding.status === 'notStarted' && activeScreen === 'today'
+    ? 'dismissed'
+    : educationState.onboarding.status
   const rupaulMode = educationState.copyMode.rupaulMode
 
   function getCopy(id: CopyEntryId) {
@@ -1315,12 +1318,6 @@ function App() {
 
       return nextBase
     })
-  }
-
-  function openFieldSettings(field: FieldDefinition) {
-    setSelectedFieldSettingsId(field.id)
-    setOpenFieldMenuId('')
-    setBuildModal('fieldSettings')
   }
 
   function requestDeleteField(field: FieldDefinition) {
@@ -2715,17 +2712,20 @@ function App() {
     return (
       <BuildGridHeader
         field={field}
+        fieldTypeOptions={fieldTypeOptions}
         isPrimaryField={selectedBuildTable?.primaryFieldId === field.id}
         menuKey={menuKey}
+        optionFieldTypes={optionFieldTypes}
         openFieldMenuId={openFieldMenuId}
         onDuplicateField={duplicateField}
         onGroupGridByField={groupGridByField}
         onOpenFieldMenuIdChange={setOpenFieldMenuId}
-        onOpenFieldSettings={openFieldSettings}
         onRequestDeleteField={requestDeleteField}
         onResizeColumn={resizeColumn}
         onSortGridByField={sortGridByField}
         onToggleVisibleField={toggleVisibleField}
+        onUpdateField={updateField}
+        parseOptions={parseOptions}
       />
     )
   }
@@ -3520,7 +3520,7 @@ function App() {
       <OnboardingTour
         canGoBack={activeOnboardingProgress.current > 1}
         progressLabel={activeOnboardingProgress.label}
-        status={educationState.onboarding.status}
+        status={visibleOnboardingStatus}
         step={activeOnboardingStep}
         onAdvance={advanceOnboardingTourStep}
         onBack={goBackOnboardingTourStep}

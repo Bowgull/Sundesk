@@ -86,20 +86,24 @@ export function TodayScreen({
     return `Open ${getCommandTableLabel(record.tableId)} record.`
   }
 
+  function getTodayContext(record: BaseRecord) {
+    return formatTodayContext(getRecordContext(record))
+  }
+
   return (
     <>
       <section className="today-brief" aria-label="Today brief" data-testid="today-brief" id="today">
         <div className="today-brief-copy">
-          <span>Today</span>
-          <h1>What can slip.</h1>
-          <p>What is waiting. What moves next.</p>
+          <span>Home</span>
+          <h1>Today</h1>
+          <p>What can slip. What is waiting. What moves next.</p>
         </div>
 
         {todayFocusRecord && (
           <article className="today-focus-card" aria-label="Today focus" data-testid="today-focus">
             <span>Touch first</span>
             <strong>{getRecordTitle(todayFocusRecord)}</strong>
-            <small>{getCommandTableLabel(todayFocusRecord.tableId)} · {getRecordContext(todayFocusRecord)}</small>
+            <small>{getCommandTableLabel(todayFocusRecord.tableId)} · {getTodayContext(todayFocusRecord)}</small>
             <div className="today-focus-reason">
               <span>Why</span>
               <p>{focusReason}</p>
@@ -131,7 +135,7 @@ export function TodayScreen({
                     <div className="lane-record-top">
                       <div>
                         <strong>{recordTitle}</strong>
-                        <span>{getCommandTableLabel(record.tableId)} · {getRecordContext(record)}</span>
+                        <span>{getCommandTableLabel(record.tableId)} · {getTodayContext(record)}</span>
                       </div>
                       <button type="button" onClick={() => onOpenDailyRecord(record)}>Open</button>
                     </div>
@@ -210,4 +214,19 @@ function getLaneIntent(lane: TodayLane) {
   }
 
   return 'Work to pull forward before it gets loud.'
+}
+
+function formatTodayContext(context: string) {
+  const cleanedContext = context.replaceAll('No status set', 'Needs review')
+
+  return cleanedContext.replace(
+    /(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::\d{2})?/g,
+    (_match, date: string, hourValue: string, minute: string) => {
+      const hour = Number(hourValue)
+      const period = hour >= 12 ? 'PM' : 'AM'
+      const displayHour = hour % 12 || 12
+
+      return `${date} ${displayHour}:${minute} ${period}`
+    },
+  )
 }
