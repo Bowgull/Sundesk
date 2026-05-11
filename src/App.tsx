@@ -148,7 +148,6 @@ import {
   getMeetingWeeklyNoteText,
   getRuleDestinationStats,
   getRuleMatchesForDestination,
-  getScreenStats,
   getTimelineRecords,
   getTimelineSourceRecords,
   getTimelineStatusOptions,
@@ -523,14 +522,6 @@ function App() {
       : todayRuleMatches.slice(0, 1).map((match) => getRulePreviewForBase(base, match.rule)),
     meetingPrepCount: nextMeetingPrep?.agenda.length ?? nextMeetingLinkedTasks.length,
   })
-  const screenStats = getScreenStats(base)
-  const railNavCounts: Partial<Record<AppScreen, number>> = {
-    today: todayChangedRecords.length,
-    communities: communityRecords.length,
-    followups: followupRecords.length,
-    meetings: meetingRecords.length,
-    timeline: timelineSourceRecords.length,
-  }
   const followupCommunityField = base.fields.find((field) => field.tableId === 'followups' && field.id === 'community')
   const meetingTasksField = base.fields.find((field) => field.tableId === 'meetings' && field.id === 'tasks')
   const buildGridDerivation = getBuildGridDerivation(
