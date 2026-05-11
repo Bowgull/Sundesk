@@ -180,3 +180,47 @@ test('Timeline mobile views stay inside the viewport', async ({ browser }) => {
     await page.close()
   }
 })
+
+test('Timeline cards, bars, dates, and graph nodes open the record drawer', async ({ browser }) => {
+  const entries = [
+    ['Grid', (page: Page) => page.getByTestId('timeline-row-task_permit_toronto'), 'Send permit follow-up.'],
+    ['Kanban', (page: Page) => page.locator('.kanban-card', { hasText: 'Send permit follow-up.' }).getByRole('button').first(), 'Send permit follow-up.'],
+    ['Calendar', (page: Page) => page.getByRole('button', { name: /Deadline\. Send permit follow-up\./ }), 'Send permit follow-up.'],
+    ['Timeline', (page: Page) => page.locator('.gantt-bar', { hasText: 'Send permit follow-up.' }), 'Send permit follow-up.'],
+    ['Graph', (page: Page) => page.locator('[data-graph-node-id="task_permit_toronto"]'), 'Send permit follow-up.'],
+  ] as const
+
+  for (const [view, getTarget, expectedTitle] of entries) {
+    const page = await browser.newPage()
+
+    await openTimeline(page)
+    await page.getByRole('tab', { name: view }).click()
+    await getTarget(page).click()
+    await expect(page.getByTestId('record-drawer')).toContainText(expectedTitle)
+    await page.close()
+  }
+})
+
+test('Timeline Kanban movement updates the card lane and persisted status', async ({ page }) => {
+  await openTimeline(page)
+  await page.getByRole('tab', { name: 'Kanban' }).click()
+
+  const blockedLane = page.getByRole('region', { name: 'Blocked lane' })
+  const waitingLane = page.getByRole('region', { name: 'Waiting lane' })
+
+  await expect(blockedLane).toContainText('Send permit follow-up.')
+  await blockedLane.locator('.kanban-card', { hasText: 'Send permit follow-up.' }).locator('.kanban-card-action').click()
+  await expect(page.getByRole('status')).toContainText('Send permit follow-up. moved to Waiting.')
+  await expect(waitingLane).toContainText('Send permit follow-up.')
+  await expect(blockedLane).not.toContainText('Send permit follow-up.')
+
+  const storedStatus = await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem('sundesk-local-workbase-v1') || '{}') as {
+      base?: { records?: Array<{ id: string, values?: Record<string, unknown> }> }
+    }
+
+    return stored.base?.records?.find((record) => record.id === 'task_permit_toronto')?.values?.status
+  })
+
+  expect(storedStatus).toBe('Waiting')
+})

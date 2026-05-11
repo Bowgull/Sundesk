@@ -135,4 +135,37 @@ describe('Timeline command model', () => {
       nextMove: null,
     })
   })
+
+  it('caps dense graph records and keeps crowded calendar days readable', () => {
+    const extraRecords = Array.from({ length: 8 }, (_, index) => ({
+      id: `dense_task_${index}`,
+      tableId: 'tasks',
+      values: {
+        title: `Dense task ${index + 1}.`,
+        status: index % 2 === 0 ? 'Waiting' : 'Blocked',
+        dueDate: '2026-05-13',
+        priority: 'Fire',
+        tags: ['Permit'],
+        community: 'community_toronto',
+      },
+    }))
+    const denseRecords = [...records, ...extraRecords]
+    const model = buildTimelineModel({
+      base: {
+        ...workbase,
+        records: [...workbase.records, ...extraRecords],
+      },
+      records: denseRecords,
+      communityRecords,
+      ruleMatches,
+      todayDate,
+      selectedCalendarDate: '2026-05-13',
+      selectedGraphCommunityId: 'community_toronto',
+    })
+
+    expect(model.graph.nodes.length).toBeLessThanOrEqual(5)
+    expect(model.graph.edges.length).toBeLessThanOrEqual(4)
+    expect(model.calendar.selectedDay?.items.length).toBeGreaterThan(4)
+    expect(model.calendar.selectedDay?.nextAction).toBe('Open Log vendor COIs.')
+  })
 })
