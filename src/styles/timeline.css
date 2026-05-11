@@ -94,8 +94,8 @@
 }
 
 .view-mode-tabs button.selected {
-  background: var(--night);
-  border-color: var(--night);
+  background: var(--night) !important;
+  border-color: var(--night) !important;
   color: #fff !important;
   -webkit-text-fill-color: #fff;
 }
