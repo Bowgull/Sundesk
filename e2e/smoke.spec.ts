@@ -109,7 +109,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   })
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+  await expect(page.getByTestId('today-brief').getByRole('heading', { name: 'Today' })).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 
