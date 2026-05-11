@@ -292,7 +292,7 @@ export function BuildGridCell({
               )
             })}
           </div>
-          <button type="button" onClick={commitGridCellEdit}>Done</button>
+          {field.allowMultiple !== false && <button type="button" onClick={commitGridCellEdit}>Done</button>}
         </div>
       )
     }
@@ -325,7 +325,7 @@ export function BuildGridCell({
   if (isEditing) {
     return (
       <div
-        className="grid-cell-editor"
+        className={`grid-cell-editor ${field.type === 'linkedRecord' ? 'linked-cell-editor-shell' : ''}`}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => onEditorKeyDown(record, field, event)}
       >

@@ -140,7 +140,7 @@ export function CommunitiesScreen({
       <article className="communities-deck-board">
         <div className="communities-deck-header">
           <div>
-            <span>Communities · Fyre Festival GTA</span>
+            <span>Communities · GTA Event Ops</span>
             <h2>Communities are the command center.</h2>
             <p>Scan every place. Open the one that needs attention. The selected card shows what is stuck, waiting, or ready for prep.</p>
           </div>

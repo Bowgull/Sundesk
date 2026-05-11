@@ -3546,9 +3546,9 @@ function App() {
         </div>
 
         {activeScreen === 'communities' && (
-          <section className="rail-context-card" aria-label="Workspace Fyre Festival GTA">
-            <strong>Fyre Festival GTA</strong>
-            <span>Fake Ontario event data. GTA community shape.</span>
+          <section className="rail-context-card" aria-label="Workspace GTA Event Ops">
+            <strong>GTA Event Ops</strong>
+            <span>Fake Ontario event data. Community workflow shape.</span>
           </section>
         )}
 
@@ -3623,10 +3623,10 @@ function App() {
           <summary>
             <span className="privacy-card-summary-copy">
               <span>Workspace</span>
-              <strong>Fyre Festival GTA</strong>
+              <strong>GTA Event Ops</strong>
             </span>
           </summary>
-          <p>{workspaceStatus || 'Fake Ontario event data. GTA community shape.'}</p>
+          <p>{workspaceStatus || 'Fake Ontario event data. Community workflow shape.'}</p>
         </details>
 
         <details className="privacy-card rule-card" data-testid="rail-system-read-card">

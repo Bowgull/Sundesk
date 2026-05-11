@@ -4176,6 +4176,20 @@ h2 {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 64%, transparent);
 }
 
+.linked-cell-editor-shell {
+  position: absolute;
+  z-index: 9;
+  top: calc(100% - 1px);
+  left: 0;
+  width: min(280px, 74vw);
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--aura);
+}
+
 .record-table input,
 .record-table select,
 .record-table textarea,
@@ -4324,6 +4338,7 @@ h2 {
   display: grid;
   gap: 7px;
   min-width: 200px;
+  padding: 8px;
 }
 
 .grid-linked-editor-head {
@@ -4360,15 +4375,17 @@ h2 {
 }
 
 .grid-linked-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  gap: 5px;
+  max-height: 172px;
   min-height: 28px;
+  overflow: auto;
 }
 
 .grid-linked-pills button {
-  min-height: 28px;
-  padding: 0 8px;
+  justify-content: space-between;
+  min-height: 30px;
+  padding: 4px 8px;
   border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
   background: var(--sky-1);
   color: var(--ink);
