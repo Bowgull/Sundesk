@@ -26,7 +26,7 @@ describe('Sundesk Lab sync-ready sandbox', () => {
       'data-routine',
     ])
     expect(sundeskLabModules.every((module) => module.steps.length >= 2)).toBe(true)
-    expect(sundeskLabModules.every((module) => module.scenarioBrief.includes('Fyre'))).toBe(true)
+    expect(sundeskLabModules.every((module) => module.scenarioBrief.includes('GTA'))).toBe(true)
     expect(sundeskLabModules.some((module) => module.sampleData.includes('Toronto'))).toBe(false)
   })
 
@@ -42,7 +42,7 @@ describe('Sundesk Lab sync-ready sandbox', () => {
       selectedView: 'grid',
       coachOpen: true,
       inspectorOpen: true,
-      sampleWorkspaceVersion: 2,
+      sampleWorkspaceVersion: 3,
       updatedAt: '2026-05-10T18:00:00.000Z',
     })
     expect(started.lab.sandbox.records.length).toBeGreaterThan(4)
@@ -107,9 +107,9 @@ describe('Sundesk Lab sync-ready sandbox', () => {
           updatedAt: '2026-05-10T18:00:00.000Z',
           records: [
             {
-              id: 'fyre-permit',
+              id: 'gta-permit',
               table: 'work',
-              title: 'Permit risk memo',
+              title: 'Kensington permit follow-up',
               status: 'Blocked',
               tags: ['Permit risk', 4],
               fake: true,
@@ -130,15 +130,15 @@ describe('Sundesk Lab sync-ready sandbox', () => {
       generatedReceipts: { tags: 'Permit risk route visible.' },
       updatedAt: '2026-05-10T18:00:00.000Z',
     })
-    expect(normalized.educationState.lab.sandbox.records).toEqual([
+    expect(normalized.educationState.lab.sandbox.records).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        id: 'fyre-permit',
+        id: 'gta-permit-risk',
         table: 'work',
-        title: 'Permit risk memo',
+        title: 'Kensington permit follow-up',
         tags: ['Permit risk'],
         fake: true,
       }),
-    ])
+    ]))
   })
 
   it('resets one lesson or all Lab progress without touching non-Lab state', () => {

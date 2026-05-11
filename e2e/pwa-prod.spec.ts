@@ -7,7 +7,7 @@ test('production preview registers the Sundesk offline shell and icons', async (
   if (await page.getByTestId('onboarding-choice').isVisible()) {
     await page.getByRole('button', { name: 'Start on my own' }).click()
   }
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
 
   const serviceWorkerScript = await page.waitForFunction(async () => {
     if (!('serviceWorker' in navigator)) {
@@ -34,9 +34,9 @@ test('production preview registers the Sundesk offline shell and icons', async (
   }
 
   await page.reload({ waitUntil: 'networkidle' })
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
 
   await page.context().setOffline(true)
   await page.goto(productionPreviewUrl)
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
 })

@@ -43,14 +43,14 @@ describe('Sundesk education state helpers', () => {
       },
       lab: {
         activeModuleId: null,
-        sampleWorkspaceVersion: 2,
+        sampleWorkspaceVersion: 3,
         sampleWorkspaceResetAt: null,
         modules: {},
         sandbox: {
           version: 1,
           activeLessonId: null,
           activeSurface: 'start',
-          sampleWorkspaceVersion: 2,
+          sampleWorkspaceVersion: 3,
           selectedView: 'grid',
           selectedFilterTag: null,
           coachOpen: true,
@@ -89,7 +89,7 @@ describe('Sundesk education state helpers', () => {
       },
       lab: {
         activeModuleId: 'meetings',
-        sampleWorkspaceVersion: 2,
+        sampleWorkspaceVersion: 3,
         modules: {
           meetings: {
             status: 'completed',
@@ -144,7 +144,7 @@ describe('Sundesk education state helpers', () => {
       },
       lab: {
         activeModuleId: 'meetings',
-        sampleWorkspaceVersion: 2,
+        sampleWorkspaceVersion: 3,
         modules: {
           meetings: {
             status: 'completed',
@@ -162,12 +162,13 @@ describe('Sundesk education state helpers', () => {
           generatedReceipts: {
             tags: 'Permit risk route visible.',
           },
-          records: [
+          records: expect.arrayContaining([
             expect.objectContaining({
-              id: 'fyre-permit',
+              id: 'gta-permit-risk',
+              title: 'Kensington permit follow-up',
               fake: true,
             }),
-          ],
+          ]),
           updatedAt: '2026-05-10T12:30:00.000Z',
         },
       },

@@ -109,7 +109,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   })
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'What can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 
@@ -343,7 +343,7 @@ test('Settings explains local, shared, bookmark, and install paths without leadi
 })
 
 test('Today renders local lanes, rule receipts, and dependency receipts', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
   await expect(page.getByTestId('rail-workspace-card')).not.toHaveAttribute('open', '')
   await expect(page.getByTestId('rail-system-read-card')).not.toHaveAttribute('open', '')
@@ -377,7 +377,7 @@ test('Today command-send preview is local-only and keeps Today as home', async (
   const firebaseWriteRequests = auditFirebaseWrites(page)
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
 
   const previewSummary = page.getByRole('button', { name: 'Preview summary' })
@@ -401,7 +401,7 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
 
   await page.goto('/')
   await expect(page).toHaveURL(/\/#?$/)
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
   await expect(navigation.getByRole('link', { name: 'Build' })).toBeVisible()
 
@@ -425,7 +425,7 @@ test('Deck-first shell keeps Today home and simplified surfaces reachable', asyn
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
 
   await navigation.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(navigation.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 })
 
@@ -447,7 +447,7 @@ test('Sundesk Lab is a real nav screen and persists module progress locally', as
   await expect(page.getByTestId('sundesk-lab-screen')).toContainText('Sync-ready')
   await expect(page.getByTestId('lab-active-module')).toContainText('Done when')
   await expect(page.getByTestId('lab-active-module')).toContainText('Practice workspace')
-  await expect(page.getByTestId('lab-active-module')).toContainText('Permit risk memo')
+  await expect(page.getByTestId('lab-active-module')).toContainText('Kensington permit follow-up')
 
   await page.getByTestId(labModuleTestId).getByRole('button', { name: /Make tags route work/ }).click()
   await expect(page.getByTestId('lab-active-module')).toContainText('Make tags route work')
@@ -720,7 +720,7 @@ test('Build exports the current visible table view as a local CSV download', asy
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
@@ -756,7 +756,7 @@ test('Build exports the current visible table view as a local CSV download', asy
   expect(dataRows.some((row) => row.includes('Send permit follow-up'))).toBe(true)
 
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
 })
 
@@ -1344,7 +1344,7 @@ test('Settings keeps data status visible and engine details manual', async ({ pa
   await expect(page.getByTestId('rule-destination-grid').getByText('Today')).toBeVisible()
   await expect(page.getByTestId('rule-destination-grid')).toContainText('Timeline')
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
 })
@@ -1501,7 +1501,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Toronto')
 
   await page.goto('/#today')
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' })).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText(originalTitle)).toBeVisible()
 
@@ -1576,7 +1576,7 @@ test('Settings exports and imports a local backup without changing Firebase writ
   await expect(page.getByRole('row', { name: new RegExp(originalTitle) })).toContainText('Toronto')
   await expect(page.getByRole('row', { name: new RegExp(changedTitle) })).toBeHidden()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
   await expect(page.getByTestId('today-lane-now').getByText(originalTitle)).toBeVisible()
   await page.getByRole('navigation', { name: 'Sundesk navigation' }).getByRole('link', { name: 'Build' }).click()
   await expect(page.getByRole('heading', { name: 'Build is freeform first.' })).toBeVisible()
@@ -1639,7 +1639,7 @@ test('Mobile keeps navigation and touch targets usable', async ({ page }) => {
   const coreNavigationLabels = ['Today', 'Communities', 'Waiting On', 'Meetings', 'Timeline', 'Build']
 
   expect(railPosition).toBe('fixed')
-  await expect(page.getByRole('heading', { name: 'Start with what can slip.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Can slip today.' })).toBeVisible()
 
   for (const label of coreNavigationLabels) {
     const link = navigation.getByRole('link', { name: label })
