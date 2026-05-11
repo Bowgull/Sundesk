@@ -4277,6 +4277,12 @@ h2 {
   width: 160px;
 }
 
+.grid-cell-context-menu {
+  top: calc(100% - 1px);
+  left: 8px;
+  width: 150px;
+}
+
 .add-field-header-cell {
   overflow: visible;
 }

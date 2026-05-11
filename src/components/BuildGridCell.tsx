@@ -24,6 +24,7 @@ type BuildGridCellProps = {
   isComputedField: (field: FieldDefinition) => boolean
   linkedRecordFilters: Record<string, string>
   onEditorKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLDivElement>) => void
+  onClearValue: (record: BaseRecord, field: FieldDefinition) => void
   onCommitValue: (recordId: string, fieldId: string, value: RecordValue) => void
   onQuickUpdate: (recordId: string, fieldId: string, value: RecordValue) => void
   onSavedKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLButtonElement>) => void
@@ -86,6 +87,7 @@ export function BuildGridCell({
   getRecordTitle,
   isComputedField,
   linkedRecordFilters,
+  onClearValue,
   onEditorKeyDown,
   onCommitValue,
   onQuickUpdate,
@@ -100,6 +102,7 @@ export function BuildGridCell({
   startGridCellEdit,
 }: BuildGridCellProps) {
   const [activeLinkedOptionIndex, setActiveLinkedOptionIndex] = useState(0)
+  const [isCellMenuOpen, setIsCellMenuOpen] = useState(false)
   const cell = { recordId: record.id, fieldId: field.id }
   const isSelected = isSameGridCell(selectedGridCell, cell)
   const isEditing = isSameGridCell(editingGridCell, cell)
@@ -368,32 +371,89 @@ export function BuildGridCell({
     )
   }
 
+  function openCellMenu() {
+    if (editingGridCell && !isSameGridCell(editingGridCell, cell)) {
+      commitGridCellEdit()
+    }
+
+    selectGridCell(record.id, field.id)
+    setSelectedBuildRecordId(record.id)
+    setIsCellMenuOpen(true)
+  }
+
   return (
-    <button
-      aria-label={`${getRecordTitle(record)} ${field.label}`}
-      className={`grid-cell-button ${isSelected ? 'selected-cell' : ''} ${isReadonly ? 'readonly-cell' : ''}`}
-      data-grid-cell={getGridCellKey(cell)}
-      data-onboarding-target={onboardingTarget}
-      data-testid={`grid-cell-${record.id}-${field.id}`}
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation()
-        if (editingGridCell && !isSameGridCell(editingGridCell, cell)) {
-          commitGridCellEdit()
-        }
-        selectGridCell(record.id, field.id)
-        setSelectedBuildRecordId(record.id)
-        if (field.type === 'checkbox' && !isReadonly) {
-          onQuickUpdate(record.id, field.id, !record.values[field.id])
-        }
-      }}
-      onDoubleClick={(event) => {
-        event.stopPropagation()
-        startGridCellEdit(record, field)
-      }}
-      onKeyDown={(event) => onSavedKeyDown(record, field, event)}
-    >
-      {renderSavedGridCell()}
-    </button>
+    <>
+      <button
+        aria-label={`${getRecordTitle(record)} ${field.label}`}
+        aria-haspopup="menu"
+        aria-expanded={isCellMenuOpen}
+        className={`grid-cell-button ${isSelected ? 'selected-cell' : ''} ${isReadonly ? 'readonly-cell' : ''}`}
+        data-grid-cell={getGridCellKey(cell)}
+        data-onboarding-target={onboardingTarget}
+        data-testid={`grid-cell-${record.id}-${field.id}`}
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation()
+          setIsCellMenuOpen(false)
+          if (editingGridCell && !isSameGridCell(editingGridCell, cell)) {
+            commitGridCellEdit()
+          }
+          selectGridCell(record.id, field.id)
+          setSelectedBuildRecordId(record.id)
+          if (field.type === 'checkbox' && !isReadonly) {
+            onQuickUpdate(record.id, field.id, !record.values[field.id])
+          }
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          openCellMenu()
+        }}
+        onDoubleClick={(event) => {
+          event.stopPropagation()
+          setIsCellMenuOpen(false)
+          startGridCellEdit(record, field)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+            event.preventDefault()
+            openCellMenu()
+            return
+          }
+
+          onSavedKeyDown(record, field, event)
+        }}
+      >
+        {renderSavedGridCell()}
+      </button>
+      {isCellMenuOpen && (
+        <span className="grid-field-menu grid-cell-context-menu" role="menu" aria-label="Cell actions">
+          <button
+            disabled={isReadonly}
+            role="menuitem"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setIsCellMenuOpen(false)
+              startGridCellEdit(record, field)
+            }}
+          >
+            Edit cell
+          </button>
+          <button
+            disabled={isReadonly}
+            role="menuitem"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setIsCellMenuOpen(false)
+              onClearValue(record, field)
+            }}
+          >
+            Clear cell
+          </button>
+        </span>
+      )}
+    </>
   )
 }

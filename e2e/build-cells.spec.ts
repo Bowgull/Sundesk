@@ -111,3 +111,21 @@ test('Build arrow keys move cell focus through the grid', async ({ page }) => {
   await secondDueDateCell.press('ArrowRight')
   await expect(secondPriorityCell).toBeFocused()
 })
+
+test('Build cell context menu clears a cell without opening a modal', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const titleCell = page.locator('[data-testid$="-title"]').first()
+
+  await expect(titleCell).not.toContainText('Empty')
+  await titleCell.click({ button: 'right' })
+  const cellMenu = page.getByRole('menu', { name: 'Cell actions' })
+
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(cellMenu).toBeVisible()
+  await cellMenu.getByRole('menuitem', { name: 'Clear cell' }).click()
+  await expect(titleCell).toContainText('Empty')
+  await page.reload()
+  await expect(page.locator('[data-testid$="-title"]').first()).toContainText('Empty')
+})

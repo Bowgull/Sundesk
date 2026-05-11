@@ -3081,6 +3081,7 @@ function App() {
         getRecordTitle={(recordItem) => getRecordTitle(base, recordItem)}
         isComputedField={(fieldItem) => computedFieldTypes.includes(fieldItem.type)}
         linkedRecordFilters={linkedRecordFilters}
+        onClearValue={(recordItem, fieldItem) => commitGridCellValue(recordItem.id, fieldItem.id, getEmptyFieldValue(fieldItem.type))}
         onCommitValue={commitGridCellValue}
         onQuickUpdate={updateRecordField}
         record={record}
