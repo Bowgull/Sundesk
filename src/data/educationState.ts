@@ -30,7 +30,7 @@ export type SundeskLabSandboxState = {
   version: 1
   activeLessonId: string | null
   activeSurface: string
-  sampleWorkspaceVersion: 2
+  sampleWorkspaceVersion: 3
   selectedView: string
   selectedFilterTag: string | null
   coachOpen: boolean
@@ -54,7 +54,7 @@ export interface SundeskEducationState {
   }
   lab: {
     activeModuleId: string | null
-    sampleWorkspaceVersion: 2
+    sampleWorkspaceVersion: 3
     sampleWorkspaceResetAt: string | null
     modules: Record<string, SundeskEducationProgress>
     sandbox: SundeskLabSandboxState
@@ -93,14 +93,14 @@ export function getDefaultSundeskEducationState(): SundeskEducationState {
     },
     lab: {
       activeModuleId: null,
-      sampleWorkspaceVersion: 2,
+      sampleWorkspaceVersion: 3,
       sampleWorkspaceResetAt: null,
       modules: {},
       sandbox: {
         version: 1,
         activeLessonId: null,
         activeSurface: 'start',
-        sampleWorkspaceVersion: 2,
+        sampleWorkspaceVersion: 3,
         selectedView: 'grid',
         selectedFilterTag: null,
         coachOpen: true,
@@ -206,7 +206,7 @@ function normalizeLabState(
 
   return {
     activeModuleId,
-    sampleWorkspaceVersion: 2,
+    sampleWorkspaceVersion: 3,
     sampleWorkspaceResetAt: normalizeNullableString(state.sampleWorkspaceResetAt),
     modules: normalizeLabModules(state.modules),
     sandbox: normalizeLabSandboxState(state.sandbox, activeModuleId),
@@ -275,14 +275,14 @@ function normalizeLabSandboxState(value: unknown, activeModuleId: string | null)
     version: 1,
     activeLessonId: normalizeLabLessonId(state.activeLessonId) || activeModuleId,
     activeSurface: normalizeNullableString(state.activeSurface) || 'start',
-    sampleWorkspaceVersion: 2,
+    sampleWorkspaceVersion: 3,
     selectedView: normalizeNullableString(state.selectedView) || 'grid',
     selectedFilterTag: normalizeNullableString(state.selectedFilterTag),
     coachOpen: typeof state.coachOpen === 'boolean' ? state.coachOpen : true,
     inspectorOpen: typeof state.inspectorOpen === 'boolean' ? state.inspectorOpen : true,
     completedTaskIds: normalizeStringArray(state.completedTaskIds),
     generatedReceipts: normalizeStringRecord(state.generatedReceipts),
-    records: normalizeLabRecords(state.records),
+    records: state.sampleWorkspaceVersion === 3 ? normalizeLabRecords(state.records) : getDefaultLabRecords(),
     updatedAt: normalizeNullableString(state.updatedAt),
   }
 }

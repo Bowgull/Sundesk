@@ -2514,6 +2514,13 @@ function App() {
     setEditingGridCell(null)
   }
 
+  function commitGridCellValue(recordId: string, fieldId: string, value: RecordValue) {
+    updateRecordField(recordId, fieldId, value)
+    setEditingGridCell(null)
+    setSelectedGridCell({ recordId, fieldId })
+    focusGridCell({ recordId, fieldId })
+  }
+
   function cancelGridCellEdit() {
     setEditingGridCell(null)
   }
@@ -3052,6 +3059,7 @@ function App() {
         getRecordTitle={(recordItem) => getRecordTitle(base, recordItem)}
         isComputedField={(fieldItem) => computedFieldTypes.includes(fieldItem.type)}
         linkedRecordFilters={linkedRecordFilters}
+        onCommitValue={commitGridCellValue}
         onQuickUpdate={updateRecordField}
         record={record}
         renderCheckboxIcon={renderCheckboxIcon}

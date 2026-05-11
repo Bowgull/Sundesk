@@ -446,7 +446,7 @@ export function startSundeskLabModule(
     lab: {
       ...educationState.lab,
       activeModuleId: module.id,
-      sampleWorkspaceVersion: 2,
+      sampleWorkspaceVersion: 3,
       modules: {
         ...educationState.lab.modules,
         [module.id]: nextProgress,
@@ -456,7 +456,7 @@ export function startSundeskLabModule(
         version: 1,
         activeLessonId: module.id,
         activeSurface: module.surface,
-        sampleWorkspaceVersion: 2,
+        sampleWorkspaceVersion: 3,
         selectedView: module.surface === 'timeline' ? educationState.lab.sandbox.selectedView : 'grid',
         updatedAt: now,
       },
@@ -626,12 +626,13 @@ export function resetSundeskLabProgress(
     ...educationState,
     lab: {
       activeModuleId: null,
-      sampleWorkspaceVersion: 2,
+      sampleWorkspaceVersion: 3,
       sampleWorkspaceResetAt: now,
       modules: {},
       sandbox: {
         ...educationState.lab.sandbox,
         activeLessonId: null,
+        activeSurface: 'start',
         selectedView: 'grid',
         selectedFilterTag: null,
         completedTaskIds: [],

@@ -93,7 +93,15 @@ test('Build community link edits change the Communities surface', async ({ page 
   await page.getByTestId('build-table-tasks').click()
 
   await editTextCell(page, 'task_site_map_vaughan', 'title', 'Title', 'Toronto site map chase.')
-  await editLinkedRecordCell(page, 'task_site_map_vaughan', 'community', 'Community', 'Toronto')
+  const communityCell = page.getByTestId('grid-cell-task_site_map_vaughan-community')
+
+  await communityCell.dblclick()
+  const editor = page.locator('.grid-cell-editor')
+
+  await editor.getByLabel('Search Community').fill('Toronto')
+  await editor.getByRole('button', { name: /Toronto/ }).click()
+  await expect(communityCell).toContainText('Toronto')
+  await expect(editor).toHaveCount(0)
 
   await page.goto('/#communities')
   await page.getByRole('button', { name: /Toronto/ }).first().click()

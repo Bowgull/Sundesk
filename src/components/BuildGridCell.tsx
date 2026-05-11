@@ -24,6 +24,7 @@ type BuildGridCellProps = {
   isComputedField: (field: FieldDefinition) => boolean
   linkedRecordFilters: Record<string, string>
   onEditorKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLDivElement>) => void
+  onCommitValue: (recordId: string, fieldId: string, value: RecordValue) => void
   onQuickUpdate: (recordId: string, fieldId: string, value: RecordValue) => void
   onSavedKeyDown: (record: BaseRecord, field: FieldDefinition, event: KeyboardEvent<HTMLButtonElement>) => void
   record: BaseRecord
@@ -86,6 +87,7 @@ export function BuildGridCell({
   isComputedField,
   linkedRecordFilters,
   onEditorKeyDown,
+  onCommitValue,
   onQuickUpdate,
   onSavedKeyDown,
   record,
@@ -273,7 +275,16 @@ export function BuildGridCell({
                   aria-pressed={isSelectedLinkedRecord}
                   key={linkedRecord.id}
                   type="button"
-                  onClick={() => setEditDraft(toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple))}
+                  onClick={() => {
+                    const nextValue = toggleListValue(selectedLinkedIds, linkedRecord.id, field.allowMultiple)
+
+                    if (field.allowMultiple === false) {
+                      onCommitValue(record.id, field.id, nextValue)
+                      return
+                    }
+
+                    setEditDraft(nextValue)
+                  }}
                 >
                   <span>{getPickerRecordLabel(linkedRecord)}</span>
                   <small>{getPickerRecordMeta(linkedRecord)}</small>
