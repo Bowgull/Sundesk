@@ -12,6 +12,7 @@ type BuildPasteSummary = {
   updated: number
   columns: readonly string[]
   skippedColumns: readonly string[]
+  issues: readonly string[]
   suggestions: readonly string[]
   actions: readonly BuildPasteAction[]
 }
@@ -26,9 +27,16 @@ function getPasteExplanation(buildPasteSummary: BuildPasteSummary) {
   const skippedCopy = buildPasteSummary.skippedColumns.length > 0
     ? `Skipped: ${buildPasteSummary.skippedColumns.join(', ')}.`
     : ''
+  const issueCopy = buildPasteSummary.issues.length > 0
+    ? `Check: ${buildPasteSummary.issues.slice(0, 2).join(' ')}`
+    : ''
 
   if (buildPasteSummary.suggestions.length > 0) {
-    return [buildPasteSummary.suggestions.slice(0, 2).join(' '), skippedCopy].filter(Boolean).join(' ')
+    return [buildPasteSummary.suggestions.slice(0, 2).join(' '), skippedCopy, issueCopy].filter(Boolean).join(' ')
+  }
+
+  if (buildPasteSummary.issues.length > 0) {
+    return [issueCopy, skippedCopy].filter(Boolean).join(' ')
   }
 
   if (buildPasteSummary.skippedColumns.length > 0) {

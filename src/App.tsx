@@ -30,6 +30,7 @@ import {
 import { type CopyEntryId, getCopyModeText } from './data/copyMode'
 import {
   coerceBuildPasteCellValue,
+  getBuildPasteCellIssue,
   getBuildPasteOptionUpdates,
   getBuildPasteOverflowColumns,
   parseBuildPasteRows,
@@ -126,6 +127,7 @@ import {
   type FieldDefinition,
   type FieldType,
   type RecordValue,
+  type Workbase,
   getBacklinksForRecord,
   getDependencyReferencesForRecord,
   getLinkedRecordsForRecord,
@@ -223,6 +225,7 @@ type BuildPasteSummary = {
   updated: number
   columns: string[]
   skippedColumns: string[]
+  issues: string[]
   suggestions: string[]
   actions: BuildPasteAction[]
 }
@@ -1835,14 +1838,18 @@ function App() {
   }
 
   function coercePastedCellValue(field: FieldDefinition, value: string): RecordValue {
-    const linkedRecords = field.linkedTableId
-      ? getRecordsForTable(base, field.linkedTableId).map((record) => ({
-          id: record.id,
-          title: getRecordTitle(base, record),
-        }))
-      : []
+    const linkedRecords = getPasteLinkedRecordOptions(base, field)
 
     return coerceBuildPasteCellValue(field, value, linkedRecords)
+  }
+
+  function getPasteLinkedRecordOptions(sourceBase: Workbase, field: FieldDefinition) {
+    return field.linkedTableId
+      ? getRecordsForTable(sourceBase, field.linkedTableId).map((record) => ({
+          id: record.id,
+          title: getRecordTitle(sourceBase, record),
+        }))
+      : []
   }
 
   function coerceStoredFieldValue(field: FieldDefinition, value: RecordValue): RecordValue {
@@ -2060,6 +2067,7 @@ function App() {
     const newRecords: BaseRecord[] = []
     const touchedColumnLabels = new Set<string>()
     const skippedColumnLabels = new Set<string>()
+    const pasteIssueLabels = new Set<string>()
     const pastedValuesByFieldId = new Map<string, string[]>()
     const updatedRowCount = rows.filter((_, rowIndex) => Boolean(flattenedRecords[startRecordIndex + rowIndex])).length
     const createdRowCount = rows.length - updatedRowCount
@@ -2076,6 +2084,12 @@ function App() {
         if (computedFieldTypes.includes(field.type)) {
           skippedColumnLabels.add(field.label)
           return
+        }
+
+        const issue = getBuildPasteCellIssue(field, cell, getPasteLinkedRecordOptions(base, field))
+
+        if (issue) {
+          pasteIssueLabels.add(issue)
         }
 
         pastedValuesByFieldId.set(field.id, [...(pastedValuesByFieldId.get(field.id) || []), cell])
@@ -2117,6 +2131,10 @@ function App() {
           }
 
           if (computedFieldTypes.includes(field.type)) {
+            return
+          }
+
+          if (getBuildPasteCellIssue(field, cell, getPasteLinkedRecordOptions(current, field))) {
             return
           }
 
@@ -2175,6 +2193,7 @@ function App() {
       updated: updatedRowCount,
       columns: Array.from(touchedColumnLabels),
       skippedColumns: Array.from(skippedColumnLabels),
+      issues: Array.from(pasteIssueLabels),
       suggestions: pasteSuggestions,
       actions: pasteActions,
     })

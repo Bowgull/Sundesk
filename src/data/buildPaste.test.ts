@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   coerceBuildPasteCellValue,
+  getBuildPasteCellIssue,
   getBuildPasteOptionUpdates,
   getBuildPasteOverflowColumns,
   parseBuildPasteRows,
@@ -34,6 +35,42 @@ describe('Build paste helpers', () => {
     expect(coerceBuildPasteCellValue(linkedField, 'Toronto', [
       { id: 'community_toronto', title: 'Toronto' },
     ])).toEqual(['community_toronto'])
+  })
+
+  it('keeps invalid numeric paste values empty instead of turning them into zero', () => {
+    const numberField: FieldDefinition = { id: 'budget', tableId: 'tasks', label: 'Budget', type: 'currency' }
+
+    expect(coerceBuildPasteCellValue(numberField, 'not a number')).toBe('')
+  })
+
+  it('explains invalid numeric paste values in plain language', () => {
+    const numberField: FieldDefinition = { id: 'budget', tableId: 'tasks', label: 'Budget', type: 'currency' }
+
+    expect(getBuildPasteCellIssue(numberField, 'not a number')).toBe('Budget needs a number.')
+    expect(getBuildPasteCellIssue(numberField, '')).toBe('')
+    expect(getBuildPasteCellIssue(numberField, '$1,250')).toBe('')
+  })
+
+  it('keeps invalid date paste values empty and explains the issue', () => {
+    const dateField: FieldDefinition = { id: 'dueDate', tableId: 'tasks', label: 'Due date', type: 'date' }
+    const dateTimeField: FieldDefinition = { id: 'meetingAt', tableId: 'tasks', label: 'Meeting at', type: 'dateTime' }
+
+    expect(coerceBuildPasteCellValue(dateField, 'tomorrowish')).toBe('')
+    expect(coerceBuildPasteCellValue(dateTimeField, 'May soon')).toBe('')
+    expect(getBuildPasteCellIssue(dateField, 'tomorrowish')).toBe('Due date needs a date.')
+    expect(getBuildPasteCellIssue(dateField, '2026-05-22')).toBe('')
+    expect(getBuildPasteCellIssue(dateTimeField, '2026-05-22T14:30')).toBe('')
+  })
+
+  it('explains linked-record paste misses in plain language', () => {
+    const linkedField: FieldDefinition = { id: 'community', tableId: 'tasks', label: 'Community', type: 'linkedRecord', linkedTableId: 'communities' }
+
+    expect(getBuildPasteCellIssue(linkedField, 'Atlantis', [
+      { id: 'community_toronto', title: 'Toronto' },
+    ])).toBe('Community did not match a record.')
+    expect(getBuildPasteCellIssue(linkedField, 'Toronto', [
+      { id: 'community_toronto', title: 'Toronto' },
+    ])).toBe('')
   })
 
   it('learns new select and tag options from pasted values', () => {

@@ -88,3 +88,75 @@ test('Build keeps the Add column menu inside the visible table on narrow screens
   expect(menuBox.x).toBeGreaterThanOrEqual(wrapBox.x)
   expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(wrapBox.x + wrapBox.width)
 })
+
+test('Build keeps long tag chips inside their cells', async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 820 })
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await page.getByRole('button', { name: 'Add column' }).click()
+  const addColumnMenu = page.getByTestId('build-add-column-menu')
+  const longTag = 'VendorReadinessProofWithAVeryLongCOILabelThatShouldStayInsideTheCell'
+
+  await addColumnMenu.getByLabel('Column name').fill('Launch tags')
+  await addColumnMenu.getByLabel('Type').selectOption('multiSelect')
+  await addColumnMenu.getByLabel('Options').fill(longTag)
+  await addColumnMenu.getByRole('button', { name: 'Add column' }).click()
+
+  const tagCell = page.locator('[data-testid$="-launch_tags"]').first()
+
+  await tagCell.click()
+  await tagCell.press('Enter')
+  await page.getByRole('button', { name: longTag }).click()
+  await page.keyboard.press('Tab')
+
+  const cellBox = await tagCell.boundingBox()
+  const chipBox = await tagCell.locator('.select-tag').boundingBox()
+
+  if (!cellBox || !chipBox) {
+    throw new Error('Missing long tag chip bounds.')
+  }
+
+  expect(chipBox.x).toBeGreaterThanOrEqual(cellBox.x)
+  expect(chipBox.x + chipBox.width).toBeLessThanOrEqual(cellBox.x + cellBox.width)
+})
+
+test('Build keeps many columns horizontally scrollable without shrinking the table', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 760 })
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  for (let index = 1; index <= 8; index += 1) {
+    const addColumnButton = page.getByRole('button', { name: 'Add column' }).first()
+
+    await addColumnButton.scrollIntoViewIfNeeded()
+    await addColumnButton.click()
+    const addColumnMenu = page.getByTestId('build-add-column-menu')
+
+    await addColumnMenu.getByLabel('Column name').fill(`Stress column ${index}`)
+    await addColumnMenu.getByRole('button', { name: 'Add column' }).click()
+    await expect(page.getByRole('columnheader', { name: new RegExp(`Stress column ${index}`) }).first()).toBeVisible()
+  }
+
+  const tableWrap = page.getByTestId('record-table-wrap').first()
+  const scrollStateBefore = await tableWrap.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollLeft: element.scrollLeft,
+    scrollWidth: element.scrollWidth,
+  }))
+
+  expect(scrollStateBefore.scrollWidth).toBeGreaterThan(scrollStateBefore.clientWidth)
+
+  await tableWrap.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth
+  })
+  await expect(page.getByRole('columnheader', { name: /Stress column 8/ }).first()).toBeVisible()
+  const scrollStateAfter = await tableWrap.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollLeft: element.scrollLeft,
+    scrollWidth: element.scrollWidth,
+  }))
+
+  expect(scrollStateAfter.scrollLeft).toBeGreaterThan(scrollStateBefore.scrollLeft)
+  expect(scrollStateAfter.scrollWidth).toBeGreaterThan(scrollStateAfter.clientWidth)
+})

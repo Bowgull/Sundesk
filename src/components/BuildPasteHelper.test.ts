@@ -14,6 +14,7 @@ describe('BuildPasteHelper', () => {
           updated: 1,
           columns: ['Title', 'Status'],
           skippedColumns: ['Extra column 1'],
+          issues: [],
           suggestions: ['Status reads as a select field.'],
           actions: [],
         },
@@ -34,6 +35,7 @@ describe('BuildPasteHelper', () => {
           updated: 3,
           columns: ['Title'],
           skippedColumns: [],
+          issues: [],
           suggestions: [],
           actions: [],
         },
@@ -41,5 +43,25 @@ describe('BuildPasteHelper', () => {
     )
 
     expect(html).toContain('4 rows pasted. 28 cells changed. 1 new. 3 updated.')
+  })
+
+  it('explains invalid paste values plainly', () => {
+    const html = renderToStaticMarkup(
+      createElement(BuildPasteHelper, {
+        applyPasteAction: () => undefined,
+        buildPasteReceipt: '1 rows pasted. 1 cells changed.',
+        buildPasteSummary: {
+          created: 0,
+          updated: 1,
+          columns: ['Permit price'],
+          skippedColumns: [],
+          issues: ['Permit price needs a number.'],
+          suggestions: [],
+          actions: [],
+        },
+      }),
+    )
+
+    expect(html).toContain('Check: Permit price needs a number.')
   })
 })

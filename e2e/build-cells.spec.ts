@@ -129,3 +129,103 @@ test('Build cell context menu clears a cell without opening a modal', async ({ p
   await page.reload()
   await expect(page.locator('[data-testid$="-title"]').first()).toContainText('Empty')
 })
+
+test('Build paste keeps invalid numeric values empty instead of writing zero', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await page.getByRole('button', { name: 'Add column' }).click()
+  const addColumnMenu = page.getByTestId('build-add-column-menu')
+
+  await addColumnMenu.getByLabel('Column name').fill('Permit price')
+  await addColumnMenu.getByLabel('Type').selectOption('currency')
+  await addColumnMenu.getByRole('button', { name: 'Add column' }).click()
+
+  const priceCell = page.locator('[data-testid$="-permit_price"]').first()
+
+  await priceCell.click()
+  await priceCell.evaluate((element, text) => {
+    const clipboardData = new DataTransfer()
+
+    clipboardData.setData('text/plain', text)
+    const event = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    })
+
+    element.dispatchEvent(event)
+  }, 'not a number')
+
+  await expect(priceCell).toContainText('Empty')
+  await expect(priceCell).not.toContainText('$0')
+  await expect(page.getByLabel('Post-paste helpers')).toContainText('Permit price needs a number.')
+  await page.reload()
+  await expect(page.locator('[data-testid$="-permit_price"]').first()).toContainText('Empty')
+})
+
+test('Build paste keeps existing date values when pasted date text is invalid', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  await page.getByRole('button', { name: 'Add column' }).click()
+  const addColumnMenu = page.getByTestId('build-add-column-menu')
+
+  await addColumnMenu.getByLabel('Column name').fill('Permit date')
+  await addColumnMenu.getByLabel('Type').selectOption('date')
+  await addColumnMenu.getByRole('button', { name: 'Add column' }).click()
+
+  const dateCell = page.locator('[data-testid$="-permit_date"]').first()
+
+  await dateCell.click()
+  await dateCell.press('Enter')
+  await page.getByLabel('Permit date editor').fill('2026-05-22')
+  await page.getByLabel('Permit date editor').press('Enter')
+  await expect(dateCell).toContainText('2026-05-22')
+
+  await dateCell.click()
+  await dateCell.evaluate((element, text) => {
+    const clipboardData = new DataTransfer()
+
+    clipboardData.setData('text/plain', text)
+    const event = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    })
+
+    element.dispatchEvent(event)
+  }, 'tomorrowish')
+
+  await expect(dateCell).toContainText('2026-05-22')
+  await expect(page.getByLabel('Post-paste helpers')).toContainText('Permit date needs a date.')
+  await page.reload()
+  await expect(page.locator('[data-testid$="-permit_date"]').first()).toContainText('2026-05-22')
+})
+
+test('Build paste keeps existing linked records when pasted text does not match a record', async ({ page }) => {
+  await page.goto('/#build')
+  await page.getByTestId('build-table-tasks').click()
+
+  const communityCell = page.getByTestId('grid-cell-task_permit_toronto-community')
+
+  await expect(communityCell).toContainText('Toronto')
+  await communityCell.click()
+  await communityCell.evaluate((element, text) => {
+    const clipboardData = new DataTransfer()
+
+    clipboardData.setData('text/plain', text)
+    const event = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    })
+
+    element.dispatchEvent(event)
+  }, 'Atlantis')
+
+  await expect(communityCell).toContainText('Toronto')
+  await expect(page.getByLabel('Post-paste helpers')).toContainText('Community did not match a record.')
+  await page.reload()
+  await expect(page.getByTestId('grid-cell-task_permit_toronto-community')).toContainText('Toronto')
+})

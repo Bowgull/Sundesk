@@ -44,12 +44,66 @@ export function coerceBuildPasteCellValue(
   }
 
   if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
+    if (!trimmedValue) {
+      return ''
+    }
+
     const numericValue = Number(trimmedValue.replace(/[$,%]/g, '').replace(/,/g, ''))
 
-    return Number.isFinite(numericValue) ? numericValue : 0
+    return Number.isFinite(numericValue) ? numericValue : ''
+  }
+
+  if (field.type === 'date' || field.type === 'dateTime') {
+    return isValidBuildPasteDateValue(field, trimmedValue) ? trimmedValue : ''
   }
 
   return trimmedValue
+}
+
+function isValidBuildPasteDateValue(field: FieldDefinition, value: string) {
+  if (!value) {
+    return true
+  }
+
+  if (field.type === 'date') {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00`))
+  }
+
+  if (field.type === 'dateTime') {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))
+  }
+
+  return true
+}
+
+export function getBuildPasteCellIssue(
+  field: FieldDefinition,
+  value: string,
+  linkedRecords: BuildPasteLinkedRecordOption[] = [],
+) {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  if (['number', 'currency', 'percent', 'rating'].includes(field.type)) {
+    const numericValue = Number(trimmedValue.replace(/[$,%]/g, '').replace(/,/g, ''))
+
+    return Number.isFinite(numericValue) ? '' : `${field.label} needs a number.`
+  }
+
+  if ((field.type === 'date' || field.type === 'dateTime') && !isValidBuildPasteDateValue(field, trimmedValue)) {
+    return `${field.label} needs a ${field.type === 'dateTime' ? 'date and time' : 'date'}.`
+  }
+
+  if (field.type === 'linkedRecord') {
+    const matchedRecord = linkedRecords.find((record) => record.title.toLowerCase() === trimmedValue.toLowerCase())
+
+    return matchedRecord ? '' : `${field.label} did not match a record.`
+  }
+
+  return ''
 }
 
 export function getBuildPasteOptionUpdates(
