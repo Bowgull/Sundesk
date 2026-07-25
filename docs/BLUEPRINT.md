@@ -2,7 +2,7 @@
 
 Sundesk is a private operations workbase for Lindsay Bell at SALTXC.
 
-It borrows Airtable's useful primitives: typed fields, linked records, saved views, record drawers, visual modes, templates, and automations. It does not ask Lindsay to live inside a database. The daily surface is a cockpit that shows what matters, why it matters, and what to do next.
+It borrows Airtable's useful logic: tables, records, typed fields, linked records, backlinks, lookups, rollups, counts, saved views, visual modes, templates, interfaces, and automations. It does not ask Lindsay to live inside a database. The daily surface is a cockpit that shows what matters, why it matters, and what to do next.
 
 ## Product Stance
 
@@ -14,13 +14,69 @@ It is:
 - Guided cockpit on top.
 - Manual metadata entry.
 - Custom tables in V1.
-- Task creation in V1.
-- Dependencies in V1.
-- Linked records.
+- Universal records.
+- Task creation in V1 as one table, not the whole app.
+- Dependencies in V1 as typed links between records.
+- Linked records across every table.
+- Backlinks.
+- Lookups.
+- Rollups.
+- Counts.
 - Saved views.
 - Custom automations.
 - Daily digest.
 - Privacy first by default.
+
+## Product Architecture
+
+The current product plan lives in [Product Architecture Plan](PRODUCT_ARCHITECTURE_PLAN.md).
+
+Sundesk is a hybrid:
+
+- Airtable underneath.
+- Notion in record focus.
+- Baserow in grid discipline.
+- SmartSuite in linked-record display.
+- Monday only where visual status helps.
+- Sundesk on top for Today, Communities, meeting prep, and open loops.
+
+The core engines are schema, records, fields, relationships, views, interfaces, and rules.
+
+The power belongs in Build. The calm belongs in Today.
+
+Tables are the core logic. Build is where that logic becomes visible.
+
+Today is not separate from Build. Today is computed from the tables, fields, linked records, views, and rules that Build controls.
+
+## Main Screen Model
+
+Sundesk is an app shell, not a long scrolling page.
+
+The sidebar opens screens:
+
+- Today.
+- Communities.
+- Tasks.
+- Follow-ups.
+- Meetings.
+- Timeline.
+- Build.
+- Settings.
+
+Each sidebar item is a separate window, tab, or screen in the user's mental model.
+
+Screens can contain their own tabs and views. Build contains table tabs. Tables contain saved views. Records open in modals. Those are nested surfaces.
+
+Do not turn the app into a document with anchors.
+
+The competitor model is visual and structural:
+
+- Airtable: base, tables, records, fields, and table-specific views.
+- Notion: pages, database views, linked database views, and focused records.
+- SmartSuite: saved views and relationship clarity.
+- Monday: boards, groups, items, columns, and quick scan.
+
+Sundesk should keep the daily path easier than all of them. One screen. One job. Clear next action.
 
 ## V1 Rule
 
@@ -73,6 +129,10 @@ It includes:
 
 - Tables.
 - Fields.
+- Linked record fields.
+- Lookup fields.
+- Rollup fields.
+- Count fields.
 - Views.
 - Templates.
 - Automations.
@@ -81,6 +141,82 @@ It includes:
 Lindsay can customize the system without being forced to manage the system every day.
 
 Build stays visible in the sidebar. It is not renamed.
+
+Build is not developer mode. It is the user-editable workshop.
+
+Build opens to Risks.
+
+Communities already has a daily sidebar surface. Build should not open by surfacing Communities again.
+
+Default Build table order:
+
+- Risks.
+- Tasks.
+- Follow-ups.
+- Approvals.
+- Meetings.
+- People.
+- Custom tables.
+
+The main Build surface is the grid. Table creation, field creation, field settings, and record creation should live in menus or modals, not always-visible panels.
+
+Saved records should look saved.
+
+Build default state:
+
+- Table tabs visible.
+- Active table clear.
+- Saved rows static by default.
+- Edit button opens the record modal.
+- Field menu opens field settings.
+- Add table and Add field stay visible.
+
+This is the hybrid model:
+
+- Airtable-level table logic.
+- Notion-level record focus.
+- SmartSuite-level relationship display.
+- Monday-level scan speed.
+- Sundesk-level daily judgment.
+
+Views such as Kanban, calendar, and Gantt belong to the View Engine. They can be pinned to the left nav when they become regular check-in or update surfaces. A pinned view should keep its table context, such as `Community Calendar`, `Approvals Kanban`, `Event Timeline`, `Waiting Follow-ups`, or `Meeting Prep`. Views should not become permanent nav clutter by default.
+
+## Airtable Logic Baseline
+
+Airtable is the baseline for Sundesk's logic model.
+
+Not the visual clone. Not the pricing model. Not the daily complexity.
+
+The baseline is:
+
+- Every table has fields.
+- Every table has records.
+- Any table can link to another table.
+- Linked records are field values.
+- Backlinks are visible automatically.
+- Lookups pull values from linked records.
+- Rollups summarize linked records.
+- Counts count linked records.
+- Views sit on top of fields and linked records.
+- Automations can read fields, linked records, views, and record changes.
+- Interfaces sit on top for daily work.
+
+Sundesk should feel simpler than Airtable in daily use. The connected-base logic underneath must be real.
+
+## Connection Model
+
+Every V1 table gets the same connection powers.
+
+- Communities can link to Tasks, Meetings, People, Risks, Approvals, Follow-ups, and custom tables.
+- Tasks can link to Communities, Approvals, Follow-ups, Meetings, People, Risks, other Tasks, and custom tables.
+- Approvals can link to Communities, Tasks, People, Risks, and custom tables.
+- Follow-ups can link to People, Communities, Tasks, Approvals, Meetings, and custom tables.
+- Meetings can link to Communities, Tasks, Risks, People, Follow-ups, and custom tables.
+- People can link to Communities, Tasks, Follow-ups, Approvals, Meetings, and custom tables.
+- Risks can link to Communities, Tasks, Approvals, Meetings, People, and custom tables.
+- Custom tables can link to any table.
+
+No table gets special connection logic unless the user-facing workflow needs it.
 
 ## Settings UX
 
@@ -104,6 +240,8 @@ Tasks are first-class records.
 
 Lindsay can create a task, link it to a community, set status, set due date, add priority, link records, and mark dependencies.
 
+Tasks are not the center of the product. They are one table inside the connected base.
+
 Examples:
 
 1. Confirm COI status depends on venue readiness.
@@ -111,6 +249,49 @@ Examples:
 3. Meeting prep reads open tasks, risks, and follow-ups.
 
 Tasks can appear in Today, grid, Kanban, calendar, Gantt, meeting prep, follow-ups, approvals, at-risk views, and custom saved views.
+
+## Record Drawers
+
+Every record drawer shows the graph around that record:
+
+- Fields.
+- Linked records.
+- Backlinks.
+- Dependencies.
+- Lookups.
+- Rollups.
+- Counts.
+- Activity.
+- Why it surfaced.
+
+Halifax is one Community record. It is not hard-coded product logic.
+
+## Today Logic
+
+Today is computed from the connected base.
+
+Inputs include:
+
+- Due dates.
+- Status.
+- Priority.
+- Linked records.
+- Backlinks.
+- Dependencies.
+- Missing approvals.
+- Overdue follow-ups.
+- Upcoming meetings.
+- At-risk communities.
+- Saved views.
+- Automation rules.
+
+Output is organized as:
+
+- Now.
+- Waiting.
+- Next.
+
+Today is not a hand-authored dashboard. It is an interface over the base.
 
 ## Themes
 
@@ -120,14 +301,56 @@ V1 themes:
 - Sunset Bold.
 - Cloud Light.
 - Focus Dark.
-- Light.
+- Paper Light.
 
 Sunrise Soft is the default.
 
 The logo defines the visual source of truth: navy wordmark, sunrise grid, coral, peach, gold, cloud blue, and lavender table geometry.
 
-## Later Visibility
+Theme behaviour, typography, button states, menus, grid editing, drawers, chips, and polish rules live in [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md).
 
-Obsidian can be considered later as an opt-in metadata export.
+## Build Memory
 
-It must not sync files, document contents, private numbers, permit content, COI files, contracts, or imported company data. Safe records only. Manual and visible.
+Obsidian is for build memory only.
+
+At the end of each build session, write one manual note that records:
+
+- What changed.
+- What was tested.
+- What is still open.
+- Decisions made.
+- Next session scope.
+
+This is for Cerebro's thinking. It is not a Sundesk feature.
+
+Stop writing these notes when the build is complete.
+
+Never export Lindsay data, SALTXC data, private records, files, document contents, private numbers, permit content, COI files, contracts, or imported company data into Obsidian.
+
+Bridgefour visibility is out of scope for this build plan.
+
+## UI/UX Acceptance
+
+UI and UX polish is part of the build path.
+
+Each build stage should use [UI/UX Polish Spec](UI_UX_POLISH_SPEC.md) as its acceptance target. The final build session should still review the whole app as one product Lindsay can use.
+
+The build should review:
+
+- First screen clarity.
+- Today action flow.
+- Build power without daily noise.
+- Inline grid editing.
+- Field menus.
+- Dropdown and picker behaviour.
+- Button types, sizes, and states.
+- Record drawer readability.
+- Mobile layout.
+- Theme fit.
+- Typography.
+- Colour meaning.
+- Chip hierarchy.
+- Empty states.
+- Button labels.
+- Privacy copy.
+- No fake dead ends.

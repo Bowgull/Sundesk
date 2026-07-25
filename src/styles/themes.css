@@ -1,0 +1,211 @@
+@import "./settings.css";
+@import "./timeline.css";
+@import "./communities.css";
+@import "./meetings.css";
+
+.app {
+  /* Base theme is the persisted command-center theme. Keep Build grids readable here first. */
+  --background:
+    linear-gradient(180deg, #f7fbfd 0%, #fbfdfe 52%, #fff9ef 100%);
+  --rail-bg: #eef7fb;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.78);
+  --surface-soft: #f6fbfd;
+  --surface-wash: #edf7fb;
+  --paper: var(--surface);
+  --chrome: #ffffff;
+  --chrome-hover: #f1f8fb;
+  --ink: #142838;
+  --ink-2: #2b4354;
+  --muted: #6e8391;
+  --line: #d8e7ee;
+  --line-strong: #b9d2de;
+  --accent: #2d83bc;
+  --sky-1: #e4f4ff;
+  --sky-2: #bfe3f8;
+  --sky-3: #6eb9e5;
+  --night: #183346;
+  --night-2: #102433;
+  --primary-fg: #ffffff;
+  --sun: #f4a83f;
+  --coral: #eb3a3b;
+  --coral-2: #f9d8d5;
+  --sage-2: #e4f4e8;
+  --lav-2: #ece8fb;
+  --fire-text: #8d302c;
+  --waiting-text: #70560d;
+  --prep-text: #4f4799;
+  --focus-ring: #2d83bc;
+  --grid-line: rgba(20, 40, 56, 0.13);
+  --brand-shadow: 0 1px 0 rgba(24, 51, 70, 0.05), 0 8px 20px rgba(24, 51, 70, 0.04);
+  --aura: 0 10px 26px rgba(24, 51, 70, 0.06);
+  background: var(--background);
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+
+.app[data-theme="sunset"] {
+  --background:
+    linear-gradient(180deg, #fff5df 0%, #ffe3d8 56%, #f5e9f5 100%);
+  --rail-bg: #ffe9dc;
+  --surface: #fffaf4;
+  --surface-raised: #fffaf4;
+  --surface-glass: rgba(255, 250, 244, 0.82);
+  --surface-soft: #fff5e8;
+  --surface-wash: #fff0e0;
+  --ink: #2b2330;
+  --ink-2: #553544;
+  --muted: #8b6c71;
+  --line: #efd0c8;
+  --line-strong: #e8aaa0;
+  --accent: #f55a01;
+  --sky-1: #ffe0c8;
+  --sky-2: #ffba88;
+  --sky-3: #df741b;
+  --night: #593e68;
+  --night-2: #41294f;
+  --sun: #f68e06;
+  --coral: #eb3a3b;
+  --coral-2: #ffe0dc;
+  --sage-2: #f1e8d4;
+  --lav-2: #eee3f4;
+  --focus-ring: #f55a01;
+  --fire-text: #86212b;
+  --waiting-text: #6d4600;
+  --prep-text: #533b98;
+  --grid-line: rgba(43, 35, 48, 0.14);
+}
+
+.app[data-theme="coast"] {
+  --background:
+    linear-gradient(180deg, #f7eedc 0%, #ece9cf 46%, #d6ddba 100%);
+  --rail-bg: #dce1c2;
+  --surface: #fff8e6;
+  --surface-raised: #fffbee;
+  --surface-soft: #f6efd9;
+  --surface-wash: #e9e5c7;
+  --surface-glass: rgba(255, 248, 230, 0.86);
+  --paper: var(--surface);
+  --chrome: #fffbee;
+  --chrome-hover: #ece8cf;
+  --ink: #22301d;
+  --ink-2: #3c4c32;
+  --muted: #6d7058;
+  --line: #d2cfaa;
+  --line-strong: #aaa87d;
+  --accent: #6f7f3f;
+  --sky-1: #e7e8c8;
+  --sky-2: #cbd09a;
+  --sky-3: #6f7f3f;
+  --night: #314a2c;
+  --night-2: #23381f;
+  --sun: #c9824b;
+  --coral: #a9563f;
+  --coral-2: #efd2bd;
+  --sage-2: #dce5c7;
+  --lav-2: #dfd9c8;
+  --focus-ring: #6f7f3f;
+  --fire-text: #743827;
+  --waiting-text: #654717;
+  --prep-text: #4b5130;
+  --grid-line: rgba(34, 48, 29, 0.15);
+}
+
+.app[data-theme="dusk"] {
+  --background:
+    linear-gradient(180deg, #fbf0f7 0%, #eceefa 52%, #f7ded8 100%);
+  --rail-bg: #f1eaf7;
+  --surface: #fffafd;
+  --surface-raised: #fffafd;
+  --surface-glass: rgba(255, 250, 253, 0.82);
+  --surface-soft: #fbf7fc;
+  --surface-wash: #f2edf8;
+  --ink: #26213a;
+  --ink-2: #483b5c;
+  --muted: #74657f;
+  --line: #dfd4e8;
+  --line-strong: #c6b5d7;
+  --accent: #84485f;
+  --sky-1: #efe8f8;
+  --sky-2: #d7c7e6;
+  --sky-3: #84485f;
+  --night: #593e68;
+  --night-2: #3d2a4a;
+  --sun: #fda839;
+  --coral: #f05a4e;
+  --coral-2: #ffdeda;
+  --sage-2: #e7f1e7;
+  --lav-2: #e6dcf1;
+  --focus-ring: #84485f;
+  --fire-text: #842c2e;
+  --waiting-text: #755315;
+  --prep-text: #4e3c77;
+  --grid-line: rgba(38, 33, 58, 0.14);
+}
+
+.app[data-theme="graphite"] {
+  --background:
+    linear-gradient(180deg, #f7f8f9 0%, #eef2f5 58%, #f6f3ef 100%);
+  --rail-bg: #e8edf1;
+  --surface-soft: #f9fafb;
+  --surface-wash: #f1f4f6;
+  --surface-glass: rgba(255, 255, 255, 0.84);
+  --ink: #1f2933;
+  --ink-2: #344252;
+  --muted: #697582;
+  --line: #d8dee5;
+  --line-strong: #bcc7d1;
+  --accent: #53639a;
+  --sky-1: #e7edf2;
+  --sky-2: #ccd6df;
+  --sky-3: #53639a;
+  --night: #263340;
+  --night-2: #182330;
+  --sun: #df741b;
+  --coral: #d94c43;
+  --coral-2: #f6dbd6;
+  --sage-2: #e3eee7;
+  --lav-2: #e8e8f3;
+  --focus-ring: #53639a;
+  --fire-text: #8f312e;
+  --waiting-text: #704a12;
+  --prep-text: #4d547e;
+  --grid-line: rgba(31, 41, 51, 0.14);
+}
+
+.app[data-theme="night-shift"] {
+  --background:
+    linear-gradient(180deg, #101722 0%, #172235 58%, #221d30 100%);
+  --rail-bg: #152232;
+  --surface: #1c2938;
+  --surface-raised: #223244;
+  --surface-glass: rgba(28, 41, 56, 0.88);
+  --surface-soft: #172332;
+  --surface-wash: #1a2b3c;
+  --paper: var(--surface);
+  --chrome: #223244;
+  --chrome-hover: #2a3e54;
+  --ink: #edf4f8;
+  --ink-2: #d5e2ea;
+  --muted: #9fb2c1;
+  --line: #34485a;
+  --line-strong: #4b6579;
+  --accent: #fda839;
+  --sky-1: #20364a;
+  --sky-2: #2d4c66;
+  --sky-3: #fda839;
+  --night: #f3d08d;
+  --night-2: #f8e1aa;
+  --primary-fg: #111924;
+  --sun: #fda839;
+  --coral: #ff6b61;
+  --coral-2: #4a272b;
+  --sage-2: #203c31;
+  --lav-2: #332d4e;
+  --focus-ring: #fda839;
+  --fire-text: #ffd2cf;
+  --waiting-text: #ffe3a3;
+  --prep-text: #ddd8ff;
+  --grid-line: rgba(237, 244, 248, 0.12);
+  --brand-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 40px rgba(0, 0, 0, 0.22);
+}

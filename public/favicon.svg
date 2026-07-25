@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sundesk">
+  <rect width="512" height="512" rx="112" fill="#f7f2ea"/>
+  <path d="M64 256h384v168H64z" fill="#d9ddf5"/>
+  <path d="M64 276h384" stroke="#fffdf8" stroke-width="10"/>
+  <path d="M64 326h384" stroke="#fffdf8" stroke-width="10"/>
+  <path d="M64 376h384" stroke="#fffdf8" stroke-width="10"/>
+  <path d="M171 256v168M256 256v168M341 256v168" stroke="#fffdf8" stroke-width="10"/>
+  <path d="M64 248c32-24 64-24 96 0 32-32 64-32 96 0 32-32 64-32 96 0 32-24 64-24 96 0V64H64z" fill="#f7d8bd"/>
+  <path d="M256 64v162M151 84l89 142M361 84l-89 142M80 144l146 94M432 144l-146 94" stroke="#fffdf8" stroke-width="10"/>
+  <circle cx="256" cy="256" r="70" fill="#f8bd58" stroke="#fffdf8" stroke-width="10"/>
+  <path d="M64 248c32-24 64-24 96 0 32-32 64-32 96 0 32-32 64-32 96 0 32-24 64-24 96 0v18H64z" fill="#dce8fb" stroke="#fffdf8" stroke-width="10"/>
+</svg>
